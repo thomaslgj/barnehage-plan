@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/nb";
 import weekOfYear from "dayjs/plugin/weekOfYear";
+import isoWeek from "dayjs/plugin/isoWeek";
 
 dayjs.extend(weekOfYear);
+dayjs.extend(isoWeek);
 
 const PEOPLE = { person1: "Thomas", person2: "Helene" } as const;
 const ORDER = [null, "person1", "person2"] as const;
@@ -23,8 +25,9 @@ export default function Schedule() {
   // sett norsk locale
   dayjs.locale("nb");
 
-  // generer 2 uker med hverdager
-  const start = dayjs().startOf("week").add(1, "day"); // mandag
+  // generer 2 uker med hverdager, starter med mandag i inneværende uke
+  const today = dayjs();
+  const start = today.startOf("isoWeek"); // mandag i inneværende uke (ISO uke starter på mandag)
   const allDays = Array.from({ length: 14 })
     .map((_, i) => start.add(i, "day"))
     .filter((d) => d.day() !== 6 && d.day() !== 0);
@@ -76,6 +79,7 @@ export default function Schedule() {
         const prevDay = index > 0 ? allDays[index - 1] : null;
         const isNewWeek =
           prevDay && d.week() !== prevDay.week();
+        const isToday = d.isSame(today, "day");
         return (
           <div key={dateStr}>
             {isNewWeek && (
@@ -85,8 +89,11 @@ export default function Schedule() {
                 </div>
               </div>
             )}
-            <div className="bg-white p-3 border-t-4 border-gray-600">
-              <div className="text-sm font-semibold text-gray-700 capitalize">
+            <div className={`p-3 border-t-4 border-gray-600 ${isToday ? "bg-blue-100" : "bg-white"}`}>
+              <div className={`text-sm font-semibold capitalize flex items-center gap-2 ${isToday ? "text-blue-600" : "text-gray-700"}`}>
+                {isToday && (
+                  <span className="text-blue-500">●</span>
+                )}
                 {d.format("dddd DD.MM")}
               </div>
               <div className="flex gap-2 mt-2">
@@ -98,7 +105,7 @@ export default function Schedule() {
                     key={slot.id}
                     onClick={() => handleClick(dateStr, slot.id)}
                     disabled={loading}
-                    className={`flex-1 rounded-lg py-3 text-sm font-medium
+                    className={`flex-1 rounded-lg py-3 text-sm font-medium border-1 border-black
                       ${who === "person1"
                         ? "bg-green-200 text-black"
                         : who === "person2"
