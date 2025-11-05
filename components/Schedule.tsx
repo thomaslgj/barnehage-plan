@@ -109,7 +109,7 @@ export default function Schedule() {
                       ${who === "person1"
                         ? "bg-green-200 text-black"
                         : who === "person2"
-                        ? "bg-blue-200 text-black"
+                        ? "bg-yellow-200 text-black"
                         : "bg-gray-100"}
                       ${loading ? "opacity-50" : ""}
                     `}
