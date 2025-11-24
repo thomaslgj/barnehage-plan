@@ -21,13 +21,15 @@ type Who = (typeof ORDER)[number];
 export default function Schedule() {
   const [data, setData] = useState<Record<string, Who>>({});
   const [loading, setLoading] = useState(true);
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = inneværende uke, -1 = forrige uke, 1 = neste uke
 
   // sett norsk locale
   dayjs.locale("nb");
 
-  // generer 2 uker med hverdager, starter med mandag i inneværende uke
+  // generer 2 uker med hverdager, starter med mandag i valgt uke
   const today = dayjs();
-  const start = today.startOf("isoWeek"); // mandag i inneværende uke (ISO uke starter på mandag)
+  const currentWeekStart = today.startOf("isoWeek"); // mandag i inneværende uke (ISO uke starter på mandag)
+  const start = currentWeekStart.add(weekOffset, "week"); // juster basert på weekOffset
   const allDays = Array.from({ length: 14 })
     .map((_, i) => start.add(i, "day"))
     .filter((d) => d.day() !== 6 && d.day() !== 0);
@@ -49,7 +51,7 @@ export default function Schedule() {
       setLoading(false);
     };
     fetchData();
-  }, [from, to]);
+  }, [from, to, weekOffset]);
 
   const handleClick = async (dateStr: string, slot: string) => {
     const key = `${dateStr}-${slot}`;
@@ -72,8 +74,45 @@ export default function Schedule() {
     });
   };
 
+  const currentWeekNumber = start.week();
+  const currentYear = start.year();
+  const weekRange = `${allDays[0].format("DD.MM")} - ${allDays[allDays.length - 1].format("DD.MM")}`;
+
+  const isCurrentWeek = weekOffset === 0;
+
   return (
     <div className="">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-300">
+        <button
+          onClick={() => setWeekOffset(weekOffset - 1)}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors text-black"
+          aria-label="Forrige uke"
+        >
+          ← Forrige
+        </button>
+        <div className="text-center flex-1">
+          <div className="text-lg font-semibold text-gray-800">
+            Uke {currentWeekNumber}, {currentYear}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">{weekRange}</div>
+          {!isCurrentWeek && (
+            <button
+              onClick={() => setWeekOffset(0)}
+              className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+              aria-label="Gå til inneværende uke"
+            >
+              Gå til inneværende uke
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => setWeekOffset(weekOffset + 1)}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors text-black"
+          aria-label="Neste uke"
+        >
+          Neste →
+        </button>
+      </div>
       {allDays.map((d, index) => {
         const dateStr = d.format("YYYY-MM-DD");
         const prevDay = index > 0 ? allDays[index - 1] : null;
