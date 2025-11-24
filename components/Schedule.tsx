@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/nb";
 import weekOfYear from "dayjs/plugin/weekOfYear";
@@ -37,9 +37,12 @@ export default function Schedule() {
   const from = allDays[0].format("YYYY-MM-DD");
   const to = allDays[allDays.length - 1].format("YYYY-MM-DD");
 
-  useEffect(() => {
-    const fetchData = async () => {
+  // Funksjon for å hente data
+  const fetchData = useCallback(async (showLoading = true) => {
+    if (showLoading) {
       setLoading(true);
+    }
+    try {
       const res = await fetch(`/api/schedule?from=${from}&to=${to}`);
       const json = await res.json();
       const next: Record<string, Who> = {};
@@ -48,10 +51,38 @@ export default function Schedule() {
         next[key] = (row.who as Who) ?? null;
       });
       setData(next);
-      setLoading(false);
+    } catch (error) {
+      console.error("Feil ved henting av data:", error);
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
+  }, [from, to]);
+
+  // Hent data når komponenten monteres eller weekOffset endres
+  useEffect(() => {
+    fetchData(true);
+  }, [fetchData, weekOffset]);
+
+  // Automatisk oppdatering hvert 30. sekund
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData(false); // Ikke vis loading-indikator ved automatisk oppdatering
+    }, 10000); // 10 sekunder
+
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // Oppdater også når vinduet får fokus igjen (hvis brukeren har byttet fane)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchData(false);
     };
-    fetchData();
-  }, [from, to, weekOffset]);
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [fetchData]);
 
   const handleClick = async (dateStr: string, slot: string) => {
     const key = `${dateStr}-${slot}`;
