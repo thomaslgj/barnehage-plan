@@ -112,24 +112,26 @@ export default function Schedule() {
   const isCurrentWeek = weekOffset === 0;
 
   return (
-    <div className="">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-300">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => setWeekOffset(weekOffset - 1)}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors text-black"
+          className="p-2.5 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-all duration-200 text-white hover:scale-105 active:scale-95"
           aria-label="Forrige uke"
         >
-          ← Forrige
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
-        <div className="text-center flex-1">
-          <div className="text-lg font-semibold text-gray-800">
+        <div className="text-center flex-1 px-4">
+          <div className="text-lg font-semibold text-white">
             Uke {currentWeekNumber}, {currentYear}
           </div>
-          <div className="text-xs text-gray-500 mt-1">{weekRange}</div>
+          <div className="text-xs text-slate-400 mt-0.5">{weekRange}</div>
           {!isCurrentWeek && (
             <button
               onClick={() => setWeekOffset(0)}
-              className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+              className="mt-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
               aria-label="Gå til inneværende uke"
             >
               Gå til inneværende uke
@@ -138,10 +140,12 @@ export default function Schedule() {
         </div>
         <button
           onClick={() => setWeekOffset(weekOffset + 1)}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors text-black"
+          className="p-2.5 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-all duration-200 text-white hover:scale-105 active:scale-95"
           aria-label="Neste uke"
         >
-          Neste →
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       </div>
       {allDays.map((d, index) => {
@@ -153,20 +157,26 @@ export default function Schedule() {
         return (
           <div key={dateStr}>
             {isNewWeek && (
-              <div className="my-4 border-t border-gray-200">
-                <div className="mt-3 text-xs font-semibold text-gray-200 uppercase tracking-wide">
+              <div className="my-6 border-t border-slate-700/30">
+                <div className="mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Uke {d.week()}
                 </div>
               </div>
             )}
-            <div className={`p-3 border-t-4 border-gray-600 ${isToday ? "bg-blue-100" : "bg-white"}`}>
-              <div className={`text-sm font-semibold capitalize flex items-center gap-2 ${isToday ? "text-blue-600" : "text-gray-700"}`}>
+            <div className={`p-4 rounded-xl shadow-lg transition-all duration-200 ${
+              isToday 
+                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-2 border-blue-400/50" 
+                : "bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50"
+            }`}>
+              <div className={`text-sm font-semibold capitalize flex items-center gap-2 mb-3 ${
+                isToday ? "text-blue-300" : "text-slate-300"
+              }`}>
                 {isToday && (
-                  <span className="text-blue-500">●</span>
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
                 )}
                 {d.format("dddd DD.MM")}
               </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-3">
               {SLOTS.map((slot) => {
                 const key = `${dateStr}-${slot.id}`;
                 const who = data[key] ?? null;
@@ -176,21 +186,28 @@ export default function Schedule() {
                     key={slot.id}
                     onClick={() => handleClick(dateStr, slot.id)}
                     disabled={loading}
-                    className={`flex-1 rounded-lg py-3 text-sm font-medium border-1 border-black relative overflow-hidden
+                    className={`flex-1 rounded-xl py-4 px-3 text-sm font-medium relative overflow-hidden transition-all duration-200
                       ${who === "person1"
-                        ? "bg-green-200 text-black"
+                        ? "bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                         : who === "person2"
-                        ? "bg-yellow-200 text-black"
-                        : "bg-gray-100"}
+                        ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                        : "bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"}
                       ${isLoading ? "animate-pulse-slow" : ""}
+                      ${loading ? "cursor-wait" : "cursor-pointer"}
                     `}
                   >
                     {isLoading && (
                       <div className="animate-shimmer" />
                     )}
                     <div className="relative z-10">
-                      <div className="text-xs text-gray-600">{slot.label}</div>
-                      <div className="text-lg">
+                      <div className={`text-xs font-medium mb-1.5 ${
+                        who ? "text-white/90" : "text-slate-400"
+                      }`}>
+                        {slot.label}
+                      </div>
+                      <div className={`text-lg font-bold ${
+                        who ? "text-white drop-shadow-sm" : "text-slate-500"
+                      }`}>
                         {who ? PEOPLE[who] : loading && Object.keys(data).length === 0 ? "…" : "-"}
                       </div>
                     </div>
