@@ -170,23 +170,29 @@ export default function Schedule() {
               {SLOTS.map((slot) => {
                 const key = `${dateStr}-${slot.id}`;
                 const who = data[key] ?? null;
+                const isLoading = loading && Object.keys(data).length === 0;
                 return (
                   <button
                     key={slot.id}
                     onClick={() => handleClick(dateStr, slot.id)}
                     disabled={loading}
-                    className={`flex-1 rounded-lg py-3 text-sm font-medium border-1 border-black
+                    className={`flex-1 rounded-lg py-3 text-sm font-medium border-1 border-black relative overflow-hidden
                       ${who === "person1"
                         ? "bg-green-200 text-black"
                         : who === "person2"
                         ? "bg-yellow-200 text-black"
                         : "bg-gray-100"}
-                      ${loading ? "opacity-50" : ""}
+                      ${isLoading ? "animate-pulse-slow" : ""}
                     `}
                   >
-                    <div className="text-xs text-gray-600">{slot.label}</div>
-                    <div className="text-lg">
-                      {who ? PEOPLE[who] : loading ? "…" : "-"}
+                    {isLoading && (
+                      <div className="animate-shimmer" />
+                    )}
+                    <div className="relative z-10">
+                      <div className="text-xs text-gray-600">{slot.label}</div>
+                      <div className="text-lg">
+                        {who ? PEOPLE[who] : loading && Object.keys(data).length === 0 ? "…" : "-"}
+                      </div>
                     </div>
                   </button>
                 );
