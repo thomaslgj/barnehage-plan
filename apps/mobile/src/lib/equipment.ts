@@ -67,12 +67,39 @@ export async function updateEquipmentStatus(
 }
 
 // Calculate overall equipment status
+// Critical items (rain_gear, diapers) missing → not_ready (red)
+// Non-critical items (change_clothes, wool) missing → missing (yellow)
+// Nothing missing → ready (green)
 export function calculateEquipmentStatus(items: EquipmentItem[]): 'ready' | 'missing' | 'not_ready' {
   const hasData = items.length > 0;
   if (!hasData) return 'not_ready';
 
-  const hasMissing = items.some((item) => item.status === 'missing');
-  return hasMissing ? 'missing' : 'ready';
+  const criticalItems = ['rain_gear', 'diapers'];
+  const nonCriticalItems = ['change_clothes', 'wool'];
+
+  // Find all missing items
+  const allMissing = items.filter((item) => item.status === 'missing');
+
+  // Check if any critical items are missing
+  const missingCritical = allMissing.filter((item) =>
+    criticalItems.includes(item.key)
+  );
+
+  if (missingCritical.length > 0) {
+    return 'not_ready'; // Red status
+  }
+
+  // Check if any non-critical items are missing
+  const missingNonCritical = allMissing.filter((item) =>
+    nonCriticalItems.includes(item.key)
+  );
+
+  if (missingNonCritical.length > 0) {
+    return 'missing'; // Yellow status
+  }
+
+  // All items are OK
+  return 'ready'; // Green status
 }
 
 // Check if equipment modal should be shown
