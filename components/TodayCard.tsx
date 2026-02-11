@@ -98,16 +98,38 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
     return () => clearInterval(interval);
   }, [isToday, equipmentItems, hasShownModalToday]);
 
-  // Beregn status
-  const getEquipmentStatus = (): "ready" | "missing" | "not_ready" => {
-    const missingItems = equipmentItems.filter((item) => item.status === "missing");
-    if (missingItems.length === 0) {
-      return "ready";
-    } else if (missingItems.length < equipmentItems.length) {
-      return "missing";
-    } else {
-      return "not_ready";
+  // Beregn status basert på viktighet
+  // Kritisk: rain_gear eller diapers mangler → not_ready (rødt)
+  // Ikke-kritisk: change_clothes eller wool mangler → missing (gult)
+  const getEquipmentStatus = (): {
+    status: "ready" | "missing" | "not_ready";
+    missingItems: EquipmentItem[];
+  } => {
+    const criticalItems = ["rain_gear", "diapers"];
+    const nonCriticalItems = ["change_clothes", "wool"];
+    
+    const allMissing = equipmentItems.filter((item) => item.status === "missing");
+    
+    // Sjekk om noen kritiske items mangler
+    const missingCritical = allMissing.filter((item) =>
+      criticalItems.includes(item.item_key)
+    );
+    
+    if (missingCritical.length > 0) {
+      return { status: "not_ready", missingItems: missingCritical };
     }
+    
+    // Sjekk om noen ikke-kritiske items mangler
+    const missingNonCritical = allMissing.filter((item) =>
+      nonCriticalItems.includes(item.item_key)
+    );
+    
+    if (missingNonCritical.length > 0) {
+      return { status: "missing", missingItems: missingNonCritical };
+    }
+    
+    // Alt er ok
+    return { status: "ready", missingItems: [] };
   };
 
   const handleUpdateItem = async (itemKey: string, status: "ok" | "missing") => {
@@ -128,7 +150,7 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
     }
   };
 
-  const equipmentStatus = getEquipmentStatus();
+  const { status: equipmentStatus, missingItems } = getEquipmentStatus();
 
   return (
     <>
@@ -162,6 +184,7 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
             <EquipmentStatusBadge
               status={equipmentStatus}
               onClick={() => setIsBottomSheetOpen(true)}
+              missingItems={missingItems}
             />
           )}
         </div>
@@ -181,4 +204,5 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
     </>
   );
 }
+
 
