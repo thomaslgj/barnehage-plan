@@ -5,11 +5,12 @@ import dayjs from "dayjs";
 import "dayjs/locale/nb";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import isoWeek from "dayjs/plugin/isoWeek";
+import TodayCard from "./TodayCard";
+import ScheduleSlot from "./ScheduleSlot";
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
 
-const PEOPLE = { person1: "Thomas", person2: "Helene" } as const;
 const ORDER = [null, "person1", "person2"] as const;
 const SLOTS = [
   { id: "dropoff", label: "Levering" },
@@ -111,8 +112,28 @@ export default function Schedule() {
 
   const isCurrentWeek = weekOffset === 0;
 
+  // Bestem hvilken dag som skal vises basert på klokkeslett
+  // Før kl 15: "I dag", kl 15-03: "I morgen"
+  const currentHour = today.hour();
+  const showTomorrow = currentHour >= 15 || currentHour < 3;
+  const targetDate = showTomorrow ? today.add(1, "day") : today;
+  const targetDateStr = targetDate.format("YYYY-MM-DD");
+  const label = showTomorrow ? "I morgen" : "I dag";
+  
+  const targetDropoff = data[`${targetDateStr}-dropoff`] ?? null;
+  const targetPickup = data[`${targetDateStr}-pickup`] ?? null;
+
   return (
     <div className="space-y-1.5">
+      {/* I dag/I morgen kort - kun vises for inneværende uke */}
+      {isCurrentWeek && (
+        <TodayCard
+          label={label}
+          isToday={!showTomorrow}
+          dropoff={targetDropoff}
+          pickup={targetPickup}
+        />
+      )}
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setWeekOffset(weekOffset - 1)}
@@ -148,6 +169,17 @@ export default function Schedule() {
           </svg>
         </button>
       </div>
+      
+      {/* Tabell-header */}
+      <div className="flex gap-2 mb-2 px-1">
+        <div className="flex-1 text-center">
+          <div className="text-[10px] font-medium text-slate-400">Levering</div>
+        </div>
+        <div className="flex-1 text-center">
+          <div className="text-[10px] font-medium text-slate-400">Henting</div>
+        </div>
+      </div>
+      
       {allDays.map((d, index) => {
         const dateStr = d.format("YYYY-MM-DD");
         const prevDay = index > 0 ? allDays[index - 1] : null;
@@ -182,36 +214,14 @@ export default function Schedule() {
                 const who = data[key] ?? null;
                 const isLoading = loading && Object.keys(data).length === 0;
                 return (
-                  <button
+                  <ScheduleSlot
                     key={slot.id}
+                    slotId={slot.id as "dropoff" | "pickup"}
+                    who={who}
+                    isLoading={isLoading}
                     onClick={() => handleClick(dateStr, slot.id)}
                     disabled={loading}
-                    className={`flex-1 rounded-lg py-2.5 px-2 text-xs font-medium relative overflow-hidden transition-all duration-200
-                      ${who === "person1"
-                        ? "bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                        : who === "person2"
-                        ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                        : "bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"}
-                      ${isLoading ? "animate-pulse-slow" : ""}
-                      ${loading ? "cursor-wait" : "cursor-pointer"}
-                    `}
-                  >
-                    {isLoading && (
-                      <div className="animate-shimmer" />
-                    )}
-                    <div className="relative z-10">
-                      <div className={`text-[10px] font-medium mb-0.5 ${
-                        who ? "text-white/90" : "text-slate-400"
-                      }`}>
-                        {slot.label}
-                      </div>
-                      <div className={`text-base font-bold ${
-                        who ? "text-white drop-shadow-sm" : "text-slate-500"
-                      }`}>
-                        {who ? PEOPLE[who] : loading && Object.keys(data).length === 0 ? "…" : "-"}
-                      </div>
-                    </div>
-                  </button>
+                  />
                 );
               })}
             </div>
