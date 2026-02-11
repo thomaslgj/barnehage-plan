@@ -14,23 +14,23 @@ export default function EquipmentStatusBadge({
       case "ready":
         return {
           text: "Barnehageklar",
-          bgColor: "bg-green-600",
-          hoverColor: "hover:bg-green-700",
-          textColor: "text-white",
+          dotColor: "bg-green-500",
+          textColor: "text-slate-300",
+          hoverColor: "hover:bg-slate-700/50",
         };
       case "missing":
         return {
           text: "Mangler noe",
-          bgColor: "bg-yellow-600",
-          hoverColor: "hover:bg-yellow-700",
-          textColor: "text-white",
+          dotColor: "bg-yellow-500",
+          textColor: "text-slate-300",
+          hoverColor: "hover:bg-slate-700/50",
         };
       case "not_ready":
         return {
           text: "Ikke barnehageklar",
-          bgColor: "bg-red-600",
-          hoverColor: "hover:bg-red-700",
-          textColor: "text-white",
+          dotColor: "bg-red-500",
+          textColor: "text-slate-300",
+          hoverColor: "hover:bg-slate-700/50",
         };
     }
   };
@@ -40,8 +40,9 @@ export default function EquipmentStatusBadge({
   return (
     <button
       onClick={onClick}
-      className={`${config.bgColor} ${config.hoverColor} ${config.textColor} px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full`}
+      className={`flex items-center gap-2 ${config.textColor} ${config.hoverColor} px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full`}
     >
+      <span className={`w-2 h-2 ${config.dotColor} rounded-full`}></span>
       {config.text}
     </button>
   );

@@ -46,11 +46,19 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
       try {
         const res = await fetch("/api/equipment");
         const data = await res.json();
-        if (data && data.length > 0) {
-          setEquipmentItems(data);
-        }
+        
+        // Merge data fra databasen med default items
+        // Dette sikrer at vi alltid viser alle items
+        const mergedItems = DEFAULT_ITEMS.map((defaultItem) => {
+          const dbItem = data?.find((item: EquipmentItem) => item.item_key === defaultItem.item_key);
+          return dbItem || defaultItem;
+        });
+        
+        setEquipmentItems(mergedItems);
       } catch (error) {
         console.error("Feil ved henting av equipment:", error);
+        // Hvis det er feil, bruk default items
+        setEquipmentItems(DEFAULT_ITEMS);
       }
     };
     fetchEquipment();

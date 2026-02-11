@@ -38,8 +38,6 @@ export default function EquipmentBottomSheet({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -51,13 +49,16 @@ export default function EquipmentBottomSheet({
     onUpdateItem(itemKey, newStatus);
   };
 
+  if (!isOpen) return null;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end"
+      className="fixed inset-0 z-50"
       onClick={handleBackdropClick}
     >
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="relative w-full bg-slate-800 rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto">
+      <div className="absolute inset-0 bg-black/50 animate-[fadeIn_0.3s_ease-out]" />
+      <div className="absolute bottom-0 left-0 right-0 w-full bg-slate-800 rounded-t-2xl max-h-[80vh] overflow-y-auto animate-[slideUp_0.3s_ease-out]">
+        <div className="p-6" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">
             Hva mangler i barnehagen?
@@ -102,6 +103,7 @@ export default function EquipmentBottomSheet({
               </button>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>
