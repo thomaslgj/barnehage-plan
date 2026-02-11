@@ -124,7 +124,7 @@ export default function Schedule() {
   const targetPickup = data[`${targetDateStr}-pickup`] ?? null;
 
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-col gap-1.5">
       {/* I dag/I morgen kort - kun vises for inneværende uke */}
       {isCurrentWeek && (
         <TodayCard
