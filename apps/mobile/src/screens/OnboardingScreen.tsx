@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
+import tw from '../lib/tw';
 
 export default function OnboardingScreen() {
   const { refresh } = useHousehold();
@@ -81,29 +81,29 @@ export default function OnboardingScreen() {
 
   if (mode === 'choice') {
     return (
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Welcome!</Text>
-          <Text style={styles.subtitle}>
+      <View style={tw`flex-1 bg-background`}>
+        <View style={tw`flex-1 justify-center px-6`}>
+          <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Welcome!</Text>
+          <Text style={tw`text-base text-slate-300 text-center mb-8`}>
             Let's get you set up. Would you like to create a new household or join an existing one?
           </Text>
 
           <TouchableOpacity
-            style={styles.choiceButton}
+            style={tw`bg-primary rounded-lg p-5 mb-4`}
             onPress={() => setMode('create')}
           >
-            <Text style={styles.choiceButtonTitle}>Create New Household</Text>
-            <Text style={styles.choiceButtonSubtitle}>
+            <Text style={tw`text-lg font-semibold text-white mb-1`}>Create New Household</Text>
+            <Text style={tw`text-sm text-white/90`}>
               Start fresh and invite others to join
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.choiceButton, styles.choiceButtonSecondary]}
+            style={tw`bg-info rounded-lg p-5`}
             onPress={() => setMode('join')}
           >
-            <Text style={styles.choiceButtonTitle}>Join Existing Household</Text>
-            <Text style={styles.choiceButtonSubtitle}>
+            <Text style={tw`text-lg font-semibold text-white mb-1`}>Join Existing Household</Text>
+            <Text style={tw`text-sm text-white/90`}>
               Use an invite code from your household
             </Text>
           </TouchableOpacity>
@@ -115,60 +115,66 @@ export default function OnboardingScreen() {
   if (mode === 'create') {
     return (
       <KeyboardAvoidingView
-        style={styles.container}
+        style={tw`flex-1 bg-background`}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.title}>Create Household</Text>
-          <Text style={styles.subtitle}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Create Household</Text>
+          <Text style={tw`text-base text-slate-300 text-center mb-8`}>
             Fill in the details below to create your household
           </Text>
 
-          <Text style={styles.label}>Household Name (optional)</Text>
+          <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Household Name (optional)</Text>
           <TextInput
-            style={styles.input}
+            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
             placeholder="e.g., The Andersons"
+            placeholderTextColor="#94a3b8"
             value={householdName}
             onChangeText={setHouseholdName}
             editable={!loading}
           />
 
-          <Text style={styles.label}>Your Name *</Text>
+          <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Your Name *</Text>
           <TextInput
-            style={styles.input}
+            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
             placeholder="Your display name"
+            placeholderTextColor="#94a3b8"
             value={myName}
             onChangeText={setMyName}
             editable={!loading}
           />
 
-          <Text style={styles.label}>Partner Name (optional)</Text>
+          <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Partner Name (optional)</Text>
           <TextInput
-            style={styles.input}
+            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
             placeholder="Partner's display name"
+            placeholderTextColor="#94a3b8"
             value={partnerName}
             onChangeText={setPartnerName}
             editable={!loading}
           />
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={tw.style(`bg-primary rounded py-3.5 items-center mt-2`, loading && 'opacity-50')}
             onPress={handleCreateHousehold}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Create Household</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Create Household</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.backButton}
+            style={tw`mt-4 py-3`}
             onPress={() => setMode('choice')}
             disabled={loading}
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={tw`text-slate-400 text-sm text-center`}>Back</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -178,145 +184,59 @@ export default function OnboardingScreen() {
   // mode === 'join'
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={tw`flex-1 bg-background`}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Join Household</Text>
-        <Text style={styles.subtitle}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Join Household</Text>
+        <Text style={tw`text-base text-slate-300 text-center mb-8`}>
           Enter the invite code you received
         </Text>
 
-        <Text style={styles.label}>Invite Code *</Text>
+        <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Invite Code *</Text>
         <TextInput
-          style={styles.input}
+          style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
           placeholder="Enter invite code"
+          placeholderTextColor="#94a3b8"
           value={inviteCode}
           onChangeText={setInviteCode}
           autoCapitalize="characters"
           editable={!loading}
         />
 
-        <Text style={styles.label}>Your Display Name (optional)</Text>
+        <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Your Display Name (optional)</Text>
         <TextInput
-          style={styles.input}
+          style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
           placeholder="How others will see you"
+          placeholderTextColor="#94a3b8"
           value={displayName}
           onChangeText={setDisplayName}
           editable={!loading}
         />
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={tw.style(`bg-primary rounded py-3.5 items-center mt-2`, loading && 'opacity-50')}
           onPress={handleJoinHousehold}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Join Household</Text>
+            <Text style={tw`text-white text-base font-semibold`}>Join Household</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.backButton}
+          style={tw`mt-4 py-3`}
           onPress={() => setMode('choice')}
           disabled={loading}
         >
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={tw`text-text-muted text-sm text-center`}>Back</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  choiceButton: {
-    backgroundColor: '#10b981',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-  },
-  choiceButtonSecondary: {
-    backgroundColor: '#3b82f6',
-  },
-  choiceButtonTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  choiceButtonSubtitle: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: '#10b981',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-});

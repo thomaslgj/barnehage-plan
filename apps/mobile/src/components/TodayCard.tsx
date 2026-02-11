@@ -1,7 +1,21 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
 import 'dayjs/locale/nb';
+import { useHousehold } from '../contexts/HouseholdProvider';
+import EquipmentStatusBadge from './EquipmentStatusBadge';
+import EquipmentBottomSheet from './EquipmentBottomSheet';
+import EquipmentModal from './EquipmentModal';
+import ScheduleSlot from './ScheduleSlot';
+import {
+  fetchEquipmentStatus,
+  updateEquipmentStatus,
+  calculateEquipmentStatus,
+  shouldShowEquipmentModal,
+} from '../lib/equipment';
+import type { EquipmentItem } from '../types/db';
+import tw from '../lib/tw';
 
 dayjs.locale('nb');
 
@@ -9,103 +23,169 @@ interface TodayCardProps {
   date: string; // YYYY-MM-DD format
   dropoffName?: string;
   pickupName?: string;
+  dropoffUserId?: string | null;
+  pickupUserId?: string | null;
+  members?: Array<{ id: string; user_id: string | null; display_name: string | null }>;
 }
 
-export default function TodayCard({ date, dropoffName, pickupName }: TodayCardProps) {
+const MODAL_SHOWN_KEY = 'equipment_modal_last_shown';
+
+export default function TodayCard({
+  date,
+  dropoffName,
+  pickupName,
+  dropoffUserId,
+  pickupUserId,
+  members = []
+}: TodayCardProps) {
+  const { user, householdId } = useHousehold();
+  const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
+  const [equipmentLoading, setEquipmentLoading] = useState(false);
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [autoModalVisible, setAutoModalVisible] = useState(false);
+  const [lastModalShownDate, setLastModalShownDate] = useState<string | null>(null);
+
   const dateObj = dayjs(date);
   const isToday = dateObj.isSame(dayjs(), 'day');
   const isTomorrow = dateObj.isSame(dayjs().add(1, 'day'), 'day');
 
   const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd D. MMM').toUpperCase();
   const dayName = dateObj.format('dddd');
+  const equipmentStatus = calculateEquipmentStatus(equipmentItems);
+
+  // Load equipment status and check if auto-modal should show
+  useEffect(() => {
+    if (!householdId) return;
+
+    const loadEquipment = async () => {
+      const items = await fetchEquipmentStatus(householdId);
+      setEquipmentItems(items);
+
+      // Check if auto-modal should show
+      if (Platform.OS !== 'web') {
+        // Only on native - use AsyncStorage
+        const lastShown = await AsyncStorage.getItem(MODAL_SHOWN_KEY);
+        setLastModalShownDate(lastShown);
+
+        if (shouldShowEquipmentModal(date, lastShown)) {
+          setAutoModalVisible(true);
+          await AsyncStorage.setItem(MODAL_SHOWN_KEY, dayjs().format('YYYY-MM-DD'));
+        }
+      } else {
+        // On web - use localStorage via AsyncStorage (polyfilled)
+        const lastShown = await AsyncStorage.getItem(MODAL_SHOWN_KEY);
+        setLastModalShownDate(lastShown);
+
+        if (shouldShowEquipmentModal(date, lastShown)) {
+          setAutoModalVisible(true);
+          await AsyncStorage.setItem(MODAL_SHOWN_KEY, dayjs().format('YYYY-MM-DD'));
+        }
+      }
+    };
+
+    loadEquipment();
+  }, [householdId, date]);
+
+  const handleToggleItem = async (itemKey: string) => {
+    if (!householdId || !user) return;
+
+    setEquipmentLoading(true);
+    try {
+      // Find current item
+      const item = equipmentItems.find((i) => i.key === itemKey);
+      if (!item) return;
+
+      // Toggle status
+      const newStatus = item.status === 'ok' ? 'missing' : 'ok';
+
+      // Update in database
+      await updateEquipmentStatus(householdId, user.id, itemKey, newStatus);
+
+      // Update local state
+      setEquipmentItems((prev) =>
+        prev.map((i) => (i.key === itemKey ? { ...i, status: newStatus } : i))
+      );
+    } catch (error) {
+      console.error('Error toggling equipment item:', error);
+    } finally {
+      setEquipmentLoading(false);
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.dayName}>{dayName}</Text>
-      </View>
-
-      <View style={styles.slots}>
-        <View style={styles.slot}>
-          <Text style={styles.slotLabel}>Levering</Text>
-          <View style={[styles.badge, dropoffName ? styles.badgeAssigned : styles.badgeUnassigned]}>
-            <Text style={[styles.badgeText, dropoffName ? styles.badgeTextAssigned : styles.badgeTextUnassigned]}>
-              {dropoffName || 'Ikke satt'}
-            </Text>
-          </View>
+    <>
+      <View style={tw`bg-slate-800/50 rounded-xl p-5 mb-6 border ${
+        isToday ? 'border-slate-600/80' : 'border-slate-700/50'
+      }`}>
+        <View style={tw`mb-4`}>
+          <Text style={tw.style(
+            isToday ? 'text-2xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
+          )}>{isToday ? title.toUpperCase() : title}</Text>
+          <Text style={tw`text-base text-slate-400`}>{dayName}</Text>
         </View>
 
-        <View style={styles.slot}>
-          <Text style={styles.slotLabel}>Henting</Text>
-          <View style={[styles.badge, pickupName ? styles.badgeAssigned : styles.badgeUnassigned]}>
-            <Text style={[styles.badgeText, pickupName ? styles.badgeTextAssigned : styles.badgeTextUnassigned]}>
-              {pickupName || 'Ikke satt'}
+        <View style={tw`flex-row gap-2 mb-4`}>
+          {(dropoffName || pickupName) ? (
+            <>
+              {dropoffName && (
+                <View style={tw`flex-1`}>
+                  <ScheduleSlot
+                    slotType="dropoff"
+                    displayName={dropoffName}
+                    userId={dropoffUserId}
+                    members={members}
+                    onPress={() => {}}
+                    loading={false}
+                    isInHero={true}
+                  />
+                </View>
+              )}
+              {pickupName && (
+                <View style={tw`flex-1`}>
+                  <ScheduleSlot
+                    slotType="pickup"
+                    displayName={pickupName}
+                    userId={pickupUserId}
+                    members={members}
+                    onPress={() => {}}
+                    loading={false}
+                    isInHero={true}
+                  />
+                </View>
+              )}
+            </>
+          ) : (
+            <Text style={tw`text-sm py-2 text-slate-400`}>
+              Ingen oppgaver {isToday ? 'i dag' : 'i morgen'}
             </Text>
-          </View>
+          )}
         </View>
+
+        {/* Equipment Status Badge */}
+        <EquipmentStatusBadge
+          status={equipmentStatus}
+          onPress={() => setBottomSheetVisible(true)}
+        />
       </View>
-    </View>
+
+      {/* Equipment Bottom Sheet */}
+      <EquipmentBottomSheet
+        visible={bottomSheetVisible}
+        items={equipmentItems}
+        loading={equipmentLoading}
+        onToggle={handleToggleItem}
+        onClose={() => setBottomSheetVisible(false)}
+      />
+
+      {/* Auto Equipment Modal (4 PM for tomorrow) */}
+      <EquipmentModal
+        visible={autoModalVisible}
+        date={dateObj.format('dddd D. MMMM')}
+        items={equipmentItems}
+        loading={equipmentLoading}
+        onToggle={handleToggleItem}
+        onClose={() => setAutoModalVisible(false)}
+      />
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  dayName: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  slots: {
-    gap: 12,
-  },
-  slot: {
-    marginBottom: 12,
-  },
-  slotLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  badgeAssigned: {
-    backgroundColor: '#d1fae5',
-  },
-  badgeUnassigned: {
-    backgroundColor: '#f3f4f6',
-  },
-  badgeText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  badgeTextAssigned: {
-    color: '#065f46',
-  },
-  badgeTextUnassigned: {
-    color: '#6b7280',
-  },
-});

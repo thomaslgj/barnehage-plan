@@ -7,7 +7,8 @@ import { HouseholdProvider, useHousehold } from './src/contexts/HouseholdProvide
 import AuthScreen from './src/screens/AuthScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MainScreen from './src/screens/MainScreen';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
+import tw from './src/lib/tw';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,7 +17,7 @@ function AppNavigator() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={tw`flex-1 justify-center items-center bg-background`}>
         <ActivityIndicator size="large" color="#10b981" />
       </View>
     );
@@ -33,15 +34,7 @@ function AppNavigator() {
           name="Main"
           component={MainScreen}
           options={{
-            headerShown: true,
-            title: 'Barnehage Plan',
-            headerStyle: {
-              backgroundColor: '#fff',
-            },
-            headerTintColor: '#111827',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
+            headerShown: false,
           }}
         />
       )}
@@ -61,12 +54,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
-});

@@ -4,10 +4,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
 } from 'react-native';
 import type { HouseholdMember } from '../types/db';
+import tw from '../lib/tw';
 
 interface AssignmentModalProps {
   visible: boolean;
@@ -42,133 +42,71 @@ export default function AssignmentModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Velg ansvarlig</Text>
-            <Text style={styles.subtitle}>
+      <View style={tw`flex-1 bg-black/60 justify-end`}>
+        <View style={tw`bg-slate-800 rounded-t-2xl max-h-[80%]`}>
+          <View style={tw`p-5 border-b border-slate-700`}>
+            <Text style={tw`text-xl font-bold text-white mb-1`}>Velg ansvarlig</Text>
+            <Text style={tw`text-sm text-slate-300`}>
               {slotLabel} - {date}
             </Text>
           </View>
 
-          <ScrollView style={styles.list}>
+          <ScrollView style={tw`max-h-[400px]`}>
             <TouchableOpacity
-              style={[
-                styles.option,
-                currentAssignedUserId === null && styles.optionSelected,
-              ]}
+              style={tw.style(
+                'flex-row items-center justify-between py-4 px-5 border-b border-slate-700/50',
+                currentAssignedUserId === null && 'bg-primary/20'
+              )}
               onPress={() => handleSelect(null)}
             >
               <Text
-                style={[
-                  styles.optionText,
-                  currentAssignedUserId === null && styles.optionTextSelected,
-                ]}
+                style={tw.style(
+                  'text-base',
+                  currentAssignedUserId === null ? 'text-primary font-semibold' : 'text-slate-200'
+                )}
               >
                 Ikke satt
               </Text>
               {currentAssignedUserId === null && (
-                <Text style={styles.checkmark}>✓</Text>
+                <Text style={tw`text-xl text-primary`}>✓</Text>
               )}
             </TouchableOpacity>
 
             {members.map((member) => {
-              // Use user_id for comparison if available, otherwise use member.id
               const memberId = member.user_id || member.id;
               const isSelected = currentAssignedUserId === memberId;
 
               return (
                 <TouchableOpacity
                   key={member.id}
-                  style={[styles.option, isSelected && styles.optionSelected]}
+                  style={tw.style(
+                    'flex-row items-center justify-between py-4 px-5 border-b border-slate-700/50',
+                    isSelected && 'bg-primary/20'
+                  )}
                   onPress={() => handleSelect(memberId)}
                 >
                   <Text
-                    style={[
-                      styles.optionText,
-                      isSelected && styles.optionTextSelected,
-                    ]}
+                    style={tw.style(
+                      'text-base',
+                      isSelected ? 'text-primary font-semibold' : 'text-slate-200'
+                    )}
                   >
                     {member.display_name}
                   </Text>
-                  {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                  {isSelected && <Text style={tw`text-xl text-primary`}>✓</Text>}
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelButtonText}>Avbryt</Text>
+          <TouchableOpacity
+            style={tw`p-5 items-center border-t border-slate-700`}
+            onPress={onClose}
+          >
+            <Text style={tw`text-base text-slate-300 font-semibold`}>Avbryt</Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  list: {
-    maxHeight: 400,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  optionSelected: {
-    backgroundColor: '#f0fdf4',
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  optionTextSelected: {
-    color: '#10b981',
-    fontWeight: '600',
-  },
-  checkmark: {
-    fontSize: 20,
-    color: '#10b981',
-  },
-  cancelButton: {
-    padding: 20,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-});

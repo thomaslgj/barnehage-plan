@@ -31,6 +31,28 @@ A mobile companion app for the Barnehage Plan web application. Built with Expo a
 
    **Note**: The `--legacy-peer-deps` flag is required due to React 19 peer dependency conflicts.
 
+## Styling with NativeWind
+
+This app uses **NativeWind** (Tailwind CSS for React Native) for styling, matching the web app's design system.
+
+### Setup
+- NativeWind v2 is configured with Tailwind CSS v3
+- Custom theme tokens mirror the web app colors
+- All components use `className` instead of `StyleSheet`
+
+### Theme Configuration
+See `tailwind.config.js` for the color palette and design tokens that match the web app:
+- Primary colors (green): `primary`, `primary-light`, `primary-dark`
+- Secondary colors (amber): `secondary`, `secondary-light`, `secondary-dark`
+- Text colors: `text`, `text-muted`, `text-light`
+- Background colors: `background`, `card`
+- Border colors: `border`, `border-light`
+
+### Build Caveats
+- **Clear cache** after config changes: `npx expo start --clear`
+- NativeWind requires Babel plugin (configured in `babel.config.js`)
+- TypeScript types enabled via `nativewind-env.d.ts`
+
 3. Create a `.env` file in the root of `apps/mobile`:
    ```env
    EXPO_PUBLIC_SUPABASE_URL=https://iyaeviwtklvspfvpizdw.supabase.co
@@ -152,8 +174,15 @@ The `HouseholdProvider` manages:
 
 ## Differences from Web App
 
+### ✅ Equipment Features (Now Implemented!)
+- **Equipment status badge** on TodayCard showing overall status (ready/missing/not_ready)
+- **Bottom sheet** for quick status toggling (tap badge to open)
+- **Auto-modal at 4 PM** when viewing tomorrow's date
+- **Four default items**: Regntøy, Skiftetøy, Ull, Bleier
+- **Persists in Supabase** via `household_equipment_status` table
+- Works on both native and web platforms
+
 ### Not Implemented (Out of Scope)
-- Equipment status tracking
 - Push notifications
 - Multi-child switching UI
 - Invite code generation

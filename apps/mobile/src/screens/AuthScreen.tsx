@@ -4,13 +4,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import tw from '../lib/tw';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -49,18 +49,21 @@ export default function AuthScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={tw`flex-1 bg-background`}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <Text style={styles.title}>Barnehage Plan</Text>
-        <Text style={styles.subtitle}>
+      <View style={tw`flex-1 justify-center px-6`}>
+        <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>
+          Barnehage Plan
+        </Text>
+        <Text style={tw`text-base text-slate-300 text-center mb-8`}>
           {isSignUp ? 'Create an account' : 'Sign in to your account'}
         </Text>
 
         <TextInput
-          style={styles.input}
+          style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
           placeholder="Email"
+          placeholderTextColor="#94a3b8"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -70,8 +73,9 @@ export default function AuthScreen() {
         />
 
         <TextInput
-          style={styles.input}
+          style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
           placeholder="Password"
+          placeholderTextColor="#94a3b8"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -80,14 +84,14 @@ export default function AuthScreen() {
         />
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={tw.style(`bg-primary rounded py-3.5 items-center mt-2`, loading && 'opacity-50')}
           onPress={handleAuth}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>
+            <Text style={tw`text-white text-base font-semibold`}>
               {isSignUp ? 'Sign Up' : 'Sign In'}
             </Text>
           )}
@@ -96,8 +100,9 @@ export default function AuthScreen() {
         <TouchableOpacity
           onPress={() => setIsSignUp(!isSignUp)}
           disabled={loading}
+          style={tw`mt-4 py-3`}
         >
-          <Text style={styles.linkText}>
+          <Text style={tw`text-info text-sm text-center`}>
             {isSignUp
               ? 'Already have an account? Sign In'
               : "Don't have an account? Sign Up"}
@@ -107,59 +112,3 @@ export default function AuthScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: '#10b981',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkText: {
-    color: '#10b981',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 16,
-  },
-});

@@ -43,6 +43,12 @@ export interface EquipmentStatus {
   updated_by: string;
 }
 
+export interface EquipmentItem {
+  key: string;
+  label: string;
+  status: 'ok' | 'missing';
+}
+
 // RPC function parameter types
 export interface BootstrapHouseholdParams {
   p_name?: string | null;

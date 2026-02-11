@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   RefreshControl,
   TouchableOpacity,
@@ -15,8 +14,8 @@ import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import TodayCard from '../components/TodayCard';
 import ScheduleSlot from '../components/ScheduleSlot';
-import AssignmentModal from '../components/AssignmentModal';
 import type { ScheduleAssignment } from '../types/db';
+import tw from '../lib/tw';
 
 dayjs.extend(isoWeek);
 dayjs.locale('nb');
@@ -32,12 +31,6 @@ export default function MainScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
-
-  // Modal state
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedSlot, setSelectedSlot] = useState<'dropoff' | 'pickup'>('dropoff');
-  const [selectedCurrentUserId, setSelectedCurrentUserId] = useState<string | null>(null);
 
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
@@ -107,39 +100,45 @@ export default function MainScreen() {
     fetchAssignments();
   };
 
-  const handleSlotPress = (date: string, slot: 'dropoff' | 'pickup') => {
+  const handleSlotPress = async (date: string, slot: 'dropoff' | 'pickup') => {
+    if (!childId || !householdId || !user) return;
+
     const key = `${date}-${slot}`;
     const currentUserId = assignments[key] || null;
 
-    setSelectedDate(date);
-    setSelectedSlot(slot);
-    setSelectedCurrentUserId(currentUserId);
-    setModalVisible(true);
-  };
+    // Build cycle order: null -> person1 -> person2 -> null
+    const order: (string | null)[] = [
+      null,
+      ...members.slice(0, 2).map(m => m.user_id || m.id)
+    ];
 
-  const handleAssignmentSelect = async (userId: string | null) => {
-    if (!childId || !householdId || !user) return;
+    // Find current index and get next
+    const currentIndex = order.indexOf(currentUserId);
+    const nextIndex = (currentIndex + 1) % order.length;
+    const nextUserId = order[nextIndex];
 
-    const key = `${selectedDate}-${selectedSlot}`;
+    // Optimistic update
     setSavingSlot(key);
+    setAssignments((prev) => {
+      if (nextUserId === null) {
+        const newAssignments = { ...prev };
+        delete newAssignments[key];
+        return newAssignments;
+      }
+      return { ...prev, [key]: nextUserId };
+    });
 
     try {
-      if (userId === null) {
+      if (nextUserId === null) {
         // Delete assignment
         const { error } = await supabase
           .from('schedule_assignments')
           .delete()
           .eq('child_id', childId)
-          .eq('date', selectedDate)
-          .eq('slot', selectedSlot);
+          .eq('date', date)
+          .eq('slot', slot);
 
         if (error) throw error;
-
-        setAssignments((prev) => {
-          const newAssignments = { ...prev };
-          delete newAssignments[key];
-          return newAssignments;
-        });
       } else {
         // Upsert assignment
         const { error } = await supabase
@@ -148,23 +147,27 @@ export default function MainScreen() {
             {
               household_id: householdId,
               child_id: childId,
-              date: selectedDate,
-              slot: selectedSlot,
-              assigned_user_id: userId,
+              date: date,
+              slot: slot,
+              assigned_user_id: nextUserId,
               updated_by: user.id,
             },
             { onConflict: 'child_id,date,slot' }
           );
 
         if (error) throw error;
-
-        setAssignments((prev) => ({
-          ...prev,
-          [key]: userId,
-        }));
       }
     } catch (error) {
       console.error('Error updating assignment:', error);
+      // Revert on error
+      setAssignments((prev) => {
+        if (currentUserId === null) {
+          const newAssignments = { ...prev };
+          delete newAssignments[key];
+          return newAssignments;
+        }
+        return { ...prev, [key]: currentUserId };
+      });
     } finally {
       setSavingSlot(null);
     }
@@ -180,40 +183,19 @@ export default function MainScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+      <View style={tw`flex-1 justify-center items-center bg-background`}>
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => setWeekOffset(weekOffset - 1)}
-        >
-          <Text style={styles.navButtonText}>←</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>
-          Uke {weekNumber}, {year}
-        </Text>
-
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => setWeekOffset(weekOffset + 1)}
-        >
-          <Text style={styles.navButtonText}>→</Text>
-        </TouchableOpacity>
-      </View>
-
+    <View style={tw`flex-1 bg-background`}>
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={tw`flex-1`}
+        contentContainerStyle={{ padding: 16 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10b981']} />
         }
       >
         {/* Today/Tomorrow Card */}
@@ -222,148 +204,107 @@ export default function MainScreen() {
             date={todayOrTomorrow.format('YYYY-MM-DD')}
             dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
             pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
+            dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
+            pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
+            members={members}
           />
         )}
 
-        {/* Schedule List */}
-        <View style={styles.scheduleContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={styles.tableHeaderText}>Dato</Text>
-            <Text style={styles.tableHeaderText}>Levering</Text>
-            <Text style={styles.tableHeaderText}>Henting</Text>
+        {/* Week Navigation Header */}
+        <View style={tw`flex-row items-center justify-between mb-3`}>
+          <TouchableOpacity
+            style={tw`p-2 bg-slate-700/50 rounded-lg`}
+            onPress={() => setWeekOffset(weekOffset - 1)}
+          >
+            <Text style={tw`text-xl text-white`}>‹</Text>
+          </TouchableOpacity>
+
+          <View style={tw`flex-1 items-center px-3`}>
+            <Text style={tw`text-base font-semibold text-white`}>
+              Uke {weekNumber}, {year}
+            </Text>
           </View>
 
-          {daysToShow.map((day) => {
+          <TouchableOpacity
+            style={tw`p-2 bg-slate-700/50 rounded-lg`}
+            onPress={() => setWeekOffset(weekOffset + 1)}
+          >
+            <Text style={tw`text-xl text-white`}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Schedule List */}
+        <View style={tw`gap-2`}>
+          {/* Header */}
+          <View style={tw`flex-row gap-2 mb-2 px-1`}>
+            <View style={tw`flex-1 items-center`}>
+              <Text style={tw`text-[10px] font-medium text-slate-400`}>Levering</Text>
+            </View>
+            <View style={tw`flex-1 items-center`}>
+              <Text style={tw`text-[10px] font-medium text-slate-400`}>Henting</Text>
+            </View>
+          </View>
+
+          {daysToShow.map((day, index) => {
             const dateStr = day.format('YYYY-MM-DD');
             const dropoffKey = `${dateStr}-dropoff`;
             const pickupKey = `${dateStr}-pickup`;
+            const isToday = day.isSame(dayjs(), 'day');
+
+            // Check if it's a new week
+            const prevDay = index > 0 ? daysToShow[index - 1] : null;
+            const isNewWeek = prevDay && day.isoWeek() !== prevDay.isoWeek();
 
             return (
-              <View key={dateStr} style={styles.dayRow}>
-                <View style={styles.dateColumn}>
-                  <Text style={styles.dayName}>{day.format('ddd')}</Text>
-                  <Text style={styles.dayDate}>{day.format('D/M')}</Text>
-                </View>
+              <View key={dateStr}>
+                {isNewWeek && (
+                  <View style={tw`my-3 border-t border-slate-700/30`}>
+                    <Text style={tw`mt-2 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>
+                      Uke {day.isoWeek()}
+                    </Text>
+                  </View>
+                )}
 
-                <View style={styles.slotColumn}>
-                  <ScheduleSlot
-                    slotType="dropoff"
-                    displayName={getDisplayName(assignments[dropoffKey])}
-                    onPress={() => handleSlotPress(dateStr, 'dropoff')}
-                    loading={savingSlot === dropoffKey}
-                  />
-                </View>
+                <View style={tw.style(
+                  'p-2.5 rounded-lg',
+                  isToday
+                    ? 'bg-blue-500/20 border-2 border-blue-400/50'
+                    : 'bg-slate-800/50 border border-slate-700/50'
+                )}>
+                  <View style={tw`flex-row items-center gap-1.5 mb-2`}>
+                    {isToday && <View style={tw`w-1.5 h-1.5 bg-blue-400 rounded-full`} />}
+                    <Text style={tw.style(
+                      'text-xs font-semibold capitalize',
+                      isToday ? 'text-blue-300' : 'text-slate-300'
+                    )}>
+                      {day.format('dddd DD.MM')}
+                    </Text>
+                  </View>
 
-                <View style={styles.slotColumn}>
-                  <ScheduleSlot
-                    slotType="pickup"
-                    displayName={getDisplayName(assignments[pickupKey])}
-                    onPress={() => handleSlotPress(dateStr, 'pickup')}
-                    loading={savingSlot === pickupKey}
-                  />
+                  <View style={tw`flex-row gap-2`}>
+                    <ScheduleSlot
+                      slotType="dropoff"
+                      displayName={getDisplayName(assignments[dropoffKey])}
+                      userId={assignments[dropoffKey]}
+                      members={members}
+                      onPress={() => handleSlotPress(dateStr, 'dropoff')}
+                      loading={savingSlot === dropoffKey}
+                    />
+                    <ScheduleSlot
+                      slotType="pickup"
+                      displayName={getDisplayName(assignments[pickupKey])}
+                      userId={assignments[pickupKey]}
+                      members={members}
+                      onPress={() => handleSlotPress(dateStr, 'pickup')}
+                      loading={savingSlot === pickupKey}
+                    />
+                  </View>
                 </View>
               </View>
             );
           })}
         </View>
       </ScrollView>
-
-      {/* Assignment Modal */}
-      <AssignmentModal
-        visible={modalVisible}
-        date={selectedDate}
-        slotType={selectedSlot}
-        currentAssignedUserId={selectedCurrentUserId}
-        members={members}
-        onSelect={handleAssignmentSelect}
-        onClose={() => setModalVisible(false)}
-      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  navButton: {
-    padding: 8,
-  },
-  navButtonText: {
-    fontSize: 24,
-    color: '#10b981',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  scheduleContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  tableHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    flex: 1,
-  },
-  dayRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    alignItems: 'center',
-  },
-  dateColumn: {
-    flex: 1,
-  },
-  dayName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  dayDate: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  slotColumn: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-});
