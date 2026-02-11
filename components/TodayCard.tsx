@@ -18,6 +18,8 @@ interface TodayCardProps {
   isToday: boolean;
   dropoff: Who;
   pickup: Who;
+  dropoffName?: string;
+  pickupName?: string;
 }
 
 const DEFAULT_ITEMS: EquipmentItem[] = [
@@ -27,7 +29,7 @@ const DEFAULT_ITEMS: EquipmentItem[] = [
   { item_key: "diapers", status: "ok" },
 ];
 
-export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCardProps) {
+export default function TodayCard({ label, isToday, dropoff, pickup, dropoffName, pickupName }: TodayCardProps) {
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>(DEFAULT_ITEMS);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -167,10 +169,10 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
           </div>
           <div className="flex gap-3 mb-4">
             {dropoff && (
-              <ScheduleSlot slotId="dropoff" who={dropoff} isInHero={true} />
+              <ScheduleSlot slotId="dropoff" who={dropoff} displayName={dropoffName} isInHero={true} />
             )}
             {pickup && (
-              <ScheduleSlot slotId="pickup" who={pickup} isInHero={true} />
+              <ScheduleSlot slotId="pickup" who={pickup} displayName={pickupName} isInHero={true} />
             )}
             {!dropoff && !pickup && (
               <div className={`text-sm py-2 ${
@@ -180,13 +182,11 @@ export default function TodayCard({ label, isToday, dropoff, pickup }: TodayCard
               </div>
             )}
           </div>
-          {isToday && (
-            <EquipmentStatusBadge
-              status={equipmentStatus}
-              onClick={() => setIsBottomSheetOpen(true)}
-              missingItems={missingItems}
-            />
-          )}
+          <EquipmentStatusBadge
+            status={equipmentStatus}
+            onClick={() => setIsBottomSheetOpen(true)}
+            missingItems={missingItems}
+          />
         </div>
       </div>
       <EquipmentBottomSheet

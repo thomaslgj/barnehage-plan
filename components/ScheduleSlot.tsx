@@ -1,10 +1,9 @@
-const PEOPLE = { person1: "Thomas", person2: "Helene" } as const;
-
 type Who = "person1" | "person2" | null;
 
 interface ScheduleSlotProps {
   slotId: "dropoff" | "pickup";
   who: Who;
+  displayName?: string;
   isLoading?: boolean;
   onClick?: () => void;
   disabled?: boolean;
@@ -15,6 +14,7 @@ interface ScheduleSlotProps {
 export default function ScheduleSlot({ 
   slotId, 
   who, 
+  displayName,
   isLoading = false, 
   onClick, 
   disabled = false,
@@ -42,6 +42,12 @@ export default function ScheduleSlot({
     : "";
   const loadingClasses = isLoading ? "animate-pulse-slow" : "";
   const disabledClasses = disabled ? "cursor-wait" : "";
+
+  const label = who
+    ? (displayName ?? "?")
+    : isLoading
+      ? "…"
+      : "-";
 
   return (
     <Component
@@ -74,10 +80,9 @@ export default function ScheduleSlot({
         <div className={`${isInHero ? "text-xl" : "text-base"} font-bold ${
           who ? "text-white drop-shadow-sm" : "text-slate-500"
         }`}>
-          {who ? PEOPLE[who] : isLoading ? "…" : "-"}
+          {label}
         </div>
       </div>
     </Component>
   );
 }
-
