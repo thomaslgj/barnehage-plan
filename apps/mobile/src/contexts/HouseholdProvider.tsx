@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { HouseholdMember, Child } from '../types/db';
@@ -12,6 +12,7 @@ interface HouseholdContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  forceOnboarding: () => void;
 }
 
 const HouseholdContext = createContext<HouseholdContextValue | undefined>(undefined);
@@ -24,8 +25,14 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const forcedOnboardingRef = useRef(false);
 
   const loadHouseholdData = async (currentUser: User) => {
+    // Skip if in forced onboarding mode
+    if (forcedOnboardingRef.current) {
+      return;
+    }
+
     try {
       setError(null);
 
@@ -83,11 +90,20 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = async () => {
     setLoading(true);
+    forcedOnboardingRef.current = false; // Reset forced onboarding flag
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       await loadHouseholdData(currentUser);
     }
     setLoading(false);
+  };
+
+  const forceOnboarding = () => {
+    forcedOnboardingRef.current = true;
+    setNeedsOnboarding(true);
+    setHouseholdId(null);
+    setChildId(null);
+    setMembers([]);
   };
 
   useEffect(() => {
@@ -98,7 +114,30 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           setUser(session.user);
-          await loadHouseholdData(session.user);
+
+          // Check for URL parameter to force onboarding (for testing)
+          let forceOnboardingMode = false;
+          if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('onboarding') === 'true') {
+              // Remove the parameter from URL
+              params.delete('onboarding');
+              const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+              window.history.replaceState({}, '', newUrl);
+              forceOnboardingMode = true;
+            }
+          }
+
+          if (forceOnboardingMode) {
+            // Force onboarding mode
+            forcedOnboardingRef.current = true;
+            setNeedsOnboarding(true);
+            setHouseholdId(null);
+            setChildId(null);
+            setMembers([]);
+          } else {
+            await loadHouseholdData(session.user);
+          }
         } else {
           setUser(null);
           setNeedsOnboarding(false);
@@ -146,6 +185,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     refresh,
+    forceOnboarding,
   };
 
   return (
