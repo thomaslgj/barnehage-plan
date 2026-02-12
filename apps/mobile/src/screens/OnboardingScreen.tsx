@@ -79,6 +79,8 @@ export default function OnboardingScreen() {
   // Join household fields
   const [inviteCode, setInviteCode] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [placeholderNameFromInvite, setPlaceholderNameFromInvite] = useState<string | null>(null);
+  const [fetchingPlaceholderName, setFetchingPlaceholderName] = useState(false);
 
   const handleAddEquipmentItem = () => {
     if (!newItemLabel.trim()) return;
@@ -374,6 +376,31 @@ export default function OnboardingScreen() {
     }
   };
 
+  const fetchPlaceholderName = async (code: string) => {
+    if (!code.trim()) return;
+
+    setFetchingPlaceholderName(true);
+    try {
+      const { data, error } = await supabase.rpc('get_placeholder_name_for_invite', {
+        p_invite_code: code.trim(),
+      });
+
+      if (error) {
+        console.error('Error fetching placeholder name:', error);
+        return;
+      }
+
+      if (data) {
+        setPlaceholderNameFromInvite(data as string);
+        setDisplayName(data as string); // Pre-fill the field
+      }
+    } catch (error) {
+      console.error('Error fetching placeholder name:', error);
+    } finally {
+      setFetchingPlaceholderName(false);
+    }
+  };
+
   const handleJoinHousehold = async () => {
     if (!inviteCode.trim()) {
       Alert.alert('Feil', 'Vennligst skriv inn invitasjonskode');
@@ -393,7 +420,20 @@ export default function OnboardingScreen() {
       await refresh();
     } catch (error) {
       console.error('Join household error:', error);
-      Alert.alert('Feil', error instanceof Error ? error.message : 'Kunne ikke bli med i husholdning');
+
+      // Provide more user-friendly error messages
+      let errorMessage = 'Kunne ikke bli med i husholdning';
+      if (error instanceof Error) {
+        if (error.message.includes('already a member')) {
+          errorMessage = 'Du er allerede medlem av denne husholdningen';
+        } else if (error.message.includes('Invalid invite code')) {
+          errorMessage = 'Ugyldig invitasjonskode';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      Alert.alert('Feil', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -456,6 +496,7 @@ export default function OnboardingScreen() {
             placeholderTextColor="#94a3b8"
             value={inviteCode}
             onChangeText={setInviteCode}
+            onBlur={() => fetchPlaceholderName(inviteCode)}
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
@@ -466,13 +507,24 @@ export default function OnboardingScreen() {
 
           <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Ditt navn (valgfritt)</Text>
           <TextInput
-            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
+            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-2 text-white`}
             placeholder="Hvordan andre vil se deg"
             placeholderTextColor="#94a3b8"
             value={displayName}
             onChangeText={setDisplayName}
-            editable={!loading}
+            editable={!loading && !fetchingPlaceholderName}
           />
+          {placeholderNameFromInvite && (
+            <Text style={tw`text-xs text-emerald-400 mb-4`}>
+              ✓ Dette navnet er satt av din partner - du kan endre det hvis du vil
+            </Text>
+          )}
+          {fetchingPlaceholderName && (
+            <View style={tw`flex-row items-center gap-2 mb-4`}>
+              <ActivityIndicator size="small" color="#10b981" />
+              <Text style={tw`text-xs text-slate-400`}>Sjekker invitasjonskode...</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             style={tw.style(`bg-primary rounded py-3.5 items-center mt-2`, loading && 'opacity-50')}

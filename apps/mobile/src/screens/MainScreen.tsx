@@ -34,6 +34,7 @@ export default function MainScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [templateAutoApplied, setTemplateAutoApplied] = useState(false);
+  const [templateWasSuccessful, setTemplateWasSuccessful] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [childName, setChildName] = useState<string>('');
   const [myName, setMyName] = useState<string>('');
@@ -156,7 +157,7 @@ export default function MainScreen({ navigation }: any) {
 
   // Auto-apply template if all visible slots are empty
   useEffect(() => {
-    if (!childId || !householdId || !user || loading || applyingTemplate) return;
+    if (!childId || !householdId || !user || loading || applyingTemplate || templateAutoApplied) return;
 
     // Check if all slots in current view are null
     const allSlotsEmpty = daysToShow.every(day => {
@@ -170,24 +171,31 @@ export default function MainScreen({ navigation }: any) {
     if (allSlotsEmpty && daysToShow.length > 0) {
       setApplyingTemplate(true);
       applyTemplateToWeek()
-        .then(() => {
+        .then((wasApplied) => {
+          // Always mark as attempted to prevent infinite loop
           setTemplateAutoApplied(true);
+          // Only set success flag if templates were actually applied
+          setTemplateWasSuccessful(wasApplied);
         })
         .catch((error) => {
           console.error('Error applying template:', error);
+          // Mark as attempted even on error to prevent infinite loop
+          setTemplateAutoApplied(true);
+          setTemplateWasSuccessful(false);
         })
         .finally(() => {
           setApplyingTemplate(false);
         });
     }
-  }, [assignments, daysToShow.length, loading, applyingTemplate]);
+  }, [assignments, daysToShow.length, loading]);
 
   // Note: Automatic template application is disabled
   // Use the debug button below to manually apply template when needed
 
   // Apply template to empty weeks
-  const applyTemplateToWeek = async () => {
-    if (!childId || !householdId || !user) return;
+  // Returns true if templates were actually applied, false otherwise
+  const applyTemplateToWeek = async (): Promise<boolean> => {
+    if (!childId || !householdId || !user) return false;
 
     try {
       // Fetch template
@@ -199,12 +207,12 @@ export default function MainScreen({ navigation }: any) {
 
       if (templateError) {
         console.error('Template error:', templateError);
-        return;
+        return false;
       }
 
       if (!templates || templates.length === 0) {
         console.log('No template found - skipping auto-apply');
-        return; // This is OK, just means no template to apply
+        return false; // No template to apply
       }
 
       console.log('Found templates:', templates);
@@ -268,16 +276,20 @@ export default function MainScreen({ navigation }: any) {
 
         if (insertError) {
           console.error('Insert error:', insertError);
+          return false;
         } else {
           console.log('Successfully inserted, refreshing...');
           // Refresh assignments
           await fetchAssignments();
+          return true; // Successfully applied template
         }
       } else {
         console.log('No new assignments to insert');
+        return false;
       }
     } catch (error) {
       console.error('Error applying template:', error);
+      return false;
     }
   };
 
@@ -426,7 +438,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
         {/* Template Auto-Applied Message */}
-        {templateAutoApplied && !applyingTemplate && (
+        {templateWasSuccessful && !applyingTemplate && (
           <View style={tw`mb-3 p-3 bg-emerald-500/20 rounded-lg border border-emerald-400/50`}>
             <Text style={tw`text-sm text-emerald-200 text-center`}>
               ✓ Standarduke er fylt inn
