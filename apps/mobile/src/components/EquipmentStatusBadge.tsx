@@ -55,7 +55,7 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
         )}
         <Text style={tw.style('text-sm font-medium flex-1', config.textStyle)}>{config.label}</Text>
       </View>
-      <Text style={tw`text-slate-400`}>›</Text>
+      <Text style={tw`text-text-light text-xl`}>›</Text>
     </TouchableOpacity>
   );
 }

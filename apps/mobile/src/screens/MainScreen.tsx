@@ -483,7 +483,7 @@ export default function MainScreen({ navigation }: any) {
             >
               <Ionicons name="person-circle-outline" size={22} color="#fff" />
               <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
-              <Text style={tw`text-slate-400 text-lg`}>›</Text>
+              <Text style={tw`text-text-light text-xl`}>›</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -580,11 +580,11 @@ export default function MainScreen({ navigation }: any) {
             style={tw`p-2 bg-slate-700/50 rounded-lg`}
             onPress={() => setWeekOffset(weekOffset - 1)}
           >
-            <Text style={tw`text-xl text-white`}>‹</Text>
+            <Text style={tw`text-2xl text-text`}>‹</Text>
           </TouchableOpacity>
 
           <View style={tw`flex-1 items-center px-3`}>
-            <Text style={tw`text-base font-semibold text-white`}>
+            <Text style={tw`text-base font-semibold text-text`}>
               Uke {weekNumber}, {year}
             </Text>
           </View>
@@ -593,7 +593,7 @@ export default function MainScreen({ navigation }: any) {
             style={tw`p-2 bg-slate-700/50 rounded-lg`}
             onPress={() => setWeekOffset(weekOffset + 1)}
           >
-            <Text style={tw`text-xl text-white`}>›</Text>
+            <Text style={tw`text-2xl text-text`}>›</Text>
           </TouchableOpacity>
           </View>
 

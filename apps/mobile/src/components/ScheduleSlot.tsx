@@ -76,7 +76,7 @@ export default function ScheduleSlot({
     : 'h-[60px] pt-1.5 pb-2.5 px-2';
 
   const textSize = isInHero ? 'text-xl' : 'text-base';
-  const iconSize = 'text-base'; // Consistent size for both arrows
+  const iconSize = 'text-lg'; // Consistent size for both arrows
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
