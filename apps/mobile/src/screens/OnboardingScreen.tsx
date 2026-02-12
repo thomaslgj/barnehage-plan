@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
 import { DEFAULT_EQUIPMENT_ITEMS } from '../lib/equipment';
+import SuccessIllustration from '../components/SuccessIllustration';
 
 interface EquipmentItemDraft {
   key: string;
@@ -496,7 +497,7 @@ export default function OnboardingScreen() {
           <TextInput
             style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-2 text-white text-center text-xl tracking-wider`}
             placeholder="ord-ord"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor="#a89985"
             value={inviteCode}
             onChangeText={setInviteCode}
             onBlur={() => fetchPlaceholderName(inviteCode)}
@@ -512,7 +513,7 @@ export default function OnboardingScreen() {
           <TextInput
             style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-2 text-white`}
             placeholder="Hvordan andre vil se deg"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor="#a89985"
             value={displayName}
             onChangeText={setDisplayName}
             editable={!loading && !fetchingPlaceholderName}
@@ -587,7 +588,7 @@ export default function OnboardingScreen() {
             <TextInput
               style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
               placeholder="Ditt navn"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#a89985"
               value={myName}
               onChangeText={setMyName}
               editable={!loading}
@@ -622,7 +623,7 @@ export default function OnboardingScreen() {
             <TextInput
               style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
               placeholder="Partner navn (valgfritt)"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#a89985"
               value={partnerName}
               onChangeText={setPartnerName}
               editable={!loading}
@@ -656,7 +657,7 @@ export default function OnboardingScreen() {
             <TextInput
               style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
               placeholder="Barnets navn"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#a89985"
               value={childName}
               onChangeText={setChildName}
               editable={!loading}
@@ -716,7 +717,7 @@ export default function OnboardingScreen() {
                 <TextInput
                   style={tw`flex-1 bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-white`}
                   placeholder="Navn på utstyr"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#a89985"
                   value={newItemLabel}
                   onChangeText={setNewItemLabel}
                 />
@@ -869,7 +870,9 @@ export default function OnboardingScreen() {
         <View style={tw`absolute inset-0 bg-background z-50`}>
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
             <View style={tw`items-center`}>
-              <Text style={tw`text-4xl mb-4`}>🎉</Text>
+              <View style={tw`mb-6`}>
+                <SuccessIllustration size={140} />
+              </View>
               <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Nå er du klar til å få flyt!</Text>
               <Text style={tw`text-base text-text-muted text-center mb-2`}>
                 Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så de kan bli med!
@@ -925,7 +928,7 @@ export default function OnboardingScreen() {
               value={renameValue}
               onChangeText={setRenameValue}
               placeholder="Nytt navn"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#a89985"
               autoFocus
             />
             <View style={tw`flex-row gap-3`}>
