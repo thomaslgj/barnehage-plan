@@ -41,6 +41,7 @@ export default function MainScreen({ navigation }: any) {
   const [myName, setMyName] = useState<string>('');
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
+  const [inviteMessageDismissed, setInviteMessageDismissed] = useState(false);
 
   // Animation refs
   const todayCardFade = useRef(new Animated.Value(0)).current;
@@ -504,18 +505,32 @@ export default function MainScreen({ navigation }: any) {
         {/* Messages Section - Invite, Template, Empty State */}
         <Animated.View style={{ opacity: messagesFade }}>
           {/* Invite Partner Message */}
-          {hasPlaceholderMember && inviteCode && weekOffset === 0 && (
-            <View style={tw`mb-3 p-4 bg-info/10 rounded-lg border border-info/30`}>
-              <Text style={tw`text-sm text-slate-200 mb-2`}>
-                💡 Din partner har ikke blitt med enda
-              </Text>
-              <Text style={tw`text-xs text-slate-400 mb-2`}>
-                Del denne invitasjonskoden så de kan bli med:
-              </Text>
-              <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
-                <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
-                  {inviteCode}
+          {hasPlaceholderMember && inviteCode && weekOffset === 0 && !inviteMessageDismissed && (
+            <View style={tw`mb-3 bg-info/10 rounded-lg border border-info/30`}>
+              {/* Header with close button */}
+              <View style={tw`flex-row items-start justify-between p-4 pb-2`}>
+                <Text style={tw`text-sm text-slate-200 flex-1 pr-2`}>
+                  💡 Din partner har ikke blitt med enda
                 </Text>
+                <TouchableOpacity
+                  onPress={() => setInviteMessageDismissed(true)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={tw`ml-2`}
+                >
+                  <Text style={tw`text-text-light text-xl leading-none`}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Content */}
+              <View style={tw`px-4 pb-4`}>
+                <Text style={tw`text-xs text-slate-400 mb-2`}>
+                  Del denne invitasjonskoden så de kan bli med:
+                </Text>
+                <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
+                  <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
+                    {inviteCode}
+                  </Text>
+                </View>
               </View>
             </View>
           )}
