@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -9,7 +9,9 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
+  Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import type { EquipmentItem } from '../types/db';
 import tw from '../lib/tw';
 
@@ -22,6 +24,85 @@ interface EquipmentBottomSheetProps {
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+// Animated Equipment Item Component
+function EquipmentItemRow({ item, onToggle, loading }: { item: EquipmentItem; onToggle: (key: string) => void; loading: boolean }) {
+  const [prevStatus, setPrevStatus] = useState(item.status);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const colorAnim = useRef(new Animated.Value(item.status === 'ok' ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (prevStatus !== item.status) {
+      // Animate status change
+      Animated.parallel([
+        Animated.sequence([
+          Animated.spring(scaleAnim, {
+            toValue: 1.1,
+            friction: 3,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 3,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(colorAnim, {
+          toValue: item.status === 'ok' ? 1 : 0,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+      ]).start();
+      setPrevStatus(item.status);
+    }
+  }, [item.status]);
+
+  const handlePress = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onToggle(item.key);
+  };
+
+  const backgroundColor = colorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(232, 201, 111, 0.2)', 'rgba(127, 168, 132, 0.2)'], // warning/20 to success/20
+  });
+
+  const textColor = colorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#e8c96f', '#7fa884'], // warning to success
+  });
+
+  return (
+    <TouchableOpacity
+      style={tw`flex-row items-center justify-between py-4 px-5 border-b border-slate-700/50`}
+      onPress={handlePress}
+      disabled={loading}
+    >
+      <Text style={[tw`text-base text-slate-200 flex-1`, { fontFamily: 'Manrope_400Regular' }]}>{item.label}</Text>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Animated.View
+          style={[
+            tw`px-3 py-1.5 rounded min-w-[80px] items-center`,
+            {
+              backgroundColor,
+            },
+          ]}
+        >
+          <Animated.Text
+            style={[
+              tw`text-sm font-semibold`,
+              { fontFamily: 'Manrope_400Regular', color: textColor },
+            ]}
+          >
+            {item.status === 'ok' ? 'OK' : 'Mangler'}
+          </Animated.Text>
+        </Animated.View>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
 export default function EquipmentBottomSheet({
   visible,
@@ -110,29 +191,12 @@ export default function EquipmentBottomSheet({
 
           <ScrollView style={tw`max-h-[400px]`}>
             {items.map((item) => (
-              <TouchableOpacity
+              <EquipmentItemRow
                 key={item.key}
-                style={tw`flex-row items-center justify-between py-4 px-5 border-b border-slate-700/50`}
-                onPress={() => onToggle(item.key)}
-                disabled={loading}
-              >
-                <Text style={[tw`text-base text-slate-200 flex-1`, { fontFamily: 'Manrope_400Regular' }]}>{item.label}</Text>
-                <View
-                  style={tw.style(
-                    'px-3 py-1.5 rounded min-w-[80px] items-center',
-                    item.status === 'ok' ? 'bg-success/20' : 'bg-warning/20'
-                  )}
-                >
-                  <Text
-                    style={[tw.style(
-                      'text-sm font-semibold',
-                      item.status === 'ok' ? 'text-success' : 'text-warning'
-                    ), { fontFamily: 'Manrope_400Regular' }]}
-                  >
-                    {item.status === 'ok' ? 'OK' : 'Mangler'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                item={item}
+                onToggle={onToggle}
+                loading={loading}
+              />
             ))}
           </ScrollView>
 

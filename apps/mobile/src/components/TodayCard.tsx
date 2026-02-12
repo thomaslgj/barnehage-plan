@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import * as Haptics from 'expo-haptics';
 import dayjs from 'dayjs';
 import 'dayjs/locale/nb';
 import { useHousehold } from '../contexts/HouseholdProvider';
@@ -44,6 +46,8 @@ export default function TodayCard({
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const [autoModalVisible, setAutoModalVisible] = useState(false);
   const [lastModalShownDate, setLastModalShownDate] = useState<string | null>(null);
+  const [prevEquipmentStatus, setPrevEquipmentStatus] = useState<'ready' | 'missing' | 'not_ready' | null>(null);
+  const confettiRef = useRef<any>(null);
 
   const dateObj = dayjs(date);
   const isToday = dateObj.isSame(dayjs(), 'day');
@@ -52,6 +56,17 @@ export default function TodayCard({
   const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd D. MMM').toUpperCase();
   const dayName = dateObj.format('dddd');
   const equipmentStatus = calculateEquipmentStatus(equipmentItems);
+
+  // Trigger confetti when status changes to 'ready'
+  useEffect(() => {
+    if (prevEquipmentStatus !== null && prevEquipmentStatus !== 'ready' && equipmentStatus === 'ready') {
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      confettiRef.current?.start();
+    }
+    setPrevEquipmentStatus(equipmentStatus);
+  }, [equipmentStatus]);
 
   // Load equipment status and check if auto-modal should show
   useEffect(() => {
@@ -114,6 +129,17 @@ export default function TodayCard({
 
   return (
     <>
+      {/* Confetti Effect */}
+      {Platform.OS !== 'web' && (
+        <ConfettiCannon
+          ref={confettiRef}
+          count={150}
+          origin={{ x: 0, y: 0 }}
+          autoStart={false}
+          fadeOut={true}
+        />
+      )}
+
       <View style={tw`bg-slate-800/50 rounded-xl p-5 mb-6 border ${
         isToday ? 'border-slate-600/80' : 'border-slate-700/50'
       }`}>

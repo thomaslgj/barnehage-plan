@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { HouseholdProvider, useHousehold } from './src/contexts/HouseholdProvider';
 import AuthScreen from './src/screens/AuthScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -118,13 +119,15 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <HouseholdProvider>
-        <NavigationContainer theme={WarmNavigationTheme}>
-          <AppNavigator />
-        </NavigationContainer>
-        <StatusBar style="light" />
-      </HouseholdProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <HouseholdProvider>
+          <NavigationContainer theme={WarmNavigationTheme}>
+            <AppNavigator />
+          </NavigationContainer>
+          <StatusBar style="light" />
+        </HouseholdProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

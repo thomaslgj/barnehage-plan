@@ -7,9 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import * as Haptics from 'expo-haptics';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import 'dayjs/locale/nb';
@@ -42,12 +46,17 @@ export default function MainScreen({ navigation }: any) {
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
   const [inviteMessageDismissed, setInviteMessageDismissed] = useState(false);
+  const [weekWasFullyFilled, setWeekWasFullyFilled] = useState(false);
 
   // Animation refs
+  const celebrationConfettiRef = useRef<any>(null);
   const todayCardFade = useRef(new Animated.Value(0)).current;
   const messagesFade = useRef(new Animated.Value(0)).current;
   const navigationFade = useRef(new Animated.Value(0)).current;
   const scheduleFade = useRef(new Animated.Value(0)).current;
+  const prevButtonScale = useRef(new Animated.Value(1)).current;
+  const nextButtonScale = useRef(new Animated.Value(1)).current;
+  const profileButtonScale = useRef(new Animated.Value(1)).current;
 
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
@@ -228,7 +237,28 @@ export default function MainScreen({ navigation }: any) {
   // Reset template message when week changes
   useEffect(() => {
     setTemplateAutoApplied(false);
+    setWeekWasFullyFilled(false);
   }, [weekOffset]);
+
+  // Check if week is fully filled and trigger celebration
+  useEffect(() => {
+    if (loading || weekWasFullyFilled) return;
+
+    const allSlotsFilled = daysToShow.every(day => {
+      const dateStr = day.format('YYYY-MM-DD');
+      const dropoffKey = `${dateStr}-dropoff`;
+      const pickupKey = `${dateStr}-pickup`;
+      return assignments[dropoffKey] && assignments[pickupKey];
+    });
+
+    if (allSlotsFilled && daysToShow.length > 0) {
+      setWeekWasFullyFilled(true);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      celebrationConfettiRef.current?.start();
+    }
+  }, [assignments, daysToShow.length, loading]);
 
   // Auto-apply template if all visible slots are empty
   useEffect(() => {
@@ -449,6 +479,44 @@ export default function MainScreen({ navigation }: any) {
     return member?.display_name;
   };
 
+  // Button animation helpers
+  const animateButtonPress = (animValue: Animated.Value, callback: () => void) => {
+    Animated.sequence([
+      Animated.spring(animValue, {
+        toValue: 0.9,
+        useNativeDriver: true,
+      }),
+      Animated.spring(animValue, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    callback();
+  };
+
+  // Swipe gesture for week navigation
+  const swipeGesture = Gesture.Pan()
+    .onEnd((event) => {
+      if (event.velocityX > 500) {
+        // Swipe right - go to previous week
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        setWeekOffset(weekOffset - 1);
+      } else if (event.velocityX < -500) {
+        // Swipe left - go to next week
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        setWeekOffset(weekOffset + 1);
+      }
+    });
+
   if (loading) {
     return (
       <View style={tw`flex-1 justify-center items-center bg-background`}>
@@ -458,14 +526,26 @@ export default function MainScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
-      <ScrollView
-        style={tw`flex-1`}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7fa884']} />
-        }
-      >
+    <>
+      {/* Celebration Confetti */}
+      {Platform.OS !== 'web' && (
+        <ConfettiCannon
+          ref={celebrationConfettiRef}
+          count={200}
+          origin={{ x: 0, y: 0 }}
+          autoStart={false}
+          fadeOut={true}
+        />
+      )}
+
+      <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
+        <ScrollView
+          style={tw`flex-1`}
+          contentContainerStyle={{ padding: 16 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7fa884']} />
+          }
+        >
         {/* Profile Header */}
         {childName && myName && (
           <View style={tw`flex-row items-center justify-between mb-6`}>
@@ -476,15 +556,17 @@ export default function MainScreen({ navigation }: any) {
             </View>
 
             {/* User info (clickable) */}
-            <TouchableOpacity
-              style={tw`flex-row items-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
-              onPress={() => navigation.navigate('Profile')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="person-circle-outline" size={22} color="#fff" />
-              <Text style={[tw`text-base text-white font-medium`, { fontFamily: 'Manrope_400Regular' }]}>{myName}</Text>
-              <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: profileButtonScale }] }}>
+              <TouchableOpacity
+                style={tw`flex-row items-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
+                onPress={() => animateButtonPress(profileButtonScale, () => navigation.navigate('Profile'))}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="person-circle-outline" size={22} color="#fff" />
+                <Text style={[tw`text-base text-white font-medium`, { fontFamily: 'Manrope_400Regular' }]}>{myName}</Text>
+                <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         )}
 
@@ -567,12 +649,15 @@ export default function MainScreen({ navigation }: any) {
         {/* Week Navigation Header */}
         <Animated.View style={{ opacity: navigationFade }}>
           <View style={tw`flex-row items-center justify-between mb-3`}>
-          <TouchableOpacity
-            style={tw`p-2 bg-slate-700/50 rounded-lg`}
-            onPress={() => setWeekOffset(weekOffset - 1)}
-          >
-            <Text style={[tw`text-2xl text-text`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
+            <TouchableOpacity
+              style={tw`p-2 bg-slate-700/50 rounded-lg`}
+              onPress={() => animateButtonPress(prevButtonScale, () => setWeekOffset(weekOffset - 1))}
+              activeOpacity={0.7}
+            >
+              <Text style={[tw`text-2xl text-text`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
+            </TouchableOpacity>
+          </Animated.View>
 
           <View style={tw`flex-1 items-center px-3`}>
             <Text style={[tw`text-base font-semibold text-text`, { fontFamily: 'Manrope_400Regular' }]}>
@@ -580,12 +665,15 @@ export default function MainScreen({ navigation }: any) {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={tw`p-2 bg-slate-700/50 rounded-lg`}
-            onPress={() => setWeekOffset(weekOffset + 1)}
-          >
-            <Text style={[tw`text-2xl text-text`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
+            <TouchableOpacity
+              style={tw`p-2 bg-slate-700/50 rounded-lg`}
+              onPress={() => animateButtonPress(nextButtonScale, () => setWeekOffset(weekOffset + 1))}
+              activeOpacity={0.7}
+            >
+              <Text style={[tw`text-2xl text-text`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
+            </TouchableOpacity>
+          </Animated.View>
           </View>
 
           {/* Go to Current Week Button */}
@@ -602,8 +690,9 @@ export default function MainScreen({ navigation }: any) {
         </Animated.View>
 
         {/* Schedule List */}
-        <Animated.View style={{ opacity: scheduleFade }}>
-          <View style={tw`gap-2`}>
+        <GestureDetector gesture={swipeGesture}>
+          <Animated.View style={{ opacity: scheduleFade }}>
+            <View style={tw`gap-2`}>
           {/* Header */}
           <View style={tw`flex-row gap-2 mb-2 px-1`}>
             <View style={tw`flex-1 items-center`}>
@@ -671,9 +760,11 @@ export default function MainScreen({ navigation }: any) {
               </View>
             );
           })}
-          </View>
-        </Animated.View>
+            </View>
+          </Animated.View>
+        </GestureDetector>
       </ScrollView>
     </SafeAreaView>
+    </>
   );
 }

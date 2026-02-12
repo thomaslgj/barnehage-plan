@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View, Animated } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, View, Animated, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
 
 interface ScheduleSlotProps {
@@ -25,6 +26,7 @@ export default function ScheduleSlot({
   // Use consistent arrow symbols
   const icon = slotType === 'dropoff' ? '▶' : '◀';
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (loading) {
@@ -86,6 +88,29 @@ export default function ScheduleSlot({
     outputRange: [-200, 200],
   });
 
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePress = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onPress();
+  };
+
   // Render content - identical structure for both states
   const content = (
     <View style={tw`flex-1 items-center justify-center`}>
@@ -137,24 +162,28 @@ export default function ScheduleSlot({
 
   return (
     <View style={tw`flex-1`}>
-      <TouchableOpacity
-        style={tw.style('rounded-lg overflow-hidden', loading && 'opacity-50')}
-        onPress={onPress}
-        disabled={loading}
-        activeOpacity={0.7}
-      >
-        <LinearGradient
-          colors={[startColor, endColor]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={tw.style(
-            `${containerClasses} items-center justify-center`,
-            !hasAssignment && 'border border-border/50'
-          )}
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          style={tw.style('rounded-lg overflow-hidden', loading && 'opacity-50')}
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={loading}
+          activeOpacity={0.7}
         >
-          {content}
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={[startColor, endColor]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={tw.style(
+              `${containerClasses} items-center justify-center`,
+              !hasAssignment && 'border border-border/50'
+            )}
+          >
+            {content}
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
