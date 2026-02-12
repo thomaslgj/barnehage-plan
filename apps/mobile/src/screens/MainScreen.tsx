@@ -472,7 +472,7 @@ export default function MainScreen({ navigation }: any) {
             {/* Child info (non-clickable) */}
             <View style={tw`flex-row items-center gap-2 bg-slate-800/30 rounded-full py-2 px-4`}>
               <MaterialCommunityIcons name="baby-face-outline" size={22} color="#a89985" />
-              <Text style={tw`text-base text-text-muted font-medium`}>{childName}</Text>
+              <Text style={[tw`text-base text-text-muted font-medium`, { fontFamily: 'Manrope_400Regular' }]}>{childName}</Text>
             </View>
 
             {/* User info (clickable) */}
@@ -482,8 +482,8 @@ export default function MainScreen({ navigation }: any) {
               activeOpacity={0.7}
             >
               <Ionicons name="person-circle-outline" size={22} color="#fff" />
-              <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
-              <Text style={tw`text-text-light text-xl`}>›</Text>
+              <Text style={[tw`text-base text-white font-medium`, { fontFamily: 'Manrope_400Regular' }]}>{myName}</Text>
+              <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -509,7 +509,7 @@ export default function MainScreen({ navigation }: any) {
             <View style={tw`mb-3 bg-info/10 rounded-lg border border-info/30`}>
               {/* Header with close button */}
               <View style={tw`flex-row items-start justify-between p-4 pb-2`}>
-                <Text style={tw`text-sm text-slate-200 flex-1 pr-2`}>
+                <Text style={[tw`text-sm text-slate-200 flex-1 pr-2`, { fontFamily: 'Manrope_400Regular' }]}>
                   💡 Din partner har ikke blitt med enda
                 </Text>
                 <TouchableOpacity
@@ -517,17 +517,17 @@ export default function MainScreen({ navigation }: any) {
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   style={tw`ml-2`}
                 >
-                  <Text style={tw`text-text-light text-xl leading-none`}>✕</Text>
+                  <Text style={[tw`text-text-light text-xl leading-none`, { fontFamily: 'Manrope_400Regular' }]}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Content */}
               <View style={tw`px-4 pb-4`}>
-                <Text style={tw`text-xs text-slate-400 mb-2`}>
+                <Text style={[tw`text-xs text-slate-400 mb-2`, { fontFamily: 'Manrope_400Regular' }]}>
                   Del denne invitasjonskoden så de kan bli med:
                 </Text>
                 <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
-                  <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
+                  <Text style={[tw`text-base text-white font-semibold text-center tracking-wider`, { fontFamily: 'Manrope_400Regular' }]}>
                     {inviteCode}
                   </Text>
                 </View>
@@ -540,7 +540,7 @@ export default function MainScreen({ navigation }: any) {
           <View style={tw`mb-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}>
             <View style={tw`flex-row items-center justify-center gap-2`}>
               <ActivityIndicator size="small" color="#7fa884" />
-              <Text style={tw`text-sm text-text-muted`}>
+              <Text style={[tw`text-sm text-text-muted`, { fontFamily: 'Manrope_400Regular' }]}>
                 Setter opp flyt...
               </Text>
             </View>
@@ -550,7 +550,7 @@ export default function MainScreen({ navigation }: any) {
         {/* Template Auto-Applied Message */}
         {templateWasSuccessful && !applyingTemplate && (
           <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
-            <Text style={tw`text-sm text-primary-light text-center`}>
+            <Text style={[tw`text-sm text-primary-light text-center`, { fontFamily: 'Manrope_400Regular' }]}>
               Nå har du flyt! 🌟
             </Text>
           </View>
@@ -563,10 +563,10 @@ export default function MainScreen({ navigation }: any) {
              return !assignments[`${dateStr}-dropoff`] && !assignments[`${dateStr}-pickup`];
            }) && (
             <View style={tw`mb-3 p-4 bg-secondary/10 rounded-lg border border-secondary/30`}>
-              <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
+              <Text style={[tw`text-base text-text text-center mb-1 font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
                 Få flyt i hverdagen 🌊
               </Text>
-              <Text style={tw`text-sm text-text-light text-center`}>
+              <Text style={[tw`text-sm text-text-light text-center`, { fontFamily: 'Manrope_300Light' }]}>
                 Planlegg uken din for mindre stress og mer familietid
               </Text>
             </View>
@@ -580,11 +580,11 @@ export default function MainScreen({ navigation }: any) {
             style={tw`p-2 bg-slate-700/50 rounded-lg`}
             onPress={() => setWeekOffset(weekOffset - 1)}
           >
-            <Text style={tw`text-2xl text-text`}>‹</Text>
+            <Text style={[tw`text-2xl text-text`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
           </TouchableOpacity>
 
           <View style={tw`flex-1 items-center px-3`}>
-            <Text style={tw`text-base font-semibold text-text`}>
+            <Text style={[tw`text-base font-semibold text-text`, { fontFamily: 'Manrope_400Regular' }]}>
               Uke {weekNumber}, {year}
             </Text>
           </View>
@@ -593,7 +593,7 @@ export default function MainScreen({ navigation }: any) {
             style={tw`p-2 bg-slate-700/50 rounded-lg`}
             onPress={() => setWeekOffset(weekOffset + 1)}
           >
-            <Text style={tw`text-2xl text-text`}>›</Text>
+            <Text style={[tw`text-2xl text-text`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
           </TouchableOpacity>
           </View>
 
@@ -603,7 +603,7 @@ export default function MainScreen({ navigation }: any) {
               style={tw`mb-3 py-2 px-3 bg-secondary/20 rounded-lg border border-secondary/50`}
               onPress={() => setWeekOffset(0)}
             >
-              <Text style={tw`text-center text-sm text-secondary-light font-medium`}>
+              <Text style={[tw`text-center text-sm text-secondary-light font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
                 📅 Gå til nåværende uke
               </Text>
             </TouchableOpacity>
@@ -616,10 +616,10 @@ export default function MainScreen({ navigation }: any) {
           {/* Header */}
           <View style={tw`flex-row gap-2 mb-2 px-1`}>
             <View style={tw`flex-1 items-center`}>
-              <Text style={tw`text-[10px] font-medium text-slate-400`}>Levering</Text>
+              <Text style={[tw`text-[10px] font-medium text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>Levering</Text>
             </View>
             <View style={tw`flex-1 items-center`}>
-              <Text style={tw`text-[10px] font-medium text-slate-400`}>Henting</Text>
+              <Text style={[tw`text-[10px] font-medium text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>Henting</Text>
             </View>
           </View>
 
@@ -639,10 +639,10 @@ export default function MainScreen({ navigation }: any) {
                 )}>
                   <View style={tw`flex-row items-center gap-1.5 mb-2`}>
                     {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
-                    <Text style={tw.style(
+                    <Text style={[tw.style(
                       'text-xs font-semibold capitalize',
                       isToday ? 'text-secondary-light' : 'text-text-muted'
-                    )}>
+                    ), { fontFamily: 'Manrope_400Regular' }]}>
                       {day.format('dddd DD.MM')}
                     </Text>
                   </View>
@@ -679,7 +679,7 @@ export default function MainScreen({ navigation }: any) {
           style={tw`mt-6 mb-4 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}
           onPress={forceOnboarding}
         >
-          <Text style={tw`text-center text-sm text-slate-300`}>
+          <Text style={[tw`text-center text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>
             Test Onboarding (Debug)
           </Text>
         </TouchableOpacity>

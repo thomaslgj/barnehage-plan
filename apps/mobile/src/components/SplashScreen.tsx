@@ -32,12 +32,12 @@ export default function SplashScreen() {
 
       <Animated.View style={{ opacity: fadeAnim }}>
         {/* Main logo text */}
-        <Text style={tw`text-7xl font-bold text-text text-center mb-3 tracking-tight`}>
-          Flyt
+        <Text style={[tw`text-7xl text-text text-center mb-3`, { fontFamily: 'Manrope_500Medium', letterSpacing: 3 }]}>
+          flyt
         </Text>
 
         {/* Tagline */}
-        <Text style={tw`text-lg text-text-muted text-center font-light tracking-wide`}>
+        <Text style={[tw`text-lg text-text-muted text-center tracking-wide`, { fontFamily: 'Manrope_400Regular' }]}>
           Flyt i hverdagen
         </Text>
       </Animated.View>

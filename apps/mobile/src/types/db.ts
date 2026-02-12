@@ -48,6 +48,7 @@ export interface EquipmentStatus {
 export interface EquipmentItem {
   key: string;
   label: string;
+  is_critical: boolean;
   status: 'ok' | 'missing';
 }
 

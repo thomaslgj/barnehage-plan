@@ -93,8 +93,8 @@ export default function EquipmentModal({
           ]}
         >
           <View style={tw`p-6 border-b border-slate-700`}>
-            <Text style={tw`text-[22px] font-bold text-white mb-2`}>Utstyrskontroll</Text>
-            <Text style={tw`text-[15px] text-slate-300 leading-[22px]`}>
+            <Text style={[tw`text-[22px] font-bold text-white mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Utstyrskontroll</Text>
+            <Text style={[tw`text-[15px] text-slate-300 leading-[22px]`, { fontFamily: 'Manrope_400Regular' }]}>
               Ble noe sendt hjem i dag? Merk det som mangler for {date}:
             </Text>
           </View>
@@ -113,16 +113,16 @@ export default function EquipmentModal({
                 disabled={loading}
               >
                 <Text
-                  style={tw.style(
+                  style={[tw.style(
                     'text-base font-medium',
                     item.status === 'missing' ? 'text-warning font-semibold' : 'text-slate-200'
-                  )}
+                  ), { fontFamily: 'Manrope_400Regular' }]}
                 >
                   {item.label}
                 </Text>
                 {item.status === 'missing' && (
                   <View style={tw`w-6 h-6 rounded-full bg-warning justify-center items-center`}>
-                    <Text style={tw`text-white text-base font-bold`}>✓</Text>
+                    <Text style={[tw`text-white text-base font-bold`, { fontFamily: 'Manrope_400Regular' }]}>✓</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -141,7 +141,7 @@ export default function EquipmentModal({
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={tw`text-white text-base font-semibold`}>Ferdig</Text>
+              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Ferdig</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

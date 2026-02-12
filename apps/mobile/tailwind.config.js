@@ -2,6 +2,10 @@
 module.exports = {
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Manrope_400Regular', 'system-ui', 'sans-serif'],
+        light: ['Manrope_300Light', 'system-ui', 'sans-serif'],
+      },
       colors: {
         // Warm beige/brown theme for family app
         background: '#2d2520', // warm dark chocolate brown - main background

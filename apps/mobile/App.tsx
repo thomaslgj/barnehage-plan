@@ -11,6 +11,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator } from 'react-native';
 import tw from './src/lib/tw';
+import { useFonts, Manrope_300Light, Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
 
 // Custom warm theme to prevent white flash
 const WarmNavigationTheme = {
@@ -106,6 +107,16 @@ function AppNavigator() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Manrope_300Light,
+    Manrope_400Regular,
+    Manrope_500Medium,
+  });
+
+  if (!fontsLoaded) {
+    return null; // or return a loading screen
+  }
+
   return (
     <SafeAreaProvider>
       <HouseholdProvider>

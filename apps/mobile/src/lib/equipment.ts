@@ -3,10 +3,10 @@ import type { EquipmentItem, EquipmentStatus } from '../types/db';
 
 // Default equipment items
 export const DEFAULT_EQUIPMENT_ITEMS = [
-  { key: 'rain_gear', label: 'Regntøy' },
-  { key: 'change_clothes', label: 'Skiftetøy' },
-  { key: 'wool', label: 'Ull' },
-  { key: 'diapers', label: 'Bleier' },
+  { key: 'rain_gear', label: 'Regntøy', is_critical: true },
+  { key: 'change_clothes', label: 'Skiftetøy', is_critical: false },
+  { key: 'wool', label: 'Ull', is_critical: false },
+  { key: 'diapers', label: 'Bleier', is_critical: true },
 ];
 
 // Fetch equipment status from database
@@ -17,7 +17,7 @@ export async function fetchEquipmentStatus(
     // Fetch actual equipment items from database
     const { data: equipmentItems, error: itemsError } = await supabase
       .from('equipment_items')
-      .select('key, label')
+      .select('key, label, is_critical')
       .eq('household_id', householdId)
       .eq('active', true)
       .order('sort_order');
@@ -46,6 +46,7 @@ export async function fetchEquipmentStatus(
     return items.map((item) => ({
       key: item.key,
       label: item.label,
+      is_critical: item.is_critical ?? false,
       status: statusMap.get(item.key) || 'ok',
     }));
   } catch (error) {
@@ -84,32 +85,25 @@ export async function updateEquipmentStatus(
 }
 
 // Calculate overall equipment status
-// Critical items (rain_gear, diapers) missing → not_ready (red)
-// Non-critical items (change_clothes, wool) missing → missing (yellow)
+// Critical items missing → not_ready (red)
+// Non-critical items missing → missing (yellow)
 // Nothing missing → ready (green)
 export function calculateEquipmentStatus(items: EquipmentItem[]): 'ready' | 'missing' | 'not_ready' {
   const hasData = items.length > 0;
   if (!hasData) return 'not_ready';
 
-  const criticalItems = ['rain_gear', 'diapers'];
-  const nonCriticalItems = ['change_clothes', 'wool'];
-
   // Find all missing items
   const allMissing = items.filter((item) => item.status === 'missing');
 
   // Check if any critical items are missing
-  const missingCritical = allMissing.filter((item) =>
-    criticalItems.includes(item.key)
-  );
+  const missingCritical = allMissing.filter((item) => item.is_critical);
 
   if (missingCritical.length > 0) {
     return 'not_ready'; // Red status
   }
 
   // Check if any non-critical items are missing
-  const missingNonCritical = allMissing.filter((item) =>
-    nonCriticalItems.includes(item.key)
-  );
+  const missingNonCritical = allMissing.filter((item) => !item.is_critical);
 
   if (missingNonCritical.length > 0) {
     return 'missing'; // Yellow status

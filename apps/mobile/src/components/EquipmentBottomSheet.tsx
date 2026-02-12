@@ -104,8 +104,8 @@ export default function EquipmentBottomSheet({
           ]}
         >
           <View style={tw`p-5 border-b border-slate-700`}>
-            <Text style={tw`text-xl font-bold text-white mb-1`}>Utstyrsstatus</Text>
-            <Text style={tw`text-sm text-slate-300`}>Trykk for å endre status</Text>
+            <Text style={[tw`text-xl font-bold text-white mb-1`, { fontFamily: 'Manrope_400Regular' }]}>Utstyrsstatus</Text>
+            <Text style={[tw`text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>Trykk for å endre status</Text>
           </View>
 
           <ScrollView style={tw`max-h-[400px]`}>
@@ -116,7 +116,7 @@ export default function EquipmentBottomSheet({
                 onPress={() => onToggle(item.key)}
                 disabled={loading}
               >
-                <Text style={tw`text-base text-slate-200 flex-1`}>{item.label}</Text>
+                <Text style={[tw`text-base text-slate-200 flex-1`, { fontFamily: 'Manrope_400Regular' }]}>{item.label}</Text>
                 <View
                   style={tw.style(
                     'px-3 py-1.5 rounded min-w-[80px] items-center',
@@ -124,10 +124,10 @@ export default function EquipmentBottomSheet({
                   )}
                 >
                   <Text
-                    style={tw.style(
+                    style={[tw.style(
                       'text-sm font-semibold',
                       item.status === 'ok' ? 'text-success' : 'text-warning'
-                    )}
+                    ), { fontFamily: 'Manrope_400Regular' }]}
                   >
                     {item.status === 'ok' ? 'OK' : 'Mangler'}
                   </Text>
@@ -143,7 +143,7 @@ export default function EquipmentBottomSheet({
           )}
 
           <TouchableOpacity style={tw`p-5 items-center border-t border-slate-700`} onPress={onClose}>
-            <Text style={tw`text-base text-slate-300 font-semibold`}>Lukk</Text>
+            <Text style={[tw`text-base text-slate-300 font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Lukk</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

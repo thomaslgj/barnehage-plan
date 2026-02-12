@@ -118,10 +118,10 @@ export default function TodayCard({
         isToday ? 'border-slate-600/80' : 'border-slate-700/50'
       }`}>
         <View style={tw`mb-4`}>
-          <Text style={tw.style(
+          <Text style={[tw.style(
             isToday ? 'text-2xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
-          )}>{isToday ? title.toUpperCase() : title}</Text>
-          <Text style={tw`text-base text-slate-400`}>{dayName}</Text>
+          ), { fontFamily: 'Manrope_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
+          <Text style={[tw`text-base text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>{dayName}</Text>
         </View>
 
         <View style={tw`flex-row gap-2 mb-4`}>
@@ -155,7 +155,7 @@ export default function TodayCard({
               )}
             </>
           ) : (
-            <Text style={tw`text-sm py-2 text-slate-400`}>
+            <Text style={[tw`text-sm py-2 text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>
               Ingen oppgaver {isToday ? 'i dag' : 'i morgen'}
             </Text>
           )}

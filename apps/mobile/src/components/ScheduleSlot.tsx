@@ -115,11 +115,11 @@ export default function ScheduleSlot({
         </View>
       ) : (
         <>
-          <Text style={tw`${iconSize} ${hasAssignment ? (useDarkText ? 'text-background/90' : 'text-white/90') : 'text-text-light'}`}>
+          <Text style={[tw`${iconSize} ${hasAssignment ? (useDarkText ? 'text-background/90' : 'text-white/90') : 'text-text-light'}`, { fontFamily: 'Manrope_400Regular' }]}>
             {icon}
           </Text>
           <Text
-            style={tw`${textSize} font-bold ${hasAssignment ? (useDarkText ? 'text-background' : 'text-text') : 'text-text-light'} mt-0.5`}
+            style={[tw`${textSize} font-bold ${hasAssignment ? (useDarkText ? 'text-background' : 'text-text') : 'text-text-light'} mt-0.5`, { fontFamily: 'Manrope_400Regular' }]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >

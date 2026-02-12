@@ -49,13 +49,13 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
     >
       <View style={tw`flex-row items-center gap-2 flex-1`}>
         {config.showCheckmark ? (
-          <Text style={tw`text-success text-xl`}>✓</Text>
+          <Text style={[tw`text-success text-xl`, { fontFamily: 'Manrope_400Regular' }]}>✓</Text>
         ) : (
           <View style={tw.style('w-2.5 h-2.5 rounded-full', config.dotStyle)} />
         )}
-        <Text style={tw.style('text-sm font-medium flex-1', config.textStyle)}>{config.label}</Text>
+        <Text style={[tw.style('text-sm font-medium flex-1', config.textStyle), { fontFamily: 'Manrope_400Regular' }]}>{config.label}</Text>
       </View>
-      <Text style={tw`text-text-light text-xl`}>›</Text>
+      <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
     </TouchableOpacity>
   );
 }
