@@ -11,17 +11,17 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import { View, ActivityIndicator } from 'react-native';
 import tw from './src/lib/tw';
 
-// Custom dark theme to prevent white flash
-const DarkNavigationTheme = {
+// Custom warm theme to prevent white flash
+const WarmNavigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#10b981', // emerald-500
-    background: '#0f172a', // slate-900
-    card: '#1e293b', // slate-800
-    text: '#ffffff',
-    border: '#334155', // slate-700
-    notification: '#10b981', // emerald-500
+    primary: '#7fa884', // sage green
+    background: '#2d2520', // warm chocolate brown
+    card: '#3d332d', // warm brown
+    text: '#f5f1ed', // warm cream
+    border: '#4a3f38', // warm brown
+    notification: '#7fa884', // sage green
   },
 };
 
@@ -33,7 +33,7 @@ function AppNavigator() {
   if (loading) {
     return (
       <View style={tw`flex-1 justify-center items-center bg-background`}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#7fa884" />
       </View>
     );
   }
@@ -42,7 +42,7 @@ function AppNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0f172a' }, // bg-background color
+        contentStyle: { backgroundColor: '#2d2520' }, // bg-background color (warm brown)
       }}
     >
       {!user ? (
@@ -76,7 +76,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <HouseholdProvider>
-        <NavigationContainer theme={DarkNavigationTheme}>
+        <NavigationContainer theme={WarmNavigationTheme}>
           <AppNavigator />
         </NavigationContainer>
         <StatusBar style="light" />

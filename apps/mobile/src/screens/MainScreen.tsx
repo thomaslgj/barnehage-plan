@@ -409,7 +409,7 @@ export default function MainScreen({ navigation }: any) {
   if (loading) {
     return (
       <View style={tw`flex-1 justify-center items-center bg-background`}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color="#6b8e6f" />
       </View>
     );
   }
@@ -420,7 +420,7 @@ export default function MainScreen({ navigation }: any) {
         style={tw`flex-1`}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10b981']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7fa884']} />
         }
       >
         {/* Profile Header */}
@@ -428,8 +428,8 @@ export default function MainScreen({ navigation }: any) {
           <View style={tw`flex-row items-center justify-between mb-6`}>
             {/* Child info (non-clickable) */}
             <View style={tw`flex-row items-center gap-2 bg-slate-800/30 rounded-full py-2 px-4`}>
-              <MaterialCommunityIcons name="baby-face-outline" size={22} color="#94a3b8" />
-              <Text style={tw`text-base text-slate-300 font-medium`}>{childName}</Text>
+              <MaterialCommunityIcons name="baby-face-outline" size={22} color="#a89985" />
+              <Text style={tw`text-base text-text-muted font-medium`}>{childName}</Text>
             </View>
 
             {/* User info (clickable) */}
@@ -478,7 +478,7 @@ export default function MainScreen({ navigation }: any) {
         {applyingTemplate && (
           <View style={tw`mb-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}>
             <View style={tw`flex-row items-center justify-center gap-2`}>
-              <ActivityIndicator size="small" color="#10b981" />
+              <ActivityIndicator size="small" color="#7fa884" />
               <Text style={tw`text-sm text-slate-300`}>
                 Fyller inn standarduke...
               </Text>
@@ -553,14 +553,14 @@ export default function MainScreen({ navigation }: any) {
                 <View style={tw.style(
                   'p-2.5 rounded-lg',
                   isToday
-                    ? 'bg-blue-500/20 border-2 border-blue-400/50'
+                    ? 'bg-secondary/20 border-2 border-secondary/50'
                     : 'bg-slate-800/50 border border-slate-700/50'
                 )}>
                   <View style={tw`flex-row items-center gap-1.5 mb-2`}>
-                    {isToday && <View style={tw`w-1.5 h-1.5 bg-blue-400 rounded-full`} />}
+                    {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
                     <Text style={tw.style(
                       'text-xs font-semibold capitalize',
-                      isToday ? 'text-blue-300' : 'text-slate-300'
+                      isToday ? 'text-secondary-light' : 'text-text-muted'
                     )}>
                       {day.format('dddd DD.MM')}
                     </Text>

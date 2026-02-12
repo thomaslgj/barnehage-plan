@@ -62,12 +62,12 @@ export default function ScheduleSlot({
   // Get gradient colors based on person
   const getGradientColors = (): [string, string] => {
     if (personIndex === 0) {
-      return ['#059669', '#0f766e']; // emerald-600 to teal-700
+      return ['#6b8e6f', '#5d8a7f']; // sage green to warm teal
     } else if (personIndex === 1) {
-      return ['#f59e0b', '#ea580c']; // amber-500 to orange-600
+      return ['#e8956f', '#d4734f']; // warm coral to terracotta
     }
     // Safeguard: if we somehow get here with hasAssignment=true, use a fallback color instead of transparent
-    return ['#64748b', '#475569']; // slate-500 to slate-600 as fallback
+    return ['#8b7a6a', '#6e5e4f']; // warm brown-gray fallback
   };
 
   // Fixed dimensions - adjusted padding for more space at bottom
@@ -108,15 +108,15 @@ export default function ScheduleSlot({
               style={{ flex: 1, width: 200 }}
             />
           </Animated.View>
-          <ActivityIndicator size="small" color={hasAssignment ? "#ffffff" : "#94a3b8"} />
+          <ActivityIndicator size="small" color={hasAssignment ? "#f5f1ed" : "#a89985"} />
         </View>
       ) : (
         <>
-          <Text style={tw`${iconSize} ${hasAssignment ? 'text-white/90' : 'text-slate-400'}`}>
+          <Text style={tw`${iconSize} ${hasAssignment ? 'text-white/90' : 'text-text-light'}`}>
             {icon}
           </Text>
           <Text
-            style={tw`${textSize} font-bold ${hasAssignment ? 'text-white' : 'text-slate-500'} mt-0.5`}
+            style={tw`${textSize} font-bold ${hasAssignment ? 'text-text' : 'text-text-light'} mt-0.5`}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -130,7 +130,7 @@ export default function ScheduleSlot({
   // Always use the same structure - just change colors based on assignment state
   const [startColor, endColor] = hasAssignment
     ? getGradientColors()
-    : ['#334155', '#1e293b']; // slate-700 to slate-800 for empty slots
+    : ['#4a3f38', '#3d332d']; // warm brown-700 to brown-800 for empty slots
 
   return (
     <View style={tw`flex-1`}>
@@ -146,7 +146,7 @@ export default function ScheduleSlot({
           end={{ x: 1, y: 1 }}
           style={tw.style(
             `${containerClasses} items-center justify-center`,
-            !hasAssignment && 'border border-slate-600/50'
+            !hasAssignment && 'border border-border/50'
           )}
         >
           {content}

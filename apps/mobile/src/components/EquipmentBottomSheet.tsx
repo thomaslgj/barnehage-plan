@@ -138,7 +138,7 @@ export default function EquipmentBottomSheet({
 
           {loading && (
             <View style={tw`absolute inset-0 bg-slate-900/80 justify-center items-center`}>
-              <ActivityIndicator size="large" color="#10b981" />
+              <ActivityIndicator size="large" color="#7fa884" />
             </View>
           )}
 

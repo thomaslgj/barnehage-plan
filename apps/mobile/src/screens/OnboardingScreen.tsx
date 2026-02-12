@@ -521,7 +521,7 @@ export default function OnboardingScreen() {
           )}
           {fetchingPlaceholderName && (
             <View style={tw`flex-row items-center gap-2 mb-4`}>
-              <ActivityIndicator size="small" color="#10b981" />
+              <ActivityIndicator size="small" color="#7fa884" />
               <Text style={tw`text-xs text-slate-400`}>Sjekker invitasjonskode...</Text>
             </View>
           )}

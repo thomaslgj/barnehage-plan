@@ -131,7 +131,7 @@ export default function EquipmentModal({
 
           {loading && (
             <View style={tw`absolute inset-0 bg-slate-900/90 justify-center items-center rounded-2xl`}>
-              <ActivityIndicator size="large" color="#10b981" />
+              <ActivityIndicator size="large" color="#7fa884" />
             </View>
           )}
 

@@ -1,60 +1,60 @@
-// Tailwind config for twrnc - Dark slate theme matching web
+// Tailwind config for twrnc - Warm, family-friendly theme
 module.exports = {
   theme: {
     extend: {
       colors: {
-        // Dark slate theme colors matching web
-        background: '#0f172a', // slate-900 - main background
-        card: '#1e293b80', // slate-800/50 - card backgrounds with opacity
+        // Warm beige/brown theme for family app
+        background: '#2d2520', // warm dark chocolate brown - main background
+        card: '#3d332d80', // warm brown/50 - card backgrounds with opacity
 
-        // Border colors
-        border: '#33415580', // slate-700/50
-        'border-light': '#47556980', // slate-600/50
+        // Border colors - warm tones
+        border: '#4a3f3880', // warm brown/50
+        'border-light': '#5c4f4680', // lighter warm brown/50
 
-        // Text colors
+        // Text colors - warm cream tones
         text: {
-          DEFAULT: '#ffffff', // white
-          muted: '#cbd5e1', // slate-300
-          light: '#94a3b8', // slate-400
+          DEFAULT: '#f5f1ed', // warm cream/white
+          muted: '#d4c5b9', // warm beige
+          light: '#a89985', // warm tan
         },
 
-        // Primary colors (emerald/teal for person1 buttons)
+        // Primary colors (sage/olive green for person1 - natural, calming)
         primary: {
-          DEFAULT: '#059669', // emerald-600
-          light: '#10b981', // emerald-500
-          dark: '#047857', // emerald-700
-          teal: '#0f766e', // teal-700
+          DEFAULT: '#6b8e6f', // sage green
+          light: '#7fa884', // lighter sage
+          dark: '#5a7a5e', // darker sage
+          teal: '#5d8a7f', // warm teal
         },
 
-        // Secondary colors (amber/orange for person2 buttons)
+        // Secondary colors (warm coral/peach for person2 - friendly, warm)
         secondary: {
-          DEFAULT: '#f59e0b', // amber-500
-          light: '#fbbf24', // amber-400
-          dark: '#d97706', // amber-600
-          orange: '#ea580c', // orange-600
+          DEFAULT: '#e8956f', // warm coral
+          light: '#f0a989', // peachy coral
+          dark: '#d17d58', // deeper coral
+          orange: '#d4734f', // warm terracotta
         },
 
-        // Status colors for equipment badge
-        success: '#22c55e', // green-500
-        warning: '#eab308', // yellow-500
-        error: '#ef4444', // red-500
-        info: '#3b82f6', // blue-500
+        // Status colors - warmer versions
+        success: '#7ba872', // warm green
+        warning: '#e8b855', // warm golden yellow
+        error: '#d17166', // warm red/coral
+        info: '#c17b5c', // terracotta (replacing cold blue)
 
-        // Muted backgrounds for empty slots
+        // Muted backgrounds for empty slots - warm tones
         muted: {
-          DEFAULT: '#33415580', // slate-700/50
-          light: '#4b556380', // slate-600/50
+          DEFAULT: '#4a3f3880', // warm brown/50
+          light: '#5c4f4680', // lighter warm brown/50
         },
 
-        // Slate variants for consistent styling
+        // Warm brown variants for consistent styling
         slate: {
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
+          300: '#d4c5b9', // warm light beige
+          400: '#a89985', // warm tan
+          500: '#8b7a6a', // warm brown-gray
+          600: '#6e5e4f', // medium warm brown
+          700: '#4a3f38', // dark warm brown
+          800: '#3d332d', // darker warm brown
+          900: '#2d2520', // darkest chocolate brown
         },
       },
       animation: {
