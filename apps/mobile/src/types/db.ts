@@ -29,6 +29,7 @@ export interface ScheduleAssignment {
   child_id: string;
   date: string; // YYYY-MM-DD format
   slot: 'dropoff' | 'pickup';
+  assigned_member_id: string | null;
   assigned_user_id: string | null;
   updated_by: string;
   created_at: string;
@@ -47,6 +48,32 @@ export interface EquipmentItem {
   key: string;
   label: string;
   status: 'ok' | 'missing';
+}
+
+export interface ScheduleTemplate {
+  id: string;
+  household_id: string;
+  child_id: string;
+  weekday: 1 | 2 | 3 | 4 | 5; // Monday=1, Friday=5
+  slot: 'dropoff' | 'pickup';
+  assigned_member_id: string | null;
+  assigned_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  updated_by: string;
+}
+
+export interface EquipmentItemDB {
+  id: string;
+  household_id: string;
+  key: string;
+  label: string;
+  severity: string;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  updated_by: string;
 }
 
 // RPC function parameter types

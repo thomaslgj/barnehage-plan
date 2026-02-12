@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { HouseholdMember, Child } from '../types/db';
@@ -115,9 +116,9 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(session.user);
 
-          // Check for URL parameter to force onboarding (for testing)
+          // Check for URL parameter to force onboarding (for testing) - web only
           let forceOnboardingMode = false;
-          if (typeof window !== 'undefined') {
+          if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
             const params = new URLSearchParams(window.location.search);
             if (params.get('onboarding') === 'true') {
               // Remove the parameter from URL
