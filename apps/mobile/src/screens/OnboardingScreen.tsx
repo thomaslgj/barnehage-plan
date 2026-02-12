@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -82,6 +82,47 @@ export default function OnboardingScreen() {
   const [displayName, setDisplayName] = useState('');
   const [placeholderNameFromInvite, setPlaceholderNameFromInvite] = useState<string | null>(null);
   const [fetchingPlaceholderName, setFetchingPlaceholderName] = useState(false);
+
+  // Load existing equipment items if re-onboarding
+  useEffect(() => {
+    const loadExistingEquipment = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Check if user already has a household
+        const { data: memberships } = await supabase
+          .from('household_members')
+          .select('household_id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (memberships && memberships.length > 0) {
+          const household_id = memberships[0].household_id;
+
+          // Fetch existing equipment items
+          const { data: existingEquipment } = await supabase
+            .from('equipment_items')
+            .select('key, label')
+            .eq('household_id', household_id)
+            .eq('active', true)
+            .order('sort_order');
+
+          if (existingEquipment && existingEquipment.length > 0) {
+            console.log('Loading existing equipment for re-onboarding:', existingEquipment);
+            setEquipmentItems(existingEquipment.map(item => ({
+              key: item.key,
+              label: item.label,
+            })));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing equipment:', error);
+      }
+    };
+
+    loadExistingEquipment();
+  }, []);
 
   const handleAddEquipmentItem = () => {
     if (!newItemLabel.trim()) return;
@@ -249,12 +290,73 @@ export default function OnboardingScreen() {
         // Always show success screen for re-onboarding
         isNewHousehold = true;
 
+        console.log('Re-onboarding: Updating existing household');
+        console.log('Child name to update:', childName.trim() || '(empty)');
+        console.log('My name to update:', myName.trim() || '(empty)');
+        console.log('Partner name to update:', partnerName.trim() || '(empty)');
+
         // Update child name if provided
         if (childName.trim()) {
-          await supabase
+          const { error: childUpdateError } = await supabase
             .from('children')
             .update({ name: childName.trim() })
             .eq('id', child_id);
+
+          if (childUpdateError) {
+            console.error('Error updating child name:', childUpdateError);
+          } else {
+            console.log('Child name updated successfully to:', childName.trim());
+          }
+        }
+
+        // Update member names
+        // Update current user's display name
+        if (myName.trim()) {
+          const { error: myNameError } = await supabase
+            .from('household_members')
+            .update({ display_name: myName.trim() })
+            .eq('household_id', household_id)
+            .eq('user_id', user.id);
+
+          if (myNameError) {
+            console.error('Error updating my name:', myNameError);
+          } else {
+            console.log('My name updated successfully to:', myName.trim());
+          }
+        }
+
+        // Update partner's display name (find any member that's not the current user)
+        if (partnerName.trim()) {
+          // Fetch all members and find the one that's not the current user
+          const { data: allMembers, error: membersFetchError } = await supabase
+            .from('household_members')
+            .select('id, display_name, user_id')
+            .eq('household_id', household_id);
+
+          if (membersFetchError) {
+            console.error('Error fetching household members:', membersFetchError);
+          } else if (allMembers) {
+            // Find partner (any member that's not the current user)
+            const partnerMember = allMembers.find(m => m.user_id !== user.id);
+
+            console.log('All members:', allMembers);
+            console.log('Partner member found:', partnerMember);
+
+            if (partnerMember) {
+              const { error: partnerUpdateError } = await supabase
+                .from('household_members')
+                .update({ display_name: partnerName.trim() })
+                .eq('id', partnerMember.id);
+
+              if (partnerUpdateError) {
+                console.error('Error updating partner name:', partnerUpdateError);
+              } else {
+                console.log('Partner name updated successfully to:', partnerName.trim());
+              }
+            } else {
+              console.log('No partner member found to update');
+            }
+          }
         }
       } else {
         // Create new household
@@ -326,6 +428,13 @@ export default function OnboardingScreen() {
         // Delete existing templates
         await supabase
           .from('schedule_templates')
+          .delete()
+          .eq('household_id', household_id)
+          .eq('child_id', child_id);
+
+        // Also delete all existing schedule assignments so they get recreated from new templates
+        await supabase
+          .from('schedule_assignments')
           .delete()
           .eq('household_id', household_id)
           .eq('child_id', child_id);
@@ -445,21 +554,17 @@ export default function OnboardingScreen() {
     return (
       <View style={tw`flex-1 bg-background`}>
         <View style={tw`flex-1 justify-center px-6`}>
-          <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Velkommen til Flyt!</Text>
-          <Text style={tw`text-base text-text-muted text-center mb-2`}>
-            La oss sette opp husholdningen din
-          </Text>
-          <Text style={tw`text-sm text-text-light text-center mb-8`}>
-            Få flyt i hverdagen med mindre stress
+          <Text style={tw`text-4xl font-bold text-white text-center mb-10`}>
+            Kom i gang
           </Text>
 
           <TouchableOpacity
             style={tw`bg-primary rounded-lg p-5 mb-4`}
             onPress={() => { setMode('create'); setStep(1); }}
           >
-            <Text style={tw`text-lg font-semibold text-white mb-1`}>Opprett ny husholdning</Text>
-            <Text style={tw`text-sm text-white/90`}>
-              Start fra bunnen av og inviter andre senere
+            <Text style={tw`text-xl font-semibold text-white mb-1`}>Opprett husholdning</Text>
+            <Text style={tw`text-sm text-white/80`}>
+              For den som setter opp først
             </Text>
           </TouchableOpacity>
 
@@ -467,9 +572,9 @@ export default function OnboardingScreen() {
             style={tw`bg-info rounded-lg p-5`}
             onPress={() => setMode('join')}
           >
-            <Text style={tw`text-lg font-semibold text-white mb-1`}>Bli med i husholdning</Text>
-            <Text style={tw`text-sm text-white/90`}>
-              Bruk invitasjonskode fra din husholdning
+            <Text style={tw`text-xl font-semibold text-white mb-1`}>Bli med</Text>
+            <Text style={tw`text-sm text-white/80`}>
+              Har du fått en invitasjonskode?
             </Text>
           </TouchableOpacity>
         </View>
@@ -875,7 +980,7 @@ export default function OnboardingScreen() {
               </View>
               <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Nå er du klar til å få flyt!</Text>
               <Text style={tw`text-base text-text-muted text-center mb-2`}>
-                Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så de kan bli med!
+                Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så hen kan bli med!
               </Text>
               <Text style={tw`text-sm text-text-light text-center mb-8`}>
                 Mindre stress, mer familietid ✨
@@ -891,8 +996,8 @@ export default function OnboardingScreen() {
               </View>
 
               <View style={tw`bg-slate-800/50 rounded-lg p-4 mb-8 w-full max-w-sm`}>
-                <Text style={tw`text-sm text-slate-300 text-center leading-relaxed`}>
-                  💡 {partnerName.trim() || 'Partner'} kan bruke denne koden når de laster ned appen og velger "Bli med i husholdning"
+                <Text style={tw`text-sm text-text-muted text-center leading-relaxed`}>
+                  💡 {partnerName.trim() || 'Partner'} kan bruke denne koden når hen laster ned appen og velger "Bli med"
                 </Text>
               </View>
 

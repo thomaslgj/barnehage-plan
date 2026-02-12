@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -31,14 +31,39 @@ const Stack = createNativeStackNavigator();
 function AppNavigator() {
   const { user, needsOnboarding, loading } = useHousehold();
   const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
+  const prevLoadingRef = useRef<boolean | null>(null);
+  const splashTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Ensure splash screen shows for at least 3 seconds
+  // Start timer when loading begins
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMinSplashTimeElapsed(true);
-    }, 3000);
+    const isFirstRender = prevLoadingRef.current === null;
+    const loadingStarted = loading && !prevLoadingRef.current;
 
-    return () => clearTimeout(timer);
+    if (isFirstRender || loadingStarted) {
+      // Clear any existing timer
+      if (splashTimerRef.current) {
+        clearTimeout(splashTimerRef.current);
+      }
+
+      // Reset the elapsed flag
+      setMinSplashTimeElapsed(false);
+
+      // Start new timer
+      splashTimerRef.current = setTimeout(() => {
+        setMinSplashTimeElapsed(true);
+      }, 2500);
+    }
+
+    prevLoadingRef.current = loading;
+  }, [loading]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (splashTimerRef.current) {
+        clearTimeout(splashTimerRef.current);
+      }
+    };
   }, []);
 
   // Show splash until both loading is done AND minimum time has elapsed

@@ -14,21 +14,38 @@ export async function fetchEquipmentStatus(
   householdId: string
 ): Promise<EquipmentItem[]> {
   try {
-    const { data, error } = await supabase
+    // Fetch actual equipment items from database
+    const { data: equipmentItems, error: itemsError } = await supabase
+      .from('equipment_items')
+      .select('key, label')
+      .eq('household_id', householdId)
+      .eq('active', true)
+      .order('sort_order');
+
+    if (itemsError) throw itemsError;
+
+    // If no items found, use defaults
+    const items = equipmentItems && equipmentItems.length > 0
+      ? equipmentItems
+      : DEFAULT_EQUIPMENT_ITEMS;
+
+    // Fetch status for each item
+    const { data: statusData, error: statusError } = await supabase
       .from('household_equipment_status')
       .select('item_key, status')
       .eq('household_id', householdId);
 
-    if (error) throw error;
+    if (statusError) throw statusError;
 
-    // Merge default items with database data
+    // Merge items with status
     const statusMap = new Map<string, 'ok' | 'missing'>();
-    data?.forEach((item: Pick<EquipmentStatus, 'item_key' | 'status'>) => {
+    statusData?.forEach((item: Pick<EquipmentStatus, 'item_key' | 'status'>) => {
       statusMap.set(item.item_key, item.status);
     });
 
-    return DEFAULT_EQUIPMENT_ITEMS.map((item) => ({
-      ...item,
+    return items.map((item) => ({
+      key: item.key,
+      label: item.label,
       status: statusMap.get(item.key) || 'ok',
     }));
   } catch (error) {
