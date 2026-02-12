@@ -21,6 +21,26 @@ interface EquipmentItemDraft {
   label: string;
 }
 
+// Helper function to generate and save invite code for existing household
+async function generateInviteCodeForHousehold(householdId: string): Promise<string | null> {
+  try {
+    // Call the RPC function to generate and save a unique invite code
+    const { data: newCode, error } = await supabase.rpc('regenerate_household_invite_code', {
+      p_household_id: householdId,
+    });
+
+    if (error) {
+      console.error('Error generating invite code:', error);
+      return null;
+    }
+
+    return newCode as string;
+  } catch (error) {
+    console.error('Error in generateInviteCodeForHousehold:', error);
+    return null;
+  }
+}
+
 export default function OnboardingScreen() {
   const { refresh } = useHousehold();
   const [mode, setMode] = useState<'choice' | 'create' | 'join'>('choice');
@@ -194,7 +214,7 @@ export default function OnboardingScreen() {
         // User already has a household - use existing
         household_id = existingMemberships[0].household_id;
 
-        // Get child_id
+        // Get child_id and household invite code
         const { data: children } = await supabase
           .from('children')
           .select('id')
@@ -205,6 +225,26 @@ export default function OnboardingScreen() {
           throw new Error('No child found for existing household');
         }
         child_id = children[0].id;
+
+        // Get invite code from existing household
+        const { data: householdData } = await supabase
+          .from('households')
+          .select('invite_code')
+          .eq('id', household_id)
+          .single();
+
+        if (householdData?.invite_code) {
+          setGeneratedInviteCode(householdData.invite_code);
+        } else {
+          // Old household without invite code - generate one
+          const newInviteCode = await generateInviteCodeForHousehold(household_id);
+          if (newInviteCode) {
+            setGeneratedInviteCode(newInviteCode);
+          }
+        }
+
+        // Always show success screen for re-onboarding
+        isNewHousehold = true;
 
         // Update child name if provided
         if (childName.trim()) {
@@ -318,6 +358,8 @@ export default function OnboardingScreen() {
 
       // If new household was created, show success screen with invite code
       if (isNewHousehold) {
+        console.log('New household created, showing success screen');
+        console.log('generatedInviteCode:', generatedInviteCode);
         setStep(6); // Go to success screen
       } else {
         // Re-onboarding (testing), just refresh
