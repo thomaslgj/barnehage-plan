@@ -38,6 +38,8 @@ export default function MainScreen({ navigation }: any) {
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [childName, setChildName] = useState<string>('');
   const [myName, setMyName] = useState<string>('');
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
 
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
@@ -149,6 +151,36 @@ export default function MainScreen({ navigation }: any) {
       setMyName(currentUserMember.display_name);
     }
   }, [user, members]);
+
+  // Fetch invite code and check for placeholder members
+  useEffect(() => {
+    if (!householdId) return;
+
+    const fetchInviteCodeAndPlaceholder = async () => {
+      // Fetch household invite code
+      const { data: householdData } = await supabase
+        .from('households')
+        .select('invite_code')
+        .eq('id', householdId)
+        .single();
+
+      if (householdData?.invite_code) {
+        setInviteCode(householdData.invite_code);
+      }
+
+      // Check if there are placeholder members (user_id IS NULL)
+      const { data: placeholderMembers } = await supabase
+        .from('household_members')
+        .select('id')
+        .eq('household_id', householdId)
+        .is('user_id', null)
+        .limit(1);
+
+      setHasPlaceholderMember(placeholderMembers && placeholderMembers.length > 0);
+    };
+
+    fetchInviteCodeAndPlaceholder();
+  }, [householdId, members]); // Re-check when members change
 
   // Reset template message when week changes
   useEffect(() => {
@@ -410,6 +442,23 @@ export default function MainScreen({ navigation }: any) {
               <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
               <Text style={tw`text-slate-400 text-lg`}>›</Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Invite Partner Message */}
+        {hasPlaceholderMember && inviteCode && weekOffset === 0 && (
+          <View style={tw`mb-3 p-4 bg-info/10 rounded-lg border border-info/30`}>
+            <Text style={tw`text-sm text-slate-200 mb-2`}>
+              💡 Din partner har ikke blitt med enda
+            </Text>
+            <Text style={tw`text-xs text-slate-400 mb-2`}>
+              Del denne invitasjonskoden så de kan bli med:
+            </Text>
+            <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
+              <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
+                {inviteCode}
+              </Text>
+            </View>
           </View>
         )}
 
