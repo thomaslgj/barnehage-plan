@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Flyt",
+    "slug": "flyt",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

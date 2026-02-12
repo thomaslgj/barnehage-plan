@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -40,6 +41,12 @@ export default function MainScreen({ navigation }: any) {
   const [myName, setMyName] = useState<string>('');
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
+
+  // Animation refs
+  const todayCardFade = useRef(new Animated.Value(0)).current;
+  const messagesFade = useRef(new Animated.Value(0)).current;
+  const navigationFade = useRef(new Animated.Value(0)).current;
+  const scheduleFade = useRef(new Animated.Value(0)).current;
 
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
@@ -119,6 +126,41 @@ export default function MainScreen({ navigation }: any) {
       fetchAssignments();
     }
   }, [fetchAssignments, childId, householdId]);
+
+  // Trigger staggered animations when loading completes
+  useEffect(() => {
+    if (!loading) {
+      // Reset all animations
+      todayCardFade.setValue(0);
+      messagesFade.setValue(0);
+      navigationFade.setValue(0);
+      scheduleFade.setValue(0);
+
+      // Stagger the animations
+      Animated.stagger(100, [
+        Animated.timing(todayCardFade, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(messagesFade, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(navigationFade, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scheduleFade, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [loading]);
 
   // Fetch child name
   useEffect(() => {
@@ -445,42 +487,46 @@ export default function MainScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Invite Partner Message */}
-        {hasPlaceholderMember && inviteCode && weekOffset === 0 && (
-          <View style={tw`mb-3 p-4 bg-info/10 rounded-lg border border-info/30`}>
-            <Text style={tw`text-sm text-slate-200 mb-2`}>
-              💡 Din partner har ikke blitt med enda
-            </Text>
-            <Text style={tw`text-xs text-slate-400 mb-2`}>
-              Del denne invitasjonskoden så de kan bli med:
-            </Text>
-            <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
-              <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
-                {inviteCode}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* Today/Tomorrow Card */}
         {todayOrTomorrow && weekOffset === 0 && (
-          <TodayCard
-            date={todayOrTomorrow.format('YYYY-MM-DD')}
-            dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
-            pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
-            dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
-            pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
-            members={members}
-          />
+          <Animated.View style={{ opacity: todayCardFade }}>
+            <TodayCard
+              date={todayOrTomorrow.format('YYYY-MM-DD')}
+              dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
+              pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
+              dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
+              pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
+              members={members}
+            />
+          </Animated.View>
         )}
+
+        {/* Messages Section - Invite, Template, Empty State */}
+        <Animated.View style={{ opacity: messagesFade }}>
+          {/* Invite Partner Message */}
+          {hasPlaceholderMember && inviteCode && weekOffset === 0 && (
+            <View style={tw`mb-3 p-4 bg-info/10 rounded-lg border border-info/30`}>
+              <Text style={tw`text-sm text-slate-200 mb-2`}>
+                💡 Din partner har ikke blitt med enda
+              </Text>
+              <Text style={tw`text-xs text-slate-400 mb-2`}>
+                Del denne invitasjonskoden så de kan bli med:
+              </Text>
+              <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
+                <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
+                  {inviteCode}
+                </Text>
+              </View>
+            </View>
+          )}
 
         {/* Template Loading Animation */}
         {applyingTemplate && (
           <View style={tw`mb-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}>
             <View style={tw`flex-row items-center justify-center gap-2`}>
               <ActivityIndicator size="small" color="#7fa884" />
-              <Text style={tw`text-sm text-slate-300`}>
-                Fyller inn standarduke...
+              <Text style={tw`text-sm text-text-muted`}>
+                Setter opp flyt...
               </Text>
             </View>
           </View>
@@ -488,15 +534,33 @@ export default function MainScreen({ navigation }: any) {
 
         {/* Template Auto-Applied Message */}
         {templateWasSuccessful && !applyingTemplate && (
-          <View style={tw`mb-3 p-3 bg-emerald-500/20 rounded-lg border border-emerald-400/50`}>
-            <Text style={tw`text-sm text-emerald-200 text-center`}>
-              ✓ Standarduke er fylt inn
+          <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
+            <Text style={tw`text-sm text-primary-light text-center`}>
+              Nå har du flyt! 🌟
             </Text>
           </View>
         )}
 
+          {/* Empty State Message - show when current week and all slots empty */}
+          {weekOffset === 0 && !applyingTemplate && !templateWasSuccessful &&
+           daysToShow.every(day => {
+             const dateStr = day.format('YYYY-MM-DD');
+             return !assignments[`${dateStr}-dropoff`] && !assignments[`${dateStr}-pickup`];
+           }) && (
+            <View style={tw`mb-3 p-4 bg-secondary/10 rounded-lg border border-secondary/30`}>
+              <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
+                Få flyt i hverdagen 🌊
+              </Text>
+              <Text style={tw`text-sm text-text-light text-center`}>
+                Planlegg uken din for mindre stress og mer familietid
+              </Text>
+            </View>
+          )}
+        </Animated.View>
+
         {/* Week Navigation Header */}
-        <View style={tw`flex-row items-center justify-between mb-3`}>
+        <Animated.View style={{ opacity: navigationFade }}>
+          <View style={tw`flex-row items-center justify-between mb-3`}>
           <TouchableOpacity
             style={tw`p-2 bg-slate-700/50 rounded-lg`}
             onPress={() => setWeekOffset(weekOffset - 1)}
@@ -516,22 +580,24 @@ export default function MainScreen({ navigation }: any) {
           >
             <Text style={tw`text-xl text-white`}>›</Text>
           </TouchableOpacity>
-        </View>
+          </View>
 
-        {/* Go to Current Week Button */}
-        {weekOffset !== 0 && (
-          <TouchableOpacity
-            style={tw`mb-3 py-2 px-3 bg-blue-500/20 rounded-lg border border-blue-400/50`}
-            onPress={() => setWeekOffset(0)}
-          >
-            <Text style={tw`text-center text-sm text-blue-200 font-medium`}>
-              📅 Gå til nåværende uke
-            </Text>
-          </TouchableOpacity>
-        )}
+          {/* Go to Current Week Button */}
+          {weekOffset !== 0 && (
+            <TouchableOpacity
+              style={tw`mb-3 py-2 px-3 bg-secondary/20 rounded-lg border border-secondary/50`}
+              onPress={() => setWeekOffset(0)}
+            >
+              <Text style={tw`text-center text-sm text-secondary-light font-medium`}>
+                📅 Gå til nåværende uke
+              </Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
 
         {/* Schedule List */}
-        <View style={tw`gap-2`}>
+        <Animated.View style={{ opacity: scheduleFade }}>
+          <View style={tw`gap-2`}>
           {/* Header */}
           <View style={tw`flex-row gap-2 mb-2 px-1`}>
             <View style={tw`flex-1 items-center`}>
@@ -590,7 +656,8 @@ export default function MainScreen({ navigation }: any) {
               </View>
             );
           })}
-        </View>
+          </View>
+        </Animated.View>
 
         {/* Debug: Test Onboarding Button */}
         <TouchableOpacity

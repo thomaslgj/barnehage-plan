@@ -444,9 +444,12 @@ export default function OnboardingScreen() {
     return (
       <View style={tw`flex-1 bg-background`}>
         <View style={tw`flex-1 justify-center px-6`}>
-          <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Velkommen!</Text>
-          <Text style={tw`text-base text-slate-300 text-center mb-8`}>
-            Vil du opprette en ny husholdning eller bli med i en eksisterende?
+          <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Velkommen til Flyt!</Text>
+          <Text style={tw`text-base text-text-muted text-center mb-2`}>
+            La oss sette opp husholdningen din
+          </Text>
+          <Text style={tw`text-sm text-text-light text-center mb-8`}>
+            Få flyt i hverdagen med mindre stress
           </Text>
 
           <TouchableOpacity
@@ -867,13 +870,16 @@ export default function OnboardingScreen() {
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
             <View style={tw`items-center`}>
               <Text style={tw`text-4xl mb-4`}>🎉</Text>
-              <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Husholdning opprettet!</Text>
-              <Text style={tw`text-base text-slate-300 text-center mb-8`}>
+              <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Nå er du klar til å få flyt!</Text>
+              <Text style={tw`text-base text-text-muted text-center mb-2`}>
                 Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så de kan bli med!
               </Text>
+              <Text style={tw`text-sm text-text-light text-center mb-8`}>
+                Mindre stress, mer familietid ✨
+              </Text>
 
-              <View style={tw`bg-emerald-500/20 border-2 border-emerald-400 rounded-2xl p-8 mb-6 w-full max-w-sm`}>
-                <Text style={tw`text-sm text-emerald-300 text-center mb-2 uppercase tracking-wider`}>
+              <View style={tw`bg-primary/20 border-2 border-primary rounded-2xl p-8 mb-6 w-full max-w-sm`}>
+                <Text style={tw`text-sm text-primary-light text-center mb-2 uppercase tracking-wider`}>
                   Invitasjonskode
                 </Text>
                 <Text style={tw`text-4xl font-bold text-white text-center tracking-wider`}>

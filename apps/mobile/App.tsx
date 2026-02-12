@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -8,6 +8,7 @@ import AuthScreen from './src/screens/AuthScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MainScreen from './src/screens/MainScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator } from 'react-native';
 import tw from './src/lib/tw';
 
@@ -29,13 +30,20 @@ const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
   const { user, needsOnboarding, loading } = useHousehold();
+  const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
 
-  if (loading) {
-    return (
-      <View style={tw`flex-1 justify-center items-center bg-background`}>
-        <ActivityIndicator size="large" color="#7fa884" />
-      </View>
-    );
+  // Ensure splash screen shows for at least 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinSplashTimeElapsed(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show splash until both loading is done AND minimum time has elapsed
+  if (loading || !minSplashTimeElapsed) {
+    return <SplashScreen />;
   }
 
   return (
