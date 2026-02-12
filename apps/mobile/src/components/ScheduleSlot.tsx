@@ -59,12 +59,15 @@ export default function ScheduleSlot({
   const personIndex = getPersonIndex();
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
 
+  // Person 2 (yellow background) needs dark text for contrast
+  const useDarkText = personIndex === 1;
+
   // Get gradient colors based on person
   const getGradientColors = (): [string, string] => {
     if (personIndex === 0) {
       return ['#6b8e6f', '#5d8a7f']; // sage green to warm teal
     } else if (personIndex === 1) {
-      return ['#e8956f', '#d4734f']; // warm coral to terracotta
+      return ['#e8c96f', '#d4b560']; // warm golden yellow
     }
     // Safeguard: if we somehow get here with hasAssignment=true, use a fallback color instead of transparent
     return ['#8b7a6a', '#6e5e4f']; // warm brown-gray fallback
@@ -108,15 +111,15 @@ export default function ScheduleSlot({
               style={{ flex: 1, width: 200 }}
             />
           </Animated.View>
-          <ActivityIndicator size="small" color={hasAssignment ? "#f5f1ed" : "#a89985"} />
+          <ActivityIndicator size="small" color={hasAssignment ? (useDarkText ? "#2d2520" : "#f5f1ed") : "#a89985"} />
         </View>
       ) : (
         <>
-          <Text style={tw`${iconSize} ${hasAssignment ? 'text-white/90' : 'text-text-light'}`}>
+          <Text style={tw`${iconSize} ${hasAssignment ? (useDarkText ? 'text-background/90' : 'text-white/90') : 'text-text-light'}`}>
             {icon}
           </Text>
           <Text
-            style={tw`${textSize} font-bold ${hasAssignment ? 'text-text' : 'text-text-light'} mt-0.5`}
+            style={tw`${textSize} font-bold ${hasAssignment ? (useDarkText ? 'text-background' : 'text-text') : 'text-text-light'} mt-0.5`}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
