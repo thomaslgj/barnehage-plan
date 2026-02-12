@@ -28,7 +28,7 @@ interface AssignmentData {
 }
 
 export default function MainScreen({ navigation }: any) {
-  const { user, householdId, childId, members, forceOnboarding } = useHousehold();
+  const { user, householdId, childId, members } = useHousehold();
   const [weekOffset, setWeekOffset] = useState(0);
   const [assignments, setAssignments] = useState<AssignmentData>({});
   const [loading, setLoading] = useState(true);
@@ -547,15 +547,6 @@ export default function MainScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Template Auto-Applied Message */}
-        {templateWasSuccessful && !applyingTemplate && (
-          <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
-            <Text style={[tw`text-sm text-primary-light text-center`, { fontFamily: 'Manrope_400Regular' }]}>
-              Nå har du flyt! 🌟
-            </Text>
-          </View>
-        )}
-
           {/* Empty State Message - show when current week and all slots empty */}
           {weekOffset === 0 && !applyingTemplate && !templateWasSuccessful &&
            daysToShow.every(day => {
@@ -623,6 +614,15 @@ export default function MainScreen({ navigation }: any) {
             </View>
           </View>
 
+          {/* Template Auto-Applied Message */}
+          {templateWasSuccessful && !applyingTemplate && (
+            <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
+              <Text style={[tw`text-sm text-primary-light text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+                Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
+              </Text>
+            </View>
+          )}
+
           {daysToShow.map((day, index) => {
             const dateStr = day.format('YYYY-MM-DD');
             const dropoffKey = `${dateStr}-dropoff`;
@@ -673,16 +673,6 @@ export default function MainScreen({ navigation }: any) {
           })}
           </View>
         </Animated.View>
-
-        {/* Debug: Test Onboarding Button */}
-        <TouchableOpacity
-          style={tw`mt-6 mb-4 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}
-          onPress={forceOnboarding}
-        >
-          <Text style={[tw`text-center text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>
-            Test Onboarding (Debug)
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

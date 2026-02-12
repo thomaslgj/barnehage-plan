@@ -966,11 +966,8 @@ export default function OnboardingScreen() {
                 <SuccessIllustration size={140} />
               </View>
               <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Nå er du klar til å få flyt!</Text>
-              <Text style={[tw`text-base text-text-muted text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={[tw`text-base text-text-muted text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
                 Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så hen kan bli med!
-              </Text>
-              <Text style={[tw`text-sm text-text-light text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
-                Mindre stress, mer familietid ✨
               </Text>
 
               <View style={tw`bg-primary/20 border-2 border-primary rounded-2xl p-8 mb-6 w-full max-w-sm`}>
