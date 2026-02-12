@@ -26,12 +26,12 @@ module.exports = {
           teal: '#5d8a7f', // warm teal
         },
 
-        // Secondary colors (warm coral/peach for person2 - friendly, warm)
+        // Secondary colors (warm golden yellow for person2 - friendly, warm)
         secondary: {
-          DEFAULT: '#e8956f', // warm coral
-          light: '#f0a989', // peachy coral
-          dark: '#d17d58', // deeper coral
-          orange: '#d4734f', // warm terracotta
+          DEFAULT: '#e8c96f', // warm golden yellow
+          light: '#f0d689', // lighter golden
+          dark: '#d4b560', // deeper golden
+          orange: '#c4a564', // warm amber
         },
 
         // Status colors - warmer versions
