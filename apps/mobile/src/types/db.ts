@@ -4,6 +4,7 @@ export interface Household {
   id: string;
   name: string | null;
   created_by: string | null;
+  invite_code: string | null;
   created_at: string;
 }
 
@@ -92,4 +93,5 @@ export interface AcceptHouseholdInviteParams {
 export interface BootstrapHouseholdResult {
   household_id: string;
   child_id: string;
+  invite_code: string;
 }

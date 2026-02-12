@@ -25,7 +25,7 @@ interface AssignmentData {
   [key: string]: string | null; // key: "YYYY-MM-DD-dropoff" or "YYYY-MM-DD-pickup", value: user_id
 }
 
-export default function MainScreen() {
+export default function MainScreen({ navigation }: any) {
   const { user, householdId, childId, members, forceOnboarding } = useHousehold();
   const [weekOffset, setWeekOffset] = useState(0);
   const [assignments, setAssignments] = useState<AssignmentData>({});
@@ -34,6 +34,8 @@ export default function MainScreen() {
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [templateAutoApplied, setTemplateAutoApplied] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [childName, setChildName] = useState<string>('');
+  const [myName, setMyName] = useState<string>('');
 
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
@@ -114,6 +116,38 @@ export default function MainScreen() {
     }
   }, [fetchAssignments, childId, householdId]);
 
+  // Fetch child name
+  useEffect(() => {
+    if (!childId) return;
+
+    const fetchChildName = async () => {
+      console.log('Fetching child name for childId:', childId);
+      const { data, error } = await supabase
+        .from('children')
+        .select('name')
+        .eq('id', childId)
+        .single();
+
+      console.log('Child data fetched:', data, 'error:', error);
+
+      if (data) {
+        setChildName(data.name);
+      }
+    };
+
+    fetchChildName();
+  }, [childId]);
+
+  // Get current user's display name
+  useEffect(() => {
+    if (!user || members.length === 0) return;
+
+    const currentUserMember = members.find(m => m.user_id === user.id);
+    if (currentUserMember) {
+      setMyName(currentUserMember.display_name);
+    }
+  }, [user, members]);
+
   // Reset template message when week changes
   useEffect(() => {
     setTemplateAutoApplied(false);
@@ -134,12 +168,16 @@ export default function MainScreen() {
     // Only auto-apply if we have days to show and all are empty
     if (allSlotsEmpty && daysToShow.length > 0) {
       setApplyingTemplate(true);
-      applyTemplateToWeek().then(() => {
-        setApplyingTemplate(false);
-        setTemplateAutoApplied(true);
-      }).catch(() => {
-        setApplyingTemplate(false);
-      });
+      applyTemplateToWeek()
+        .then(() => {
+          setTemplateAutoApplied(true);
+        })
+        .catch((error) => {
+          console.error('Error applying template:', error);
+        })
+        .finally(() => {
+          setApplyingTemplate(false);
+        });
     }
   }, [assignments, daysToShow.length, loading, applyingTemplate]);
 
@@ -164,8 +202,8 @@ export default function MainScreen() {
       }
 
       if (!templates || templates.length === 0) {
-        console.log('No template found');
-        return;
+        console.log('No template found - skipping auto-apply');
+        return; // This is OK, just means no template to apply
       }
 
       console.log('Found templates:', templates);
@@ -340,6 +378,28 @@ export default function MainScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10b981']} />
         }
       >
+        {/* Profile Header */}
+        {childName && myName && (
+          <View style={tw`flex-row items-center justify-between mb-6`}>
+            {/* Child info (non-clickable) */}
+            <View style={tw`flex-row items-center gap-2 bg-slate-800/30 rounded-full py-2 px-4`}>
+              <Text style={tw`text-xl`}>👶</Text>
+              <Text style={tw`text-base text-slate-300 font-medium`}>{childName}</Text>
+            </View>
+
+            {/* User info (clickable) */}
+            <TouchableOpacity
+              style={tw`flex-row items-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.7}
+            >
+              <Text style={tw`text-xl`}>👤</Text>
+              <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
+              <Text style={tw`text-slate-400 text-lg`}>›</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Today/Tomorrow Card */}
         {todayOrTomorrow && weekOffset === 0 && (
           <TodayCard

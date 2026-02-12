@@ -24,15 +24,20 @@ interface EquipmentItemDraft {
 export default function OnboardingScreen() {
   const { refresh } = useHousehold();
   const [mode, setMode] = useState<'choice' | 'create' | 'join'>('choice');
-  const [step, setStep] = useState(1); // Step 1-4
+  const [step, setStep] = useState(1); // Step 1-5 (+ success screen)
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Household name
-  const [householdName, setHouseholdName] = useState('');
-
-  // Step 2: Parent names
+  // Step 1: My name
   const [myName, setMyName] = useState('');
+
+  // Step 2: Partner name
   const [partnerName, setPartnerName] = useState('');
+
+  // Step 3: Child name
+  const [childName, setChildName] = useState('');
+
+  // Generated invite code (shown after creation)
+  const [generatedInviteCode, setGeneratedInviteCode] = useState<string | null>(null);
 
   // Android rename modal state
   const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -183,6 +188,7 @@ export default function OnboardingScreen() {
 
       let household_id: string;
       let child_id: string;
+      let isNewHousehold = false;
 
       if (existingMemberships && existingMemberships.length > 0) {
         // User already has a household - use existing
@@ -199,19 +205,38 @@ export default function OnboardingScreen() {
           throw new Error('No child found for existing household');
         }
         child_id = children[0].id;
+
+        // Update child name if provided
+        if (childName.trim()) {
+          await supabase
+            .from('children')
+            .update({ name: childName.trim() })
+            .eq('id', child_id);
+        }
       } else {
         // Create new household
+        isNewHousehold = true;
+
+        const childNameValue = childName.trim() || 'Barn';
+        console.log('Creating household with child name:', childNameValue);
+
         const { data: householdData, error: householdError } = await supabase.rpc('bootstrap_household', {
-          p_name: householdName.trim() || null,
+          p_name: `${myName.trim()}${partnerName.trim() ? ' & ' + partnerName.trim() : ''}`,
           p_my_display_name: myName.trim(),
           p_partner_display_name: partnerName.trim() || null,
+          p_child_name: childNameValue,
         });
+
+        console.log('Household created, result:', householdData);
 
         if (householdError) throw householdError;
 
-        const result = householdData as { household_id: string; child_id: string };
+        const result = householdData as { household_id: string; child_id: string; invite_code: string };
         household_id = result.household_id;
         child_id = result.child_id;
+
+        // Save invite code to show later
+        setGeneratedInviteCode(result.invite_code);
       }
 
       // Get household members to map names to member_ids
@@ -291,8 +316,14 @@ export default function OnboardingScreen() {
         }
       }
 
-      Alert.alert('Suksess', existingMemberships && existingMemberships.length > 0 ? 'Innstillinger oppdatert!' : 'Husholdning opprettet!');
-      await refresh();
+      // If new household was created, show success screen with invite code
+      if (isNewHousehold) {
+        setStep(6); // Go to success screen
+      } else {
+        // Re-onboarding (testing), just refresh
+        Alert.alert('Suksess', 'Innstillinger oppdatert!');
+        await refresh();
+      }
     } catch (error) {
       console.error('Create household error:', error);
       Alert.alert('Feil', error instanceof Error ? error.message : 'Kunne ikke opprette husholdning');
@@ -378,14 +409,18 @@ export default function OnboardingScreen() {
 
           <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Invitasjonskode *</Text>
           <TextInput
-            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
-            placeholder="Skriv inn kode"
+            style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-2 text-white text-center text-xl tracking-wider`}
+            placeholder="ord-ord"
             placeholderTextColor="#94a3b8"
             value={inviteCode}
             onChangeText={setInviteCode}
-            autoCapitalize="characters"
+            autoCapitalize="none"
+            autoCorrect={false}
             editable={!loading}
           />
+          <Text style={tw`text-xs text-slate-400 text-center mb-4`}>
+            F.eks. "eple-hund" eller "sol-katt"
+          </Text>
 
           <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Ditt navn (valgfritt)</Text>
           <TextInput
@@ -433,38 +468,39 @@ export default function OnboardingScreen() {
       >
         {/* Progress indicator */}
         <View style={tw`flex-row justify-center mb-8 gap-2`}>
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <View
               key={s}
               style={tw.style(
-                'w-12 h-1.5 rounded-full',
+                'w-10 h-1.5 rounded-full',
                 s <= step ? 'bg-primary' : 'bg-slate-700'
               )}
             />
           ))}
         </View>
 
-        {/* Step 1: Household name */}
+        {/* Step 1: My name */}
         {step === 1 && (
           <View style={tw`flex-1 justify-center`}>
-            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter husholdningen?</Text>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter du?</Text>
             <Text style={tw`text-base text-slate-300 text-center mb-8`}>
-              Dette er valgfritt, du kan også la det stå tomt
+              Dette navnet brukes i planleggingen
             </Text>
 
             <TextInput
               style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
-              placeholder="F.eks. Familie Hansen"
+              placeholder="Ditt navn"
               placeholderTextColor="#94a3b8"
-              value={householdName}
-              onChangeText={setHouseholdName}
+              value={myName}
+              onChangeText={setMyName}
               editable={!loading}
               autoFocus
             />
 
             <TouchableOpacity
-              style={tw`bg-primary rounded py-3.5 items-center`}
-              onPress={() => setStep(2)}
+              style={tw.style('bg-primary rounded py-3.5 items-center', !myName.trim() && 'opacity-50')}
+              onPress={() => myName.trim() && setStep(2)}
+              disabled={!myName.trim()}
             >
               <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
@@ -478,39 +514,27 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        {/* Step 2: Parent names */}
+        {/* Step 2: Partner name */}
         {step === 2 && (
           <View style={tw`flex-1 justify-center`}>
-            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hvem er foreldrene?</Text>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter samboer/partner?</Text>
             <Text style={tw`text-base text-slate-300 text-center mb-8`}>
-              Disse navnene brukes i planleggingen
+              Dette er valgfritt. Du kan også invitere dem senere.
             </Text>
 
-            <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Ditt navn *</Text>
-            <TextInput
-              style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
-              placeholder="Ditt navn"
-              placeholderTextColor="#94a3b8"
-              value={myName}
-              onChangeText={setMyName}
-              editable={!loading}
-              autoFocus
-            />
-
-            <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Partner (valgfritt)</Text>
             <TextInput
               style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
-              placeholder="Partnerens navn"
+              placeholder="Partner navn (valgfritt)"
               placeholderTextColor="#94a3b8"
               value={partnerName}
               onChangeText={setPartnerName}
               editable={!loading}
+              autoFocus
             />
 
             <TouchableOpacity
-              style={tw.style('bg-primary rounded py-3.5 items-center', !myName.trim() && 'opacity-50')}
-              onPress={() => myName.trim() && setStep(3)}
-              disabled={!myName.trim()}
+              style={tw`bg-primary rounded py-3.5 items-center`}
+              onPress={() => setStep(3)}
             >
               <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
@@ -524,8 +548,43 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        {/* Step 3: Equipment customization */}
+        {/* Step 3: Child name */}
         {step === 3 && (
+          <View style={tw`flex-1 justify-center`}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter barnet?</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-8`}>
+              Dette navnet brukes i appen
+            </Text>
+
+            <TextInput
+              style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
+              placeholder="Barnets navn"
+              placeholderTextColor="#94a3b8"
+              value={childName}
+              onChangeText={setChildName}
+              editable={!loading}
+              autoFocus
+            />
+
+            <TouchableOpacity
+              style={tw.style('bg-primary rounded py-3.5 items-center', !childName.trim() && 'opacity-50')}
+              onPress={() => childName.trim() && setStep(4)}
+              disabled={!childName.trim()}
+            >
+              <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={tw`mt-4 py-3`}
+              onPress={() => setStep(2)}
+            >
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Step 4: Equipment customization */}
+        {step === 4 && (
           <View style={tw`flex-1`}>
             <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Utstyr til barnehagen</Text>
             <Text style={tw`text-base text-slate-300 text-center mb-6`}>
@@ -576,22 +635,22 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity
               style={tw`bg-primary rounded py-3.5 items-center mb-2`}
-              onPress={() => setStep(4)}
+              onPress={() => setStep(5)}
             >
               <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={tw`mt-2 py-3`}
-              onPress={() => setStep(2)}
+              onPress={() => setStep(3)}
             >
               <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Step 4: Schedule template (optional) */}
-        {step === 4 && !setupTemplate && (
+        {/* Step 5: Schedule template (optional) */}
+        {step === 5 && !setupTemplate && (
           <View style={tw`flex-1`}>
             <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Standard uke?</Text>
             <Text style={tw`text-base text-slate-300 text-center mb-6`}>
@@ -619,15 +678,15 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity
               style={tw`mt-2 py-3`}
-              onPress={() => setStep(3)}
+              onPress={() => setStep(4)}
             >
               <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Step 4b: Setup template */}
-        {step === 4 && setupTemplate && (
+        {/* Step 5b: Setup template */}
+        {step === 5 && setupTemplate && (
           <View style={tw`flex-1`}>
             <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Standard uke</Text>
             <Text style={tw`text-base text-slate-300 text-center mb-4`}>
@@ -707,6 +766,47 @@ export default function OnboardingScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Step 6: Success screen with invite code */}
+      {step === 6 && generatedInviteCode && (
+        <View style={tw`absolute inset-0 bg-background z-50`}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
+            <View style={tw`items-center`}>
+              <Text style={tw`text-4xl mb-4`}>🎉</Text>
+              <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Husholdning opprettet!</Text>
+              <Text style={tw`text-base text-slate-300 text-center mb-8`}>
+                Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så de kan bli med!
+              </Text>
+
+              <View style={tw`bg-emerald-500/20 border-2 border-emerald-400 rounded-2xl p-8 mb-6 w-full max-w-sm`}>
+                <Text style={tw`text-sm text-emerald-300 text-center mb-2 uppercase tracking-wider`}>
+                  Invitasjonskode
+                </Text>
+                <Text style={tw`text-4xl font-bold text-white text-center tracking-wider`}>
+                  {generatedInviteCode}
+                </Text>
+              </View>
+
+              <View style={tw`bg-slate-800/50 rounded-lg p-4 mb-8 w-full max-w-sm`}>
+                <Text style={tw`text-sm text-slate-300 text-center leading-relaxed`}>
+                  💡 {partnerName.trim() || 'Partner'} kan bruke denne koden når de laster ned appen og velger "Bli med i husholdning"
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={tw`bg-primary rounded-lg py-4 px-8 w-full max-w-sm`}
+                onPress={async () => {
+                  await refresh();
+                }}
+              >
+                <Text style={tw`text-white text-lg font-semibold text-center`}>
+                  Kom i gang!
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
       {/* Android Rename Modal */}
       <Modal

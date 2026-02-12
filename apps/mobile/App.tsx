@@ -7,6 +7,7 @@ import { HouseholdProvider, useHousehold } from './src/contexts/HouseholdProvide
 import AuthScreen from './src/screens/AuthScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MainScreen from './src/screens/MainScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import { View, ActivityIndicator } from 'react-native';
 import tw from './src/lib/tw';
 
@@ -30,13 +31,22 @@ function AppNavigator() {
       ) : needsOnboarding ? (
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       ) : (
-        <Stack.Screen
-          name="Main"
-          component={MainScreen}
-          options={{
-            headerShown: false,
-          }}
-        />
+        <>
+          <Stack.Screen
+            name="Main"
+            component={MainScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );
