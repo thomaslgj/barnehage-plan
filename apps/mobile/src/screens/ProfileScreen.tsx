@@ -5,8 +5,12 @@ import tw from '../lib/tw';
 
 export default function ProfileScreen({ navigation }: any) {
   return (
-    <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
-      <ScrollView style={tw`flex-1`} contentContainerStyle={{ padding: 16 }}>
+    <View style={tw`flex-1 bg-background`}>
+      <SafeAreaView style={tw`flex-1`} edges={['top']}>
+        <ScrollView
+          style={tw`flex-1`}
+          contentContainerStyle={tw`p-4`}
+        >
         {/* Back button */}
         <TouchableOpacity
           style={tw`flex-row items-center gap-2 mb-6`}
@@ -28,6 +32,7 @@ export default function ProfileScreen({ navigation }: any) {
           Her kommer profil og innstillinger
         </Text>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
