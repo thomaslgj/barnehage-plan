@@ -114,11 +114,6 @@ export default function MainScreen() {
     }
   }, [fetchAssignments, childId, householdId]);
 
-  // Debug: Log assignments state whenever it changes
-  useEffect(() => {
-    console.log('[MainScreen] assignments state changed:', JSON.stringify(assignments, null, 2));
-  }, [assignments]);
-
   // Reset template message when week changes
   useEffect(() => {
     setTemplateAutoApplied(false);
@@ -138,13 +133,11 @@ export default function MainScreen() {
 
     // Only auto-apply if we have days to show and all are empty
     if (allSlotsEmpty && daysToShow.length > 0) {
-      console.log('[MainScreen] All slots empty, auto-applying template');
       setApplyingTemplate(true);
       applyTemplateToWeek().then(() => {
         setApplyingTemplate(false);
         setTemplateAutoApplied(true);
-      }).catch((error) => {
-        console.error('[MainScreen] Failed to apply template:', error);
+      }).catch(() => {
         setApplyingTemplate(false);
       });
     }
@@ -255,11 +248,6 @@ export default function MainScreen() {
   };
 
   const handleSlotPress = async (date: string, slot: 'dropoff' | 'pickup') => {
-    console.log('=== SLOT PRESS ===');
-    console.log('Date:', date, 'Slot:', slot);
-    console.log('childId:', childId, 'householdId:', householdId, 'user:', !!user);
-    console.log('savingSlot:', savingSlot);
-
     // Clear template auto-applied message when user makes manual changes
     if (templateAutoApplied) {
       setTemplateAutoApplied(false);
@@ -269,10 +257,6 @@ export default function MainScreen() {
 
     const key = `${date}-${slot}`;
     const currentUserId = assignments[key] || null;
-
-    console.log('Key:', key);
-    console.log('Current userId:', currentUserId);
-    console.log('All assignments:', assignments);
 
     // Build cycle order: null -> person1 -> person2 -> null
     // Always use member_id to match what we store in the database
@@ -330,14 +314,12 @@ export default function MainScreen() {
 
   const getDisplayName = (memberId: string | null): string | undefined => {
     if (!memberId) {
-      console.log('[getDisplayName] memberId is null/undefined, returning undefined');
       return undefined;
     }
 
     // Find member by id (works for both real users and placeholders)
     // Also check user_id for backwards compatibility
     const member = members.find((m) => m.id === memberId || m.user_id === memberId);
-    console.log('[getDisplayName] memberId:', memberId, '→ displayName:', member?.display_name);
     return member?.display_name;
   };
 

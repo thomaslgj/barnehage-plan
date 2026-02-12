@@ -50,17 +50,14 @@ export default function ScheduleSlot({
   // Determine which person this is
   const getPersonIndex = () => {
     if (!userId || members.length === 0) {
-      console.log(`[ScheduleSlot ${slotType}] userId is null/empty or no members, personIndex=null`);
       return null;
     }
     const index = members.findIndex(m => m.user_id === userId || m.id === userId);
-    console.log(`[ScheduleSlot ${slotType}] userId=${userId}, personIndex=${index}, members.length=${members.length}`);
     return index;
   };
 
   const personIndex = getPersonIndex();
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
-  console.log(`[ScheduleSlot ${slotType}] displayName=${displayName}, personIndex=${personIndex}, hasAssignment=${hasAssignment}`);
 
   // Get gradient colors based on person
   const getGradientColors = (): [string, string] => {
@@ -70,7 +67,6 @@ export default function ScheduleSlot({
       return ['#f59e0b', '#ea580c']; // amber-500 to orange-600
     }
     // Safeguard: if we somehow get here with hasAssignment=true, use a fallback color instead of transparent
-    console.warn(`[ScheduleSlot ${slotType}] Invalid personIndex=${personIndex} with hasAssignment=${hasAssignment}`);
     return ['#64748b', '#475569']; // slate-500 to slate-600 as fallback
   };
 
