@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import 'dayjs/locale/nb';
@@ -383,7 +384,7 @@ export default function MainScreen({ navigation }: any) {
           <View style={tw`flex-row items-center justify-between mb-6`}>
             {/* Child info (non-clickable) */}
             <View style={tw`flex-row items-center gap-2 bg-slate-800/30 rounded-full py-2 px-4`}>
-              <Text style={tw`text-xl`}>👶</Text>
+              <MaterialCommunityIcons name="baby-face-outline" size={22} color="#94a3b8" />
               <Text style={tw`text-base text-slate-300 font-medium`}>{childName}</Text>
             </View>
 
@@ -393,7 +394,7 @@ export default function MainScreen({ navigation }: any) {
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.7}
             >
-              <Text style={tw`text-xl`}>👤</Text>
+              <Ionicons name="person-circle-outline" size={22} color="#fff" />
               <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
               <Text style={tw`text-slate-400 text-lg`}>›</Text>
             </TouchableOpacity>
