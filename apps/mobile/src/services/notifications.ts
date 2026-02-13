@@ -2,6 +2,20 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 
+/**
+ * Notification Service for Equipment Reminders
+ *
+ * NOTE: When running in Expo Go, you'll see console warnings:
+ * - "ERROR expo-notifications: Android Push notifications... was removed from Expo Go"
+ * - "WARN `expo-notifications` functionality is not fully supported in Expo Go"
+ *
+ * These warnings can be SAFELY IGNORED. They refer to remote push notifications (from server),
+ * which are not supported in Expo Go. However, LOCAL SCHEDULED NOTIFICATIONS (which this
+ * service uses) work perfectly fine in Expo Go.
+ *
+ * For more details, see: docs/NOTIFICATIONS.md
+ */
+
 // Configure how notifications are displayed
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

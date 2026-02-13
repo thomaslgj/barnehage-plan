@@ -212,6 +212,39 @@ console.error('Error scheduling notification:', error);
 - **Årsak**: Notification ikke re-scheduled etter første firing
 - **Løsning**: Auto-reschedule er nå implementert ved equipment endringer
 
+### Console Warnings i Expo Go (kan ignoreres)
+
+Når du kjører appen i Expo Go, vil du se følgende advarsler i console:
+
+```
+ERROR expo-notifications: Android Push notifications (remote notifications)
+functionality provided by expo-notifications was removed from Expo Go with
+the release of SDK 53. Use a development build instead of Expo Go.
+
+WARN `expo-notifications` functionality is not fully supported in Expo Go
+```
+
+**Hvorfor dette skjer:**
+- Disse warningene kommer fra `expo-notifications` biblioteket selv ved initialisering
+- De printes før koden vår kjører, så vi kan ikke forhindre dem
+
+**Er det et problem?**
+- ❌ **NEI** - Disse kan trygt ignoreres
+- ✅ **Local scheduled notifications** (som vi bruker) fungerer perfekt i Expo Go
+- ❌ Kun **remote push notifications** (fra server) fungerer ikke i Expo Go
+
+**Hvis du vil fjerne warningene:**
+- Bruk en development build i stedet for Expo Go:
+  ```bash
+  npx expo run:android
+  ```
+- Men dette er **ikke nødvendig** - notifications fungerer perfekt med Expo Go for vårt bruk
+
+**Konklusjon:**
+- Notifications fungerer som forventet i Expo Go
+- Warningene er kun informative og kan ignoreres
+- Ingen action nødvendig
+
 ## Fremtidige Forbedringer
 
 ### Potensielle Features

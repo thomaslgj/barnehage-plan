@@ -364,6 +364,16 @@ info: '#c17b5c'          // Terracotta
 - Verifiser database migrations
 - Se [NOTIFICATIONS.md](./NOTIFICATIONS.md) for detaljer
 
+**Console warnings i Expo Go**
+```
+ERROR expo-notifications: Android Push notifications...
+WARN `expo-notifications` functionality is not fully supported...
+```
+- Disse warningene kommer fra expo-notifications ved oppstart
+- Kan **trygt ignoreres** - local scheduled notifications fungerer perfekt
+- Kun remote push (fra server) fungerer ikke i Expo Go
+- Se [NOTIFICATIONS.md](./NOTIFICATIONS.md#console-warnings-i-expo-go-kan-ignoreres) for mer info
+
 ## Bidrag
 
 ### Før du committer

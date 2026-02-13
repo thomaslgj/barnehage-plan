@@ -47,6 +47,9 @@ function AppNavigator() {
   const notificationInitializedRef = useRef(false);
 
   // Initialize notifications when user is logged in
+  // NOTE: When running in Expo Go, you'll see warnings about remote push notifications
+  // not being supported. These can be safely ignored - local scheduled notifications
+  // (which we use) work perfectly fine in Expo Go.
   useEffect(() => {
     if (user && householdId && members.length > 0 && !needsOnboarding) {
       // Prevent double initialization
