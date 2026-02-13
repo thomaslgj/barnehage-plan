@@ -1,14 +1,28 @@
 # Barnehage Plan - Mobile App (React Native/Expo)
 
-A mobile companion app for the Barnehage Plan web application. Built with Expo and React Native, it replicates core functionality including authentication, onboarding, and schedule management.
+A mobile companion app for the Barnehage Plan web application. Built with Expo and React Native, it replicates core functionality including authentication, onboarding, schedule management, equipment tracking, and notifications.
+
+## 📚 Documentation
+
+**For comprehensive documentation, see the [docs/](./docs/) folder:**
+
+- **[README.md](./docs/README.md)** - Full app overview and feature documentation
+- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System architecture and data flow
+- **[SCHEDULE.md](./docs/SCHEDULE.md)** - Schedule system documentation
+- **[EQUIPMENT.md](./docs/EQUIPMENT.md)** - Equipment tracking documentation
+- **[NOTIFICATIONS.md](./docs/NOTIFICATIONS.md)** - Notification system documentation
+- **[ONBOARDING.md](./docs/ONBOARDING.md)** - Onboarding flow documentation
 
 ## Features
 
 - **Authentication**: Email/password sign-in with Supabase
 - **Onboarding**: Create new household or join existing via invite code
-- **Schedule Management**: View and edit weekly drop-off/pickup assignments
+- **Schedule Management**: View and edit weekly drop-off/pickup assignments with templates
+- **Equipment Tracking**: Track critical equipment with status (OK/Missing)
+- **Notifications**: Daily reminders for missing critical equipment
+- **Profile Management**: Personal info, settings, equipment management
 - **Today Card**: Quick view of today's or tomorrow's schedule
-- **Secure Session Storage**: Uses SecureStore (iOS/Android) and AsyncStorage (web) for token persistence
+- **Secure Session Storage**: Uses SecureStore (iOS/Android) and AsyncStorage (web)
 
 ## Prerequisites
 
@@ -172,28 +186,28 @@ The `HouseholdProvider` manages:
 - **Upsert**: `UPSERT INTO schedule_assignments (...) ON CONFLICT (child_id, date, slot)`
 - **Delete**: `DELETE FROM schedule_assignments WHERE child_id = ? AND date = ? AND slot = ?`
 
-## Differences from Web App
+## Feature Parity with Web App
 
-### ✅ Equipment Features (Now Implemented!)
-- **Equipment status badge** on TodayCard showing overall status (ready/missing/not_ready)
-- **Bottom sheet** for quick status toggling (tap badge to open)
-- **Auto-modal at 4 PM** when viewing tomorrow's date
-- **Four default items**: Regntøy, Skiftetøy, Ull, Bleier
-- **Persists in Supabase** via `household_equipment_status` table
-- Works on both native and web platforms
+### ✅ Fully Implemented
+- **Authentication** - Email/password sign-in/sign-up
+- **Onboarding** - Create/join household with full setup flow
+- **Schedule Management** - Weekly view with templates
+- **Equipment Tracking** - Status tracking with critical flags
+- **Notifications** - Daily reminders (local scheduled)
+- **Profile Management** - Personal info, settings, equipment CRUD
+- **Today/Tomorrow Card** - Quick overview with equipment status
+- **Warm Design System** - Consistent colors and typography
 
-### Not Implemented (Out of Scope)
-- Push notifications
-- Multi-child switching UI
-- Invite code generation
-- Settings/preferences screen
-- Profile management
+### Platform-Specific Adaptations
+- **Local Notifications**: Uses expo-notifications (no remote push)
+- **Mobile-First UI**: Optimized for touch interactions
+- **Platform-Specific Components**: DateTimePicker, Alert.prompt (iOS)
+- **Navigation**: Native stack navigator instead of web routing
 
-### Simplified Features
+### Simplified vs Web
 - Week navigation only (no month view)
-- Single household support (no switching)
-- Single child support (no switching)
-- Minimal styling (focus on functionality)
+- Single household support (no switching UI)
+- Single child support (first child auto-selected)
 
 ## Known Issues & Caveats
 
@@ -264,18 +278,23 @@ npx expo start --clear
 
 ## Future Enhancements
 
-Potential improvements (not in current scope):
+Potential improvements (see individual docs for detailed feature roadmaps):
 
-1. **Real-time sync** via Supabase Realtime
-2. **Push notifications** for schedule reminders
-3. **Equipment status** tracking (like web app)
-4. **Offline support** with local database
-5. **Multi-child UI** for households with multiple children
-6. **Dark mode** support
-7. **Invite code generation** within the app
-8. **Calendar integration** (export to native calendar)
-9. **Biometric auth** (Face ID/Touch ID)
-10. **Onboarding improvements** with better UX
+1. **Real-time sync** via Supabase Realtime subscriptions
+2. **Remote push notifications** (currently local only)
+3. **Offline support** with local database and sync
+4. **Multi-child/household UI** for switching between multiple
+5. **Calendar integration** (export to native calendar)
+6. **Biometric auth** (Face ID/Touch ID)
+7. **Drag-to-reorder** for equipment and schedule templates
+8. **Weather integration** for automatic equipment reminders
+9. **History tracking** for schedule and equipment changes
+10. **A/B testing** for onboarding flow optimization
+
+See individual documentation files for detailed feature roadmaps:
+- [SCHEDULE.md](./docs/SCHEDULE.md#fremtidige-forbedringer) - Schedule enhancements
+- [EQUIPMENT.md](./docs/EQUIPMENT.md#fremtidige-forbedringer) - Equipment features
+- [NOTIFICATIONS.md](./docs/NOTIFICATIONS.md#fremtidige-forbedringer) - Notification improvements
 
 ## Support
 
