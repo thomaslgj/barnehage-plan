@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { EquipmentItem, EquipmentStatus } from '../types/db';
+import { rescheduleNotificationIfNeeded } from '../services/notifications';
 
 // Default equipment items
 export const DEFAULT_EQUIPMENT_ITEMS = [
@@ -78,6 +79,22 @@ export async function updateEquipmentStatus(
       );
 
     if (error) throw error;
+
+    // Reschedule notification after status change (especially useful for Android)
+    // Get member ID from user ID
+    const { data: memberData } = await supabase
+      .from('household_members')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('household_id', householdId)
+      .single();
+
+    if (memberData) {
+      // Fire and forget - don't wait for this to complete
+      rescheduleNotificationIfNeeded(householdId, memberData.id).catch(err => {
+        console.error('Failed to reschedule notification:', err);
+      });
+    }
   } catch (error) {
     console.error('Error updating equipment status:', error);
     throw error;

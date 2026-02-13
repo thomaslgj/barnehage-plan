@@ -9,10 +9,18 @@ import AuthScreen from './src/screens/AuthScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MainScreen from './src/screens/MainScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import PersonalInfoScreen from './src/screens/PersonalInfoScreen';
+import NotificationsSettingsScreen from './src/screens/NotificationsSettingsScreen';
+import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator } from 'react-native';
 import tw from './src/lib/tw';
 import { useFonts, Manrope_300Light, Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
+import {
+  setupNotificationChannel,
+  getNotificationSettings,
+  scheduleEquipmentNotification,
+} from './src/services/notifications';
 
 // Custom warm theme to prevent white flash
 const WarmNavigationTheme = {
@@ -31,10 +39,38 @@ const WarmNavigationTheme = {
 const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
-  const { user, needsOnboarding, loading } = useHousehold();
+  const { user, needsOnboarding, loading, householdId, members } = useHousehold();
   const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
   const prevLoadingRef = useRef<boolean | null>(null);
   const splashTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize notifications when user is logged in
+  useEffect(() => {
+    if (user && householdId && members.length > 0 && !needsOnboarding) {
+      const initializeNotifications = async () => {
+        try {
+          // Set up notification channel (Android)
+          await setupNotificationChannel();
+
+          // Get current member
+          const currentMember = members.find(m => m.user_id === user.id);
+          if (!currentMember) return;
+
+          // Get notification settings
+          const settings = await getNotificationSettings(currentMember.id);
+
+          // Schedule notification if enabled
+          if (settings.enabled) {
+            await scheduleEquipmentNotification(householdId, settings.time);
+          }
+        } catch (error) {
+          console.error('Error initializing notifications:', error);
+        }
+      };
+
+      initializeNotifications();
+    }
+  }, [user, householdId, members, needsOnboarding]);
 
   // Start timer when loading begins
   useEffect(() => {
@@ -96,6 +132,30 @@ function AppNavigator() {
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="PersonalInfo"
+            component={PersonalInfoScreen}
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="NotificationsSettings"
+            component={NotificationsSettingsScreen}
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="EquipmentManagement"
+            component={EquipmentManagementScreen}
             options={{
               headerShown: false,
               animation: 'slide_from_right',
