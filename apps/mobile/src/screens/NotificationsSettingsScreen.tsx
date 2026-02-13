@@ -61,9 +61,13 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
 
       if (!hasPermission) {
         console.log('❌ Permission denied by user');
+        const settingsText = Platform.OS === 'ios'
+          ? 'Gå til iOS Innstillinger → Expo Go → Varsler og aktiver tillatelser.'
+          : 'Gå til Android Innstillinger → Apps → Expo Go → Notifications og aktiver tillatelser.';
+
         Alert.alert(
           'Tillatelse nødvendig',
-          'Du må gi tillatelse til varslinger for å aktivere denne funksjonen.\n\nGå til Android Settings → Apps → Expo Go → Notifications og aktiver tillatelser.'
+          `Du må gi tillatelse til varslinger for å aktivere denne funksjonen.\n\n${settingsText}`
         );
         return;
       }

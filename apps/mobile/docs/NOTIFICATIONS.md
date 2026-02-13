@@ -88,8 +88,11 @@ src/
 #### iOS
 - **Trigger Type**: `CALENDAR`
 - **Repeats**: `true` (native support for daglige repetisjoner)
-- **Fordeler**: Automatisk repetisjon på system-nivå
-- **Ulemper**: Ingen (full støtte)
+- **Fordeler**: Automatisk repetisjon på system-nivå, ingen manuell re-scheduling nødvendig
+- **Ulemper**:
+  - Notifikasjons-melding settes ved scheduling og oppdateres ikke automatisk
+  - Løsning: Re-scheduler når equipment status endres (samme som Android)
+- **Testing**: Må testes på ekte iOS-enhet, simulator har begrensninger
 
 #### Android
 - **Trigger Type**: `TIME_INTERVAL`
@@ -173,7 +176,8 @@ Neste dag 07:30 → 🔔 Notifikasjon: (oppdatert status)
 **Test notifikasjoner fungerer:**
 1. Aktiver notifikasjoner i appen
 2. Sett tidspunkt til 1 minutt frem i tid
-3. Vent og sjekk at notifikasjon kommer
+3. **Lukk eller minimér appen** (kritisk!)
+4. Vent og sjekk at notifikasjon kommer
 
 **Test auto-rescheduling:**
 1. Aktiver notifikasjoner
@@ -182,8 +186,20 @@ Neste dag 07:30 → 🔔 Notifikasjon: (oppdatert status)
 4. Verifiser at ny notifikasjon er planlagt
 
 **Test plattform-spesifikk oppførsel:**
-- iOS: Notifikasjon skal repetere daglig automatisk
-- Android: Sjekk at re-scheduling skjer ved status endringer
+- **iOS**:
+  - Notifikasjon skal repetere daglig automatisk
+  - Test på ekte iOS-enhet (ikke simulator)
+  - Verifiser at notifikasjons-melding oppdateres når equipment status endres
+  - Sjekk at lyd og vibrasjon fungerer
+- **Android**:
+  - Sjekk at re-scheduling skjer ved status endringer
+  - Verifiser at notifikasjon kommer til riktig tid
+
+**iOS-spesifikk testing:**
+- Test på ulike iOS-enheter (iPhone 12+, iPhone SE, iPad)
+- Verifiser Safe Area på enheter med notch/Dynamic Island
+- Test haptic feedback på ekte enhet
+- Sjekk at DateTimePicker viser korrekt på iOS
 
 ### Debug Logging
 

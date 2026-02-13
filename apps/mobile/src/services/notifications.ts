@@ -193,7 +193,10 @@ export async function scheduleEquipmentNotification(
       };
       console.log('Using TIME_INTERVAL trigger (Android)');
     } else {
-      // iOS: use calendar trigger
+      // iOS: use calendar trigger with automatic daily repeats
+      // NOTE: Calendar trigger repeats automatically every day at the specified time
+      // The notification message is set at scheduling time and won't update automatically.
+      // To update the message, we reschedule when equipment status changes (see rescheduleNotificationIfNeeded)
       trigger = {
         type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
         hour: hours,
@@ -411,7 +414,9 @@ export async function rescheduleNotificationIfNeeded(
     const hasMissing = await hasMissingCriticalEquipment(householdId);
 
     // For Android: always reschedule to ensure it fires at the correct time tomorrow
-    // For iOS: calendar trigger handles this automatically, but we reschedule anyway to update the message
+    // (TIME_INTERVAL trigger doesn't repeat automatically)
+    // For iOS: reschedule to update the notification message with current equipment status
+    // (CALENDAR trigger repeats automatically, but message is fixed at scheduling time)
     if (Platform.OS === 'android' || hasMissing) {
       await scheduleEquipmentNotification(householdId, settings.time);
       console.log('Notification rescheduled after equipment status change');

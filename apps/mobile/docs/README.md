@@ -347,6 +347,40 @@ info: '#c17b5c'          // Terracotta
 - **Easing**: Spring for user interactions, Linear for loaders
 - **Native Driver**: Bruk når mulig (transform, opacity)
 
+## iOS Kompatibilitet
+
+Appen er testet og optimalisert for både iOS og Android.
+
+### iOS-spesifikke funksjoner
+
+**Notifications:**
+- Bruker CALENDAR trigger med automatisk daglig repetisjon
+- Krever testing på ekte iOS-enhet (simulator har begrensninger)
+- Se [NOTIFICATIONS.md](./NOTIFICATIONS.md) for detaljer
+
+**UI/UX:**
+- DateTimePicker: iOS-stil time picker (spinner)
+- Alert.prompt: iOS-spesifikk API for tekstinput
+- KeyboardAvoidingView: Optimalisert for iOS med `behavior="padding"`
+- Haptic feedback: Krever ekte iOS-enhet for full testing
+
+**Sikkerhet:**
+- Bruker iOS Keychain for sikker lagring av tokens (expo-secure-store)
+- Best practice for iOS sikkerhet
+
+### Testing på iOS
+
+**Minimumskrav:**
+- iOS 13.4+ (Expo SDK 54 krav)
+- Ekte iOS-enhet anbefales for:
+  - Notifications testing
+  - Haptic feedback
+  - Safe Area på enheter med notch/Dynamic Island
+
+**Kjente begrensninger:**
+- Expo Go på iOS simulator: Notifications kan ha begrensninger
+- Development build anbefales for full testing
+
 ## Feilsøking
 
 ### Common Issues
