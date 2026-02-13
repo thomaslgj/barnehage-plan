@@ -9,11 +9,11 @@ module.exports = {
       colors: {
         // Warm beige/brown theme for family app
         background: '#2d2520', // warm dark chocolate brown - main background
-        card: '#3d332d80', // warm brown/50 - card backgrounds with opacity
+        card: '#3d332d', // warm brown - card backgrounds (use /50 for opacity)
 
         // Border colors - warm tones
-        border: '#4a3f3880', // warm brown/50
-        'border-light': '#5c4f4680', // lighter warm brown/50
+        border: '#4a3f38', // warm brown (use /50 for opacity)
+        'border-light': '#5c4f46', // lighter warm brown (use /50 for opacity)
 
         // Text colors - warm cream tones
         text: {
@@ -46,8 +46,8 @@ module.exports = {
 
         // Muted backgrounds for empty slots - warm tones
         muted: {
-          DEFAULT: '#4a3f3880', // warm brown/50
-          light: '#5c4f4680', // lighter warm brown/50
+          DEFAULT: '#4a3f38', // warm brown (use /50 for opacity)
+          light: '#5c4f46', // lighter warm brown (use /50 for opacity)
         },
 
         // Warm brown variants for consistent styling

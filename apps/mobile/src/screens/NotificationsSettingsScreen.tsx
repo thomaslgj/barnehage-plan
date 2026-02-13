@@ -11,6 +11,8 @@ import {
   cancelAllEquipmentNotifications,
   requestNotificationPermissions,
   setupNotificationChannel,
+  getScheduledNotifications,
+  scheduleTestNotification,
   type NotificationSettings,
 } from '../services/notifications';
 
@@ -23,6 +25,7 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
     time: '07:30',
   });
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const currentMember = members.find(m => m.user_id === user?.id);
 
@@ -51,15 +54,21 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
 
     // Request permissions if enabling
     if (value) {
+      console.log('\n=== USER ENABLING NOTIFICATIONS ===');
+      console.log('Requesting permissions...');
+
       const hasPermission = await requestNotificationPermissions();
+
       if (!hasPermission) {
+        console.log('❌ Permission denied by user');
         Alert.alert(
           'Tillatelse nødvendig',
-          'Du må gi tillatelse til varslinger i innstillingene for å aktivere denne funksjonen.'
+          'Du må gi tillatelse til varslinger for å aktivere denne funksjonen.\n\nGå til Android Settings → Apps → Expo Go → Notifications og aktiver tillatelser.'
         );
         return;
       }
 
+      console.log('✅ Permission granted, setting up channel...');
       await setupNotificationChannel();
     }
 
@@ -68,17 +77,33 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
 
     setSaving(true);
     try {
+      console.log('Saving settings to database...');
       await saveNotificationSettings(currentMember.id, newSettings);
 
       if (value) {
         // Schedule notification
-        await scheduleEquipmentNotification(householdId, settings.time);
-        Alert.alert('Aktivert', 'Du vil nå motta daglige påminnelser om utstyr');
+        console.log('Scheduling notification...');
+        const notificationId = await scheduleEquipmentNotification(householdId, settings.time);
+
+        if (notificationId) {
+          Alert.alert(
+            'Aktivert ✅',
+            'Du vil nå motta daglige påminnelser om utstyr.\n\nMerk: Lukk appen for å se notifikasjoner.'
+          );
+        } else {
+          Alert.alert(
+            'Aktivert (med advarsel)',
+            'Innstillinger lagret, men notifikasjon kunne ikke schedules. Sjekk console for detaljer.'
+          );
+        }
       } else {
         // Cancel notifications
+        console.log('Cancelling notifications...');
         await cancelAllEquipmentNotifications();
         Alert.alert('Deaktivert', 'Varsler er deaktivert');
       }
+
+      console.log('=== END TOGGLE ===\n');
     } catch (error) {
       console.error('Error updating settings:', error);
       Alert.alert('Feil', 'Kunne ikke oppdatere innstillinger');
@@ -135,6 +160,43 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
     return date;
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      const hasPermission = await requestNotificationPermissions();
+      if (!hasPermission) {
+        Alert.alert('Mangler tillatelse', 'Du må gi tillatelse til varslinger først');
+        return;
+      }
+
+      await scheduleTestNotification();
+      Alert.alert(
+        'Test-varsling schedulert',
+        'Du burde motta en notifikasjon om 10 sekunder. Sjekk console for detaljer.'
+      );
+    } catch (error) {
+      console.error('Error testing notification:', error);
+      Alert.alert('Feil', 'Kunne ikke schedule test-notifikasjon');
+    }
+  };
+
+  const handleCheckScheduled = async () => {
+    try {
+      const scheduled = await getScheduledNotifications();
+      const info = scheduled.length > 0
+        ? `Antall schedulerte: ${scheduled.length}\n\n` +
+          scheduled.map((n, i) =>
+            `#${i + 1}:\nID: ${n.identifier}\nTrigger: ${JSON.stringify(n.trigger, null, 2)}`
+          ).join('\n\n')
+        : 'Ingen varslinger er schedulert';
+
+      setDebugInfo(info);
+      Alert.alert('Schedulerte varslinger', info);
+    } catch (error) {
+      console.error('Error checking scheduled notifications:', error);
+      Alert.alert('Feil', 'Kunne ikke hente schedulerte varslinger');
+    }
   };
 
   if (loading) {
@@ -215,6 +277,51 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
               )}
             </View>
           )}
+
+          {/* Expo Go Warning */}
+          <View style={tw`bg-error/10 rounded-lg p-4 border border-error/30 mb-4`}>
+            <Text style={[tw`text-sm text-slate-200 mb-2 font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
+              ⚠️ Viktig
+            </Text>
+            <Text style={[tw`text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>
+              Expo Go på emulator har begrensninger med notifications. Hvis scheduled notifications ikke fungerer, test på en ekte enhet eller bruk en development build.
+            </Text>
+          </View>
+
+          {/* Debug Section */}
+          <View style={tw`bg-warning/10 rounded-lg p-4 border border-warning/30 mb-4`}>
+            <Text style={[tw`text-sm text-slate-200 mb-3 font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
+              🔧 Debug / Testing
+            </Text>
+
+            <TouchableOpacity
+              style={tw`bg-warning/20 rounded-lg px-4 py-3 mb-2 border border-warning/40`}
+              onPress={handleTestNotification}
+              disabled={saving}
+            >
+              <Text style={[tw`text-base text-white text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+                Send test-varsling (10 sek)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={tw`bg-info/20 rounded-lg px-4 py-3 mb-2 border border-info/40`}
+              onPress={handleCheckScheduled}
+              disabled={saving}
+            >
+              <Text style={[tw`text-base text-white text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+                Sjekk schedulerte varslinger
+              </Text>
+            </TouchableOpacity>
+
+            {debugInfo ? (
+              <View style={tw`bg-background rounded-lg p-3 mt-2`}>
+                <Text style={[tw`text-xs text-text-muted font-mono`, { fontFamily: 'Manrope_400Regular' }]}>
+                  {debugInfo}
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
           {/* Info Section */}
           <View style={tw`bg-info/10 rounded-lg p-4 border border-info/30`}>

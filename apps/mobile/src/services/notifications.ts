@@ -21,18 +21,28 @@ export interface NotificationSettings {
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') {
+    console.log('Notifications not supported on web');
     return false; // Notifications not supported on web
   }
 
+  console.log('\n=== CHECKING NOTIFICATION PERMISSIONS ===');
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  console.log(`Existing permission status: ${existingStatus}`);
+
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
+    console.log('Permission not granted, requesting...');
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
+    console.log(`New permission status: ${finalStatus}`);
   }
 
-  return finalStatus === 'granted';
+  const granted = finalStatus === 'granted';
+  console.log(`Final result: ${granted ? '✅ GRANTED' : '❌ DENIED'}`);
+  console.log('=== END PERMISSION CHECK ===\n');
+
+  return granted;
 }
 
 /**
@@ -40,12 +50,23 @@ export async function requestNotificationPermissions(): Promise<boolean> {
  */
 export async function setupNotificationChannel() {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('equipment-reminders', {
-      name: 'Utstyrs-påminnelser',
-      description: 'Daglige påminnelser om utstyr til barnehagen',
-      importance: Notifications.AndroidImportance.HIGH,
-      sound: 'default',
-    });
+    console.log('\n=== SETTING UP ANDROID NOTIFICATION CHANNEL ===');
+    try {
+      await Notifications.setNotificationChannelAsync('equipment-reminders', {
+        name: 'Utstyrs-påminnelser',
+        description: 'Daglige påminnelser om utstyr til barnehagen',
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: 'default',
+      });
+      console.log('✅ Channel created successfully');
+      console.log('=== END CHANNEL SETUP ===\n');
+    } catch (error) {
+      console.error('❌ Error creating channel:', error);
+      console.log('=== END CHANNEL SETUP (FAILED) ===\n');
+      throw error;
+    }
+  } else {
+    console.log('Not Android, skipping channel setup');
   }
 }
 
@@ -107,25 +128,38 @@ export async function scheduleEquipmentNotification(
   time: string // Format: "HH:MM"
 ): Promise<string | null> {
   if (Platform.OS === 'web') {
+    console.log('Notifications not supported on web');
     return null;
   }
 
   try {
+    console.log(`\n=== SCHEDULING EQUIPMENT NOTIFICATION ===`);
+    console.log(`Platform: ${Platform.OS}`);
+    console.log(`Time: ${time}`);
+    console.log(`Household ID: ${householdId}`);
+
     // Cancel any existing equipment notifications before scheduling new ones
     console.log('Cancelling existing notifications before rescheduling...');
     await cancelAllEquipmentNotifications();
 
     // Parse time
     const [hours, minutes] = time.split(':').map(Number);
+    console.log(`Parsed time: ${hours}:${minutes}`);
 
     // Calculate next occurrence of the notification time
     const now = new Date();
     const scheduledDate = new Date();
     scheduledDate.setHours(hours, minutes, 0, 0);
 
+    console.log(`Current time: ${now.toLocaleString()}`);
+    console.log(`Target time today: ${scheduledDate.toLocaleString()}`);
+
     // If the time has already passed today, schedule for tomorrow
     if (scheduledDate <= now) {
       scheduledDate.setDate(scheduledDate.getDate() + 1);
+      console.log(`Time has passed today, rescheduling for tomorrow: ${scheduledDate.toLocaleString()}`);
+    } else {
+      console.log(`Scheduling for today: ${scheduledDate.toLocaleString()}`);
     }
 
     // Create trigger based on platform
@@ -135,6 +169,7 @@ export async function scheduleEquipmentNotification(
       // Android: use date-based trigger with daily repeating
       // Calculate time until first trigger
       const timeUntilTrigger = Math.floor((scheduledDate.getTime() - now.getTime()) / 1000);
+      console.log(`Seconds until trigger: ${timeUntilTrigger} (${Math.floor(timeUntilTrigger / 60)} minutes)`);
 
       // Use time interval trigger that repeats every 24 hours
       trigger = {
@@ -142,6 +177,7 @@ export async function scheduleEquipmentNotification(
         seconds: timeUntilTrigger,
         repeats: false, // We'll reschedule after it fires
       };
+      console.log('Using TIME_INTERVAL trigger (Android)');
     } else {
       // iOS: use calendar trigger
       trigger = {
@@ -150,28 +186,47 @@ export async function scheduleEquipmentNotification(
         minute: minutes,
         repeats: true,
       };
+      console.log('Using CALENDAR trigger (iOS)');
     }
+
+    console.log('Trigger config:', JSON.stringify(trigger, null, 2));
 
     // Check if critical equipment is missing right now
     const hasMissing = await hasMissingCriticalEquipment(householdId);
+    console.log(`Has missing critical equipment: ${hasMissing}`);
 
     // Schedule notification
+    console.log('Calling scheduleNotificationAsync...');
+
+    const content: any = {
+      title: 'Utstyr til barnehagen 🎒',
+      body: hasMissing
+        ? 'Du mangler viktig utstyr! Sjekk hva som må tas med.'
+        : 'Husk å sjekke at du har alt utstyr til barnehagen.',
+      data: { type: 'equipment-reminder', householdId, time },
+      sound: 'default',
+    };
+
+    // Add Android-specific channel ID
+    if (Platform.OS === 'android') {
+      content.channelId = 'equipment-reminders';
+      console.log('Added Android channelId: equipment-reminders');
+    }
+
     const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Utstyr til barnehagen 🎒',
-        body: hasMissing
-          ? 'Du mangler viktig utstyr! Sjekk hva som må tas med.'
-          : 'Husk å sjekke at du har alt utstyr til barnehagen.',
-        data: { type: 'equipment-reminder', householdId, time },
-        sound: 'default',
-      },
+      content,
       trigger,
     });
 
-    console.log(`Notification scheduled for ${scheduledDate.toLocaleString()}, ID: ${notificationId}`);
+    console.log(`✅ SUCCESS: Notification scheduled for ${scheduledDate.toLocaleString()}, ID: ${notificationId}`);
+    console.log(`=== END SCHEDULING ===\n`);
     return notificationId;
   } catch (error) {
-    console.error('Error scheduling notification:', error);
+    console.error('\n❌ ERROR SCHEDULING NOTIFICATION:');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Full error:', error);
+    console.error(`=== END SCHEDULING (FAILED) ===\n`);
     return null;
   }
 }
@@ -186,14 +241,84 @@ export async function cancelAllEquipmentNotifications() {
 
   try {
     const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`Found ${scheduledNotifications.length} total scheduled notifications`);
 
+    let cancelledCount = 0;
     for (const notification of scheduledNotifications) {
       if (notification.content.data?.type === 'equipment-reminder') {
         await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+        cancelledCount++;
       }
     }
+    console.log(`Cancelled ${cancelledCount} equipment notifications`);
   } catch (error) {
     console.error('Error canceling notifications:', error);
+  }
+}
+
+/**
+ * Get all scheduled equipment notifications (for debugging)
+ */
+export async function getScheduledNotifications() {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+
+  try {
+    const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const equipmentNotifications = allNotifications.filter(
+      n => n.content.data?.type === 'equipment-reminder'
+    );
+    console.log('Scheduled equipment notifications:', equipmentNotifications);
+    return equipmentNotifications;
+  } catch (error) {
+    console.error('Error getting scheduled notifications:', error);
+    return [];
+  }
+}
+
+/**
+ * Test notification (fires in 10 seconds)
+ */
+export async function scheduleTestNotification(): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return null;
+  }
+
+  try {
+    console.log('\n=== SCHEDULING TEST NOTIFICATION ===');
+    console.log('Platform:', Platform.OS);
+    console.log('Scheduling test notification in 10 seconds...');
+
+    const content: any = {
+      title: 'Test Notification 🔔',
+      body: 'Hvis du ser denne, fungerer notifications!',
+      data: { type: 'test' },
+      sound: 'default',
+    };
+
+    // Add Android-specific channel ID
+    if (Platform.OS === 'android') {
+      content.channelId = 'equipment-reminders';
+      console.log('Added Android channelId: equipment-reminders');
+    }
+
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 10,
+      },
+    });
+
+    console.log(`✅ Test notification scheduled with ID: ${notificationId}`);
+    console.log('=== END TEST SCHEDULING ===\n');
+    return notificationId;
+  } catch (error) {
+    console.error('❌ Error scheduling test notification:');
+    console.error('Full error:', error);
+    console.error('=== END TEST SCHEDULING (FAILED) ===\n');
+    return null;
   }
 }
 

@@ -16,6 +16,7 @@ import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator } from 'react-native';
 import tw from './src/lib/tw';
 import { useFonts, Manrope_300Light, Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
+import * as Notifications from 'expo-notifications';
 import {
   setupNotificationChannel,
   getNotificationSettings,
@@ -43,26 +44,57 @@ function AppNavigator() {
   const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
   const prevLoadingRef = useRef<boolean | null>(null);
   const splashTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const notificationInitializedRef = useRef(false);
 
   // Initialize notifications when user is logged in
   useEffect(() => {
     if (user && householdId && members.length > 0 && !needsOnboarding) {
+      // Prevent double initialization
+      if (notificationInitializedRef.current) {
+        console.log('Notification already initialized, skipping...');
+        return;
+      }
+
       const initializeNotifications = async () => {
         try {
+          console.log('\n=== APP INITIALIZATION: NOTIFICATIONS ===');
+
+          // Mark as initialized
+          notificationInitializedRef.current = true;
+
           // Set up notification channel (Android)
           await setupNotificationChannel();
 
           // Get current member
           const currentMember = members.find(m => m.user_id === user.id);
-          if (!currentMember) return;
+          if (!currentMember) {
+            console.log('No current member found, skipping notification initialization');
+            return;
+          }
 
           // Get notification settings
           const settings = await getNotificationSettings(currentMember.id);
+          console.log('Notification settings:', settings);
 
-          // Schedule notification if enabled
+          // Only schedule if enabled
           if (settings.enabled) {
-            await scheduleEquipmentNotification(householdId, settings.time);
+            console.log('Notifications enabled, checking permissions...');
+
+            // Check if we have permission (but don't request it here at app start)
+            const { status } = await Notifications.getPermissionsAsync();
+            console.log('Current permission status:', status);
+
+            if (status === 'granted') {
+              console.log('Permission granted, scheduling notification...');
+              await scheduleEquipmentNotification(householdId, settings.time);
+            } else {
+              console.log('⚠️  Permission not granted. User needs to enable notifications in settings.');
+            }
+          } else {
+            console.log('Notifications disabled in settings');
           }
+
+          console.log('=== END APP INITIALIZATION ===\n');
         } catch (error) {
           console.error('Error initializing notifications:', error);
         }
