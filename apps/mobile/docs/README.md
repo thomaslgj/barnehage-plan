@@ -4,13 +4,23 @@
 
 Barnehage-Plan er en familie-app som hjelper foreldre med å organisere hverdagen rundt barnehage. Appen fokuserer på tidsplanlegging og utstyrshåndtering.
 
-## Innhold
+## 📚 Dokumentasjon
 
-- [Notifications System](./NOTIFICATIONS.md) - Daglige påminnelser om utstyr
+### Omfattende Feature-dokumentasjon
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Overordnet arkitektur, dataflyt og teknologi stack
+- **[SCHEDULE.md](./SCHEDULE.md)** - Tidsplanlegging-systemet (ukesvisning, templates, assignments)
+- **[EQUIPMENT.md](./EQUIPMENT.md)** - Utstyrshåndtering (status, kritikalitet, auto-modal)
+- **[NOTIFICATIONS.md](./NOTIFICATIONS.md)** - Notifikasjonssystem (scheduling, platform-spesifikk)
+- **[ONBOARDING.md](./ONBOARDING.md)** - Onboarding-flow (create/join household)
+
+### Quick Links
+
 - [Arkitektur](#arkitektur)
 - [Funksjonaliteter](#funksjonaliteter)
 - [Database Schema](#database-schema)
 - [Utviklings-guide](#utviklings-guide)
+- [iOS Kompatibilitet](#ios-kompatibilitet)
 
 ## Arkitektur
 
@@ -442,10 +452,47 @@ docs: add notifications system documentation
 
 Proprietary - Barnehage-Plan App
 
+## 📖 Detaljert Dokumentasjon
+
+For dypere forståelse av spesifikke systemer, se disse dokumentene:
+
+### System-spesifikk dokumentasjon
+
+| Dokument | Beskrivelse | Nøkkelinnhold |
+|----------|-------------|---------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Overordnet arkitektur og dataflyt | Technology stack, state management, komponent-hierarki, security |
+| [SCHEDULE.md](./SCHEDULE.md) | Tidsplanlegging-systemet | AssignmentData, templates, uke-navigasjon, optimistiske oppdateringer |
+| [EQUIPMENT.md](./EQUIPMENT.md) | Utstyrshåndtering | Status-beregning, CRUD-operasjoner, auto-modal, notification-integrasjon |
+| [NOTIFICATIONS.md](./NOTIFICATIONS.md) | Notifikasjonssystem | Scheduling, platform-forskjeller, permission-håndtering, debugging |
+| [ONBOARDING.md](./ONBOARDING.md) | Onboarding-flow | Create/join household, RPC functions, re-onboarding |
+
+### Når bruke hvilken dokumentasjon?
+
+**Ny utvikler?**
+1. Start med [README.md](./README.md) (dette dokumentet)
+2. Les [ARCHITECTURE.md](./ARCHITECTURE.md) for overordnet forståelse
+3. Dykk inn i system-spesifikke docs etter behov
+
+**Implementere ny feature?**
+1. Sjekk [ARCHITECTURE.md](./ARCHITECTURE.md) for patterns
+2. Les relevant system-doc (SCHEDULE/EQUIPMENT/etc)
+3. Følg eksisterende mønstre
+
+**Debugge problem?**
+1. Sjekk "Feilsøking" i README.md
+2. Les system-spesifikk doc for detaljer
+3. Se "Edge Cases & Error Handling" seksjoner
+
+**Lære om spesifikk feature?**
+- Schedule → [SCHEDULE.md](./SCHEDULE.md)
+- Equipment → [EQUIPMENT.md](./EQUIPMENT.md)
+- Notifications → [NOTIFICATIONS.md](./NOTIFICATIONS.md)
+- Onboarding → [ONBOARDING.md](./ONBOARDING.md)
+
 ## Support
 
 For spørsmål eller problemer, kontakt utviklingsteamet.
 
 ---
 
-Sist oppdatert: 2025
+Sist oppdatert: 2025-02-13
