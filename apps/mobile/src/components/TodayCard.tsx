@@ -47,6 +47,7 @@ export default function TodayCard({
   const [autoModalVisible, setAutoModalVisible] = useState(false);
   const [lastModalShownDate, setLastModalShownDate] = useState<string | null>(null);
   const [prevEquipmentStatus, setPrevEquipmentStatus] = useState<'ready' | 'missing' | 'not_ready' | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const confettiRef = useRef<any>(null);
 
   const dateObj = dayjs(date);
@@ -59,14 +60,24 @@ export default function TodayCard({
 
   // Trigger confetti when status changes to 'ready'
   useEffect(() => {
-    if (prevEquipmentStatus !== null && prevEquipmentStatus !== 'ready' && equipmentStatus === 'ready') {
+    // Only check status changes when we have actual equipment data loaded
+    if (equipmentItems.length === 0) {
+      return;
+    }
+
+    // Skip confetti on initial load
+    if (!isInitialLoad && prevEquipmentStatus !== null && prevEquipmentStatus !== 'ready' && equipmentStatus === 'ready') {
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       confettiRef.current?.start();
     }
-    setPrevEquipmentStatus(equipmentStatus);
-  }, [equipmentStatus]);
+
+    // Update previous status after initial load
+    if (!isInitialLoad) {
+      setPrevEquipmentStatus(equipmentStatus);
+    }
+  }, [equipmentStatus, isInitialLoad, equipmentItems.length]);
 
   // Load equipment status and check if auto-modal should show
   useEffect(() => {
@@ -75,6 +86,13 @@ export default function TodayCard({
     const loadEquipment = async () => {
       const items = await fetchEquipmentStatus(householdId);
       setEquipmentItems(items);
+
+      // Set initial status to prevent false positive confetti on first load
+      if (isInitialLoad) {
+        const initialStatus = calculateEquipmentStatus(items);
+        setPrevEquipmentStatus(initialStatus);
+        setIsInitialLoad(false);
+      }
 
       // Check if auto-modal should show
       if (Platform.OS !== 'web') {
@@ -129,15 +147,17 @@ export default function TodayCard({
 
   return (
     <>
-      {/* Confetti Effect */}
+      {/* Confetti Effect - positioned absolutely off-screen until triggered */}
       {Platform.OS !== 'web' && (
-        <ConfettiCannon
-          ref={confettiRef}
-          count={150}
-          origin={{ x: 0, y: 0 }}
-          autoStart={false}
-          fadeOut={true}
-        />
+        <View style={{ position: 'absolute', top: -1000, left: -1000, zIndex: 9999 }}>
+          <ConfettiCannon
+            ref={confettiRef}
+            count={150}
+            origin={{ x: 200, y: 200 }}
+            autoStart={false}
+            fadeOut={true}
+          />
+        </View>
       )}
 
       <View style={tw`bg-slate-800/50 rounded-xl p-5 mb-6 border ${
@@ -187,11 +207,19 @@ export default function TodayCard({
           )}
         </View>
 
-        {/* Equipment Status Badge */}
-        <EquipmentStatusBadge
-          status={equipmentStatus}
-          onPress={() => setBottomSheetVisible(true)}
-        />
+        {/* Equipment Status Badge - only show when data is loaded */}
+        {equipmentItems.length > 0 ? (
+          <EquipmentStatusBadge
+            status={equipmentStatus}
+            onPress={() => setBottomSheetVisible(true)}
+          />
+        ) : (
+          <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-3 rounded-full border border-slate-700 bg-slate-800/30`}>
+            <Text style={[tw`text-base text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>
+              Laster utstyr...
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Equipment Bottom Sheet */}

@@ -426,11 +426,19 @@ export default function MainScreen({ navigation }: any) {
     const nextIndex = (currentIndex + 1) % order.length;
     const nextUserId = order[nextIndex];
 
-    // Set loading state
-    setSavingSlot(key);
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setAssignments((prev) => ({
+      ...prev,
+      [key]: nextUserId,
+    }));
 
+    // Trigger haptic feedback for immediate response
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    // Database update in background
     try {
-      // Always upsert (even for null) instead of deleting
       // Find the member corresponding to nextUserId (could be user_id or member id)
       const member = nextUserId ? members.find(m => m.user_id === nextUserId || m.id === nextUserId) : null;
 
@@ -454,8 +462,6 @@ export default function MainScreen({ navigation }: any) {
         console.error('Error updating assignment:', error);
         throw error;
       }
-      // Fetch assignments to sync with database and ensure consistency
-      await fetchAssignments();
     } catch (error) {
       console.error('!!! CAUGHT ERROR - REVERTING !!!', error);
       // Revert on error
@@ -463,8 +469,11 @@ export default function MainScreen({ navigation }: any) {
         ...prev,
         [key]: currentUserId,
       }));
-    } finally {
-      setSavingSlot(null);
+
+      // Show error feedback
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     }
   };
 
@@ -527,15 +536,17 @@ export default function MainScreen({ navigation }: any) {
 
   return (
     <>
-      {/* Celebration Confetti */}
+      {/* Celebration Confetti - positioned absolutely off-screen until triggered */}
       {Platform.OS !== 'web' && (
-        <ConfettiCannon
-          ref={celebrationConfettiRef}
-          count={200}
-          origin={{ x: 0, y: 0 }}
-          autoStart={false}
-          fadeOut={true}
-        />
+        <View style={{ position: 'absolute', top: -1000, left: -1000, zIndex: 9999 }}>
+          <ConfettiCannon
+            ref={celebrationConfettiRef}
+            count={200}
+            origin={{ x: 200, y: 200 }}
+            autoStart={false}
+            fadeOut={true}
+          />
+        </View>
       )}
 
       <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>

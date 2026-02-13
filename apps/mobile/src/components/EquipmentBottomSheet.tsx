@@ -29,28 +29,20 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 function EquipmentItemRow({ item, onToggle, loading }: { item: EquipmentItem; onToggle: (key: string) => void; loading: boolean }) {
   const [prevStatus, setPrevStatus] = useState(item.status);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const colorAnim = useRef(new Animated.Value(item.status === 'ok' ? 1 : 0)).current;
 
   useEffect(() => {
     if (prevStatus !== item.status) {
       // Animate status change
-      Animated.parallel([
-        Animated.sequence([
-          Animated.spring(scaleAnim, {
-            toValue: 1.1,
-            friction: 3,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            friction: 3,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.timing(colorAnim, {
-          toValue: item.status === 'ok' ? 1 : 0,
-          duration: 300,
-          useNativeDriver: false,
+      Animated.sequence([
+        Animated.spring(scaleAnim, {
+          toValue: 1.1,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 3,
+          useNativeDriver: true,
         }),
       ]).start();
       setPrevStatus(item.status);
@@ -64,15 +56,27 @@ function EquipmentItemRow({ item, onToggle, loading }: { item: EquipmentItem; on
     onToggle(item.key);
   };
 
-  const backgroundColor = colorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(232, 201, 111, 0.2)', 'rgba(127, 168, 132, 0.2)'], // warning/20 to success/20
-  });
+  // Determine colors based on status and criticality
+  const getColors = () => {
+    if (item.status === 'ok') {
+      return {
+        bg: 'rgba(127, 168, 132, 0.2)', // success/20
+        text: '#7fa884', // success
+      };
+    } else if (item.is_critical) {
+      return {
+        bg: 'rgba(209, 113, 102, 0.2)', // error/20
+        text: '#d17166', // error
+      };
+    } else {
+      return {
+        bg: 'rgba(232, 201, 111, 0.2)', // warning/20
+        text: '#e8c96f', // warning
+      };
+    }
+  };
 
-  const textColor = colorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#e8c96f', '#7fa884'], // warning to success
-  });
+  const colors = getColors();
 
   return (
     <TouchableOpacity
@@ -82,23 +86,23 @@ function EquipmentItemRow({ item, onToggle, loading }: { item: EquipmentItem; on
     >
       <Text style={[tw`text-base text-slate-200 flex-1`, { fontFamily: 'Manrope_400Regular' }]}>{item.label}</Text>
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <Animated.View
+        <View
           style={[
             tw`px-3 py-1.5 rounded min-w-[80px] items-center`,
             {
-              backgroundColor,
+              backgroundColor: colors.bg,
             },
           ]}
         >
-          <Animated.Text
+          <Text
             style={[
               tw`text-sm font-semibold`,
-              { fontFamily: 'Manrope_400Regular', color: textColor },
+              { fontFamily: 'Manrope_400Regular', color: colors.text },
             ]}
           >
             {item.status === 'ok' ? 'OK' : 'Mangler'}
-          </Animated.Text>
-        </Animated.View>
+          </Text>
+        </View>
       </Animated.View>
     </TouchableOpacity>
   );

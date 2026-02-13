@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Text, View, Animated } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
 
@@ -9,65 +9,6 @@ interface EquipmentStatusBadgeProps {
 }
 
 export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatusBadgeProps) {
-  const bounceAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  // Bounce effect when status changes to 'ready'
-  useEffect(() => {
-    if (status === 'ready') {
-      Animated.spring(bounceAnim, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-
-      // Initial bounce
-      bounceAnim.setValue(0.8);
-    }
-  }, [status]);
-
-  // Pulsating effect when status is 'not_ready'
-  useEffect(() => {
-    if (status === 'not_ready') {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [status]);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-  };
-
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
@@ -78,25 +19,31 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
       case 'ready':
         return {
           label: 'Alt klart for barnehagen',
-          dotStyle: 'bg-success', // green-500
-          borderStyle: 'border-success/30',
-          textStyle: 'text-slate-200',
+          dotStyle: 'bg-success',
+          borderStyle: 'border-success/40',
+          bgStyle: 'bg-success/10',
+          textStyle: 'text-white',
+          iconStyle: 'text-success text-2xl',
           showCheckmark: true,
         };
       case 'missing':
         return {
           label: 'Bør ordnes',
-          dotStyle: 'bg-warning', // yellow-500
+          dotStyle: 'bg-warning',
           borderStyle: 'border-warning/30',
+          bgStyle: 'bg-transparent',
           textStyle: 'text-slate-200',
+          iconStyle: '',
           showCheckmark: false,
         };
       case 'not_ready':
         return {
           label: 'Må ordnes før i morgen',
-          dotStyle: 'bg-error', // red-500
+          dotStyle: 'bg-error',
           borderStyle: 'border-error/30',
+          bgStyle: 'bg-transparent',
           textStyle: 'text-slate-200',
+          iconStyle: '',
           showCheckmark: false,
         };
     }
@@ -104,30 +51,27 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
 
   const config = getStatusConfig();
 
-  const combinedScale = status === 'ready' ? bounceAnim : status === 'not_ready' ? pulseAnim : 1;
-
   return (
-    <Animated.View style={{ transform: [{ scale: Animated.multiply(scaleAnim, combinedScale) }] }}>
+    <View style={tw`w-full`}>
       <TouchableOpacity
         style={tw.style(
-          'flex-row items-center justify-between gap-2 px-4 py-2.5 rounded-lg border w-full',
-          config.borderStyle
+          'flex-row items-center justify-between gap-3 px-5 py-3 rounded-full border',
+          config.borderStyle,
+          config.bgStyle
         )}
         onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         activeOpacity={0.7}
       >
-        <View style={tw`flex-row items-center gap-2 flex-1`}>
+        <View style={tw`flex-row items-center gap-3 flex-1`}>
           {config.showCheckmark ? (
-            <Text style={[tw`text-success text-xl`, { fontFamily: 'Manrope_400Regular' }]}>✓</Text>
+            <Text style={[tw.style(config.iconStyle), { fontFamily: 'Manrope_400Regular' }]}>✓</Text>
           ) : (
             <View style={tw.style('w-2.5 h-2.5 rounded-full', config.dotStyle)} />
           )}
-          <Text style={[tw.style('text-sm font-medium flex-1', config.textStyle), { fontFamily: 'Manrope_400Regular' }]}>{config.label}</Text>
+          <Text style={[tw.style('text-base font-semibold flex-1', config.textStyle), { fontFamily: 'Manrope_400Regular' }]}>{config.label}</Text>
         </View>
-        <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
+        <Text style={[tw`text-text-light text-2xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 }
