@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
+import { BackButton } from '../components/BackButton';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { TextInputField } from '../components/TextInputField';
+import { Button } from '../components/Button';
+import { Text } from '../components/Text';
 
 export default function PersonalInfoScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
@@ -54,6 +59,8 @@ export default function PersonalInfoScreen({ navigation }: any) {
     }
   };
 
+  const isUnchanged = displayName.trim() === currentMember?.display_name;
+
   return (
     <View style={tw`flex-1 bg-background`}>
       <SafeAreaView style={tw`flex-1`} edges={['top']}>
@@ -61,47 +68,34 @@ export default function PersonalInfoScreen({ navigation }: any) {
           style={tw`flex-1`}
           contentContainerStyle={tw`p-4`}
         >
-          {/* Back button */}
-          <TouchableOpacity
-            style={tw`flex-row items-center gap-2 mb-6`}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={[tw`text-2xl text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
-            <Text style={[tw`text-base text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
-          </TouchableOpacity>
+          <BackButton />
 
-          <Text style={[tw`text-3xl font-bold text-white mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Personlige opplysninger</Text>
-          <Text style={[tw`text-sm text-text-muted mb-6`, { fontFamily: 'Manrope_400Regular' }]}>
-            Rediger dine personlige opplysninger
-          </Text>
+          <ScreenHeader
+            title="Personlige opplysninger"
+            subtitle="Rediger dine personlige opplysninger"
+          />
 
           {/* Name Section */}
           <View style={tw`bg-slate-800/50 rounded-lg p-4 border border-slate-700`}>
-            <Text style={[tw`text-sm text-text-muted mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Ditt navn</Text>
-            <TextInput
-              style={tw`bg-background border border-slate-700 rounded-lg px-4 py-3 text-white text-base mb-3`}
+            <Text style={tw`text-sm text-text-muted mb-2`}>Ditt navn</Text>
+
+            <TextInputField
               value={displayName}
               onChangeText={setDisplayName}
               placeholder="Ditt navn"
-              placeholderTextColor="#a89985"
               autoCapitalize="words"
+              editable={!saving}
             />
-            <TouchableOpacity
-              style={tw`bg-primary rounded-lg py-3 px-4`}
+
+            <Button
+              variant="primary"
               onPress={handleSaveName}
-              disabled={saving || displayName.trim() === currentMember?.display_name}
+              disabled={saving || isUnchanged}
+              loading={saving}
+              fullWidth
             >
-              {saving ? (
-                <View style={tw`flex-row items-center justify-center gap-2`}>
-                  <ActivityIndicator size="small" color="#f5f1ed" />
-                  <Text style={[tw`text-white text-base font-medium`, { fontFamily: 'Manrope_400Regular' }]}>Lagrer...</Text>
-                </View>
-              ) : (
-                <Text style={[tw`text-white text-base font-medium text-center`, { fontFamily: 'Manrope_400Regular' }]}>
-                  Lagre navn
-                </Text>
-              )}
-            </TouchableOpacity>
+              {saving ? 'Lagrer...' : 'Lagre navn'}
+            </Button>
           </View>
         </ScrollView>
       </SafeAreaView>

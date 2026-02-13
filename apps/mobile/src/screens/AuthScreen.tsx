@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import tw from '../lib/tw';
+import { Text } from '../components/Text';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -94,13 +94,13 @@ export default function AuthScreen() {
       <View style={tw`flex-1 justify-center px-6`}>
         {/* Title + Tagline */}
         <Animated.View style={{ opacity: titleFade }}>
-          <Text style={[tw`text-5xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={tw`text-5xl font-bold text-white text-center mb-2`}>
             Flyt
           </Text>
-          <Text style={[tw`text-base text-text-muted text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={tw`text-base text-text-muted text-center mb-2`}>
             Flyt i hverdagen
           </Text>
-          <Text style={[tw`text-sm text-text-light text-center mb-12`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={tw`text-sm text-text-light text-center mb-12`}>
             {isSignUp ? 'Opprett en konto' : 'Logg inn på din konto'}
           </Text>
         </Animated.View>
@@ -144,7 +144,7 @@ export default function AuthScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={tw`text-white text-base font-semibold`}>
                 {isSignUp ? 'Opprett konto' : 'Logg inn'}
               </Text>
             )}
@@ -158,7 +158,7 @@ export default function AuthScreen() {
             disabled={loading}
             style={tw`mt-4 py-3`}
           >
-            <Text style={[tw`text-secondary text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-secondary text-sm text-center`}>
               {isSignUp
                 ? 'Har du allerede en konto? Logg inn'
                 : 'Har du ikke en konto? Opprett konto'}

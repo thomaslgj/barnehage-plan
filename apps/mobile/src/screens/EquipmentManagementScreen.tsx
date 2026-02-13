@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
+import { BackButton } from '../components/BackButton';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { Text } from '../components/Text';
 import EquipmentList from '../components/EquipmentList';
 import AddEquipmentItem from '../components/AddEquipmentItem';
 
@@ -210,19 +213,12 @@ export default function EquipmentManagementScreen({ navigation }: any) {
           style={tw`flex-1`}
           contentContainerStyle={tw`p-4`}
         >
-          {/* Back button */}
-          <TouchableOpacity
-            style={tw`flex-row items-center gap-2 mb-6`}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={[tw`text-2xl text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
-            <Text style={[tw`text-base text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
-          </TouchableOpacity>
+          <BackButton />
 
-          <Text style={[tw`text-3xl font-bold text-white mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Utstyrsliste</Text>
-          <Text style={[tw`text-sm text-text-muted mb-6`, { fontFamily: 'Manrope_400Regular' }]}>
-            Administrer utstyr som skal med til barnehagen
-          </Text>
+          <ScreenHeader
+            title="Utstyrsliste"
+            subtitle="Administrer utstyr som skal med til barnehagen"
+          />
 
           {equipmentLoading && (
             <View style={tw`mb-3`}>
@@ -248,7 +244,7 @@ export default function EquipmentManagementScreen({ navigation }: any) {
             </>
           ) : (
             <View style={tw`bg-slate-800/50 rounded-lg p-4 border border-slate-700 mb-3`}>
-              <Text style={[tw`text-text-light text-center text-sm mb-3`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={tw`text-text-light text-center text-sm mb-3`}>
                 Ingen utstyr lagt til enda
               </Text>
               <AddEquipmentItem

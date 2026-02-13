@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
+import { BackButton } from '../components/BackButton';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { Text } from '../components/Text';
 
 interface MenuItem {
   id: string;
@@ -125,16 +128,11 @@ export default function ProfileScreen({ navigation }: any) {
           size={24}
           color={item.color ? tw.color(item.color) : tw.color('text-text')}
         />
-        <Text
-          style={[
-            tw.style('text-base font-medium flex-1', item.color || 'text-white'),
-            { fontFamily: 'Manrope_400Regular' },
-          ]}
-        >
+        <Text style={tw.style('text-base font-medium flex-1', item.color || 'text-white')}>
           {item.title}
         </Text>
       </View>
-      <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
+      <Text style={tw`text-text-light text-xl`}>›</Text>
     </TouchableOpacity>
   );
 
@@ -145,18 +143,9 @@ export default function ProfileScreen({ navigation }: any) {
           style={tw`flex-1`}
           contentContainerStyle={tw`p-4`}
         >
-          {/* Back button */}
-          <TouchableOpacity
-            style={tw`flex-row items-center gap-2 mb-6`}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={[tw`text-2xl text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
-            <Text style={[tw`text-base text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
-          </TouchableOpacity>
+          <BackButton />
 
-          <Text style={[tw`text-3xl font-bold text-white mb-6`, { fontFamily: 'Manrope_400Regular' }]}>
-            Profil & Innstillinger
-          </Text>
+          <ScreenHeader title="Profil & Innstillinger" />
 
           {/* Main Menu Section */}
           <View style={tw`bg-slate-800/50 rounded-lg border border-slate-700 mb-4`}>

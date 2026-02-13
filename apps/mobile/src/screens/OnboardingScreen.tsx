@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
+import { Text } from '../components/Text';
 import { DEFAULT_EQUIPMENT_ITEMS } from '../lib/equipment';
 import SuccessIllustration from '../components/SuccessIllustration';
 import EquipmentList from '../components/EquipmentList';
@@ -566,7 +566,7 @@ export default function OnboardingScreen() {
     return (
       <View style={tw`flex-1 bg-background`}>
         <View style={tw`flex-1 justify-center px-6`}>
-          <Text style={[tw`text-4xl font-bold text-white text-center mb-10`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={tw`text-4xl font-bold text-white text-center mb-10`}>
             Kom i gang
           </Text>
 
@@ -574,8 +574,8 @@ export default function OnboardingScreen() {
             style={tw`bg-primary rounded-lg p-5 mb-4`}
             onPress={() => { setMode('create'); setStep(1); }}
           >
-            <Text style={[tw`text-xl font-semibold text-white mb-1`, { fontFamily: 'Manrope_400Regular' }]}>Opprett husholdning</Text>
-            <Text style={[tw`text-sm text-white/80`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-xl font-semibold text-white mb-1`}>Opprett husholdning</Text>
+            <Text style={tw`text-sm text-white/80`}>
               For den som setter opp først
             </Text>
           </TouchableOpacity>
@@ -584,8 +584,8 @@ export default function OnboardingScreen() {
             style={tw`bg-info rounded-lg p-5`}
             onPress={() => setMode('join')}
           >
-            <Text style={[tw`text-xl font-semibold text-white mb-1`, { fontFamily: 'Manrope_400Regular' }]}>Bli med</Text>
-            <Text style={[tw`text-sm text-white/80`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-xl font-semibold text-white mb-1`}>Bli med</Text>
+            <Text style={tw`text-sm text-white/80`}>
               Har du fått en invitasjonskode?
             </Text>
           </TouchableOpacity>
@@ -605,12 +605,12 @@ export default function OnboardingScreen() {
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Bli med i husholdning</Text>
-          <Text style={[tw`text-base text-slate-300 text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Bli med i husholdning</Text>
+          <Text style={tw`text-base text-slate-300 text-center mb-8`}>
             Skriv inn invitasjonskoden du har fått
           </Text>
 
-          <Text style={[tw`text-sm font-semibold text-slate-300 mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Invitasjonskode *</Text>
+          <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Invitasjonskode *</Text>
           <TextInput
             style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-2 text-white text-center text-xl tracking-wider`}
             placeholder="ord-ord"
@@ -622,11 +622,11 @@ export default function OnboardingScreen() {
             autoCorrect={false}
             editable={!loading}
           />
-          <Text style={[tw`text-xs text-slate-400 text-center mb-4`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={tw`text-xs text-slate-400 text-center mb-4`}>
             F.eks. "eple-hund" eller "sol-katt"
           </Text>
 
-          <Text style={[tw`text-sm font-semibold text-slate-300 mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Ditt navn (valgfritt)</Text>
+          <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>Ditt navn (valgfritt)</Text>
           <TextInput
             style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-2 text-white`}
             placeholder="Hvordan andre vil se deg"
@@ -636,14 +636,14 @@ export default function OnboardingScreen() {
             editable={!loading && !fetchingPlaceholderName}
           />
           {placeholderNameFromInvite && (
-            <Text style={[tw`text-xs text-emerald-400 mb-4`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-xs text-emerald-400 mb-4`}>
               ✓ Dette navnet er satt av din partner - du kan endre det hvis du vil
             </Text>
           )}
           {fetchingPlaceholderName && (
             <View style={tw`flex-row items-center gap-2 mb-4`}>
               <ActivityIndicator size="small" color="#7fa884" />
-              <Text style={[tw`text-xs text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>Sjekker invitasjonskode...</Text>
+              <Text style={tw`text-xs text-slate-400`}>Sjekker invitasjonskode...</Text>
             </View>
           )}
 
@@ -655,7 +655,7 @@ export default function OnboardingScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Bli med</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Bli med</Text>
             )}
           </TouchableOpacity>
 
@@ -664,7 +664,7 @@ export default function OnboardingScreen() {
             onPress={() => setMode('choice')}
             disabled={loading}
           >
-            <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+            <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -697,8 +697,8 @@ export default function OnboardingScreen() {
         {/* Step 1: My name */}
         {step === 1 && (
           <View style={tw`flex-1 justify-center`}>
-            <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Hva heter du?</Text>
-            <Text style={[tw`text-base text-slate-300 text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter du?</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-8`}>
               Dette navnet brukes i planleggingen
             </Text>
 
@@ -717,14 +717,14 @@ export default function OnboardingScreen() {
               onPress={() => myName.trim() && setStep(2)}
               disabled={!myName.trim()}
             >
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Neste</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={tw`mt-4 py-3`}
               onPress={() => setMode('choice')}
             >
-              <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -732,8 +732,8 @@ export default function OnboardingScreen() {
         {/* Step 2: Partner name */}
         {step === 2 && (
           <View style={tw`flex-1 justify-center`}>
-            <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Hva heter samboer/partner?</Text>
-            <Text style={[tw`text-base text-slate-300 text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter samboer/partner?</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-8`}>
               Dette er valgfritt. Du kan også invitere dem senere.
             </Text>
 
@@ -751,14 +751,14 @@ export default function OnboardingScreen() {
               style={tw`bg-primary rounded py-3.5 items-center`}
               onPress={() => setStep(3)}
             >
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Neste</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={tw`mt-4 py-3`}
               onPress={() => setStep(1)}
             >
-              <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -766,8 +766,8 @@ export default function OnboardingScreen() {
         {/* Step 3: Child name */}
         {step === 3 && (
           <View style={tw`flex-1 justify-center`}>
-            <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Hva heter barnet?</Text>
-            <Text style={[tw`text-base text-slate-300 text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Hva heter barnet?</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-8`}>
               Dette navnet brukes i appen
             </Text>
 
@@ -786,14 +786,14 @@ export default function OnboardingScreen() {
               onPress={() => childName.trim() && setStep(4)}
               disabled={!childName.trim()}
             >
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Neste</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={tw`mt-4 py-3`}
               onPress={() => setStep(2)}
             >
-              <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -801,8 +801,8 @@ export default function OnboardingScreen() {
         {/* Step 4: Equipment customization */}
         {step === 4 && (
           <View style={tw`flex-1`}>
-            <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Utstyr til barnehagen</Text>
-            <Text style={[tw`text-base text-slate-300 text-center mb-6`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Utstyr til barnehagen</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-6`}>
               Tilpass listen etter dine behov
             </Text>
 
@@ -827,14 +827,14 @@ export default function OnboardingScreen() {
               style={tw`bg-primary rounded py-3.5 items-center mb-2`}
               onPress={() => setStep(5)}
             >
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Neste</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={tw`mt-2 py-3`}
               onPress={() => setStep(3)}
             >
-              <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -842,8 +842,8 @@ export default function OnboardingScreen() {
         {/* Step 5: Schedule template (optional) */}
         {step === 5 && !setupTemplate && (
           <View style={tw`flex-1`}>
-            <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Standard uke?</Text>
-            <Text style={[tw`text-base text-slate-300 text-center mb-6`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Standard uke?</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-6`}>
               Du kan sette opp en standarduke nå, eller hoppe over og gjøre det senere
             </Text>
 
@@ -851,7 +851,7 @@ export default function OnboardingScreen() {
               style={tw`bg-primary rounded py-3.5 items-center mb-3`}
               onPress={() => setSetupTemplate(true)}
             >
-              <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Sett opp standarduke</Text>
+              <Text style={tw`text-white text-base font-semibold`}>Sett opp standarduke</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -862,7 +862,7 @@ export default function OnboardingScreen() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Hopp over</Text>
+                <Text style={tw`text-white text-base font-semibold`}>Hopp over</Text>
               )}
             </TouchableOpacity>
 
@@ -870,7 +870,7 @@ export default function OnboardingScreen() {
               style={tw`mt-2 py-3`}
               onPress={() => setStep(4)}
             >
-              <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -878,8 +878,8 @@ export default function OnboardingScreen() {
         {/* Step 5b: Setup template */}
         {step === 5 && setupTemplate && (
           <View style={tw`flex-1`}>
-            <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Standard uke</Text>
-            <Text style={[tw`text-base text-slate-300 text-center mb-4`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Standard uke</Text>
+            <Text style={tw`text-base text-slate-300 text-center mb-4`}>
               Trykk på hver rute for å velge hvem som har ansvar
             </Text>
 
@@ -887,10 +887,10 @@ export default function OnboardingScreen() {
             <View style={tw`flex-row gap-2 mb-2 px-1`}>
               <View style={tw`w-16`} />
               <View style={tw`flex-1 items-center`}>
-                <Text style={[tw`text-xs font-medium text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>Levering</Text>
+                <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
               </View>
               <View style={tw`flex-1 items-center`}>
-                <Text style={[tw`text-xs font-medium text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>Henting</Text>
+                <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
               </View>
             </View>
 
@@ -904,7 +904,7 @@ export default function OnboardingScreen() {
             ].map(({ day, label }) => (
               <View key={day} style={tw`flex-row gap-2 mb-2`}>
                 <View style={tw`w-16 justify-center`}>
-                  <Text style={[tw`text-sm font-semibold text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>{label}</Text>
+                  <Text style={tw`text-sm font-semibold text-slate-300`}>{label}</Text>
                 </View>
 
                 {/* Dropoff slot */}
@@ -915,7 +915,7 @@ export default function OnboardingScreen() {
                   )}
                   onPress={() => handleTemplateSlotPress(day, 'dropoff')}
                 >
-                  <Text style={[tw`text-sm text-center text-white`, { fontFamily: 'Manrope_400Regular' }]}>
+                  <Text style={tw`text-sm text-center text-white`}>
                     {getTemplateSlotName(day, 'dropoff') || '—'}
                   </Text>
                 </TouchableOpacity>
@@ -928,7 +928,7 @@ export default function OnboardingScreen() {
                   )}
                   onPress={() => handleTemplateSlotPress(day, 'pickup')}
                 >
-                  <Text style={[tw`text-sm text-center text-white`, { fontFamily: 'Manrope_400Regular' }]}>
+                  <Text style={tw`text-sm text-center text-white`}>
                     {getTemplateSlotName(day, 'pickup') || '—'}
                   </Text>
                 </TouchableOpacity>
@@ -943,7 +943,7 @@ export default function OnboardingScreen() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={[tw`text-white text-base font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Fullfør</Text>
+                <Text style={tw`text-white text-base font-semibold`}>Fullfør</Text>
               )}
             </TouchableOpacity>
 
@@ -951,7 +951,7 @@ export default function OnboardingScreen() {
               style={tw`mt-2 py-3`}
               onPress={() => setSetupTemplate(false)}
             >
-              <Text style={[tw`text-slate-400 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
+              <Text style={tw`text-slate-400 text-sm text-center`}>Tilbake</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -965,22 +965,22 @@ export default function OnboardingScreen() {
               <View style={tw`mb-6`}>
                 <SuccessIllustration size={140} />
               </View>
-              <Text style={[tw`text-3xl font-bold text-white text-center mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Nå er du klar til å få flyt!</Text>
-              <Text style={[tw`text-base text-text-muted text-center mb-8`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Nå er du klar til å få flyt!</Text>
+              <Text style={tw`text-base text-text-muted text-center mb-8`}>
                 Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så hen kan bli med!
               </Text>
 
               <View style={tw`bg-primary/20 border-2 border-primary rounded-2xl p-8 mb-6 w-full max-w-sm`}>
-                <Text style={[tw`text-sm text-primary-light text-center mb-2 uppercase tracking-wider`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-sm text-primary-light text-center mb-2 uppercase tracking-wider`}>
                   Invitasjonskode
                 </Text>
-                <Text style={[tw`text-4xl font-bold text-white text-center tracking-wider`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-4xl font-bold text-white text-center tracking-wider`}>
                   {generatedInviteCode}
                 </Text>
               </View>
 
               <View style={tw`bg-slate-800/50 rounded-lg p-4 mb-8 w-full max-w-sm`}>
-                <Text style={[tw`text-sm text-text-muted text-center leading-relaxed`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-sm text-text-muted text-center leading-relaxed`}>
                   💡 {partnerName.trim() || 'Partner'} kan bruke denne koden når hen laster ned appen og velger "Bli med"
                 </Text>
               </View>
@@ -991,7 +991,7 @@ export default function OnboardingScreen() {
                   await refresh();
                 }}
               >
-                <Text style={[tw`text-white text-lg font-semibold text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-white text-lg font-semibold text-center`}>
                   Kom i gang!
                 </Text>
               </TouchableOpacity>
@@ -1009,7 +1009,7 @@ export default function OnboardingScreen() {
       >
         <View style={tw`flex-1 justify-center items-center bg-black/50`}>
           <View style={tw`bg-slate-800 rounded-lg p-6 w-80 mx-4`}>
-            <Text style={[tw`text-white text-lg font-semibold mb-4`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-white text-lg font-semibold mb-4`}>
               Endre navn
             </Text>
             <TextInput
@@ -1025,7 +1025,7 @@ export default function OnboardingScreen() {
                 style={tw`flex-1 py-3 bg-slate-700 rounded-lg`}
                 onPress={() => setRenameModalVisible(false)}
               >
-                <Text style={[tw`text-white text-center font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-white text-center font-medium`}>
                   Avbryt
                 </Text>
               </TouchableOpacity>
@@ -1033,7 +1033,7 @@ export default function OnboardingScreen() {
                 style={tw`flex-1 py-3 bg-primary rounded-lg`}
                 onPress={handleRenameConfirm}
               >
-                <Text style={[tw`text-white text-center font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-white text-center font-semibold`}>
                   Lagre
                 </Text>
               </TouchableOpacity>

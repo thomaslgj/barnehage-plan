@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Switch, Platform } from 'react-native';
+import { View, ScrollView, Alert, ActivityIndicator, Switch, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
+import { BackButton } from '../components/BackButton';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { Text } from '../components/Text';
+import { Button } from '../components/Button';
 import {
   getNotificationSettings,
   saveNotificationSettings,
@@ -218,28 +222,21 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
           style={tw`flex-1`}
           contentContainerStyle={tw`p-4`}
         >
-          {/* Back button */}
-          <TouchableOpacity
-            style={tw`flex-row items-center gap-2 mb-6`}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={[tw`text-2xl text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>‹</Text>
-            <Text style={[tw`text-base text-text-light`, { fontFamily: 'Manrope_400Regular' }]}>Tilbake</Text>
-          </TouchableOpacity>
+          <BackButton />
 
-          <Text style={[tw`text-3xl font-bold text-white mb-2`, { fontFamily: 'Manrope_400Regular' }]}>Varslinger</Text>
-          <Text style={[tw`text-sm text-text-muted mb-6`, { fontFamily: 'Manrope_400Regular' }]}>
-            Få daglige påminnelser om utstyr til barnehagen
-          </Text>
+          <ScreenHeader
+            title="Varslinger"
+            subtitle="Få daglige påminnelser om utstyr til barnehagen"
+          />
 
           {/* Enable/Disable Toggle */}
           <View style={tw`bg-slate-800/50 rounded-lg p-4 border border-slate-700 mb-4`}>
             <View style={tw`flex-row items-center justify-between`}>
               <View style={tw`flex-1 pr-4`}>
-                <Text style={[tw`text-base text-white font-medium mb-1`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-base text-white font-medium mb-1`}>
                   Daglige påminnelser
                 </Text>
-                <Text style={[tw`text-sm text-text-muted`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-sm text-text-muted`}>
                   Få varsel hvis kritisk utstyr mangler
                 </Text>
               </View>
@@ -264,10 +261,10 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
                 onPress={() => setShowTimePicker(true)}
                 disabled={saving}
               >
-                <Text style={[tw`text-base text-white`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-base text-white`}>
                   {settings.time}
                 </Text>
-                <Text style={[tw`text-text-light text-xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
+                <Text style={tw`text-text-light text-xl`}>›</Text>
               </TouchableOpacity>
 
               {showTimePicker && (
@@ -284,17 +281,17 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
 
           {/* Expo Go Warning */}
           <View style={tw`bg-error/10 rounded-lg p-4 border border-error/30 mb-4`}>
-            <Text style={[tw`text-sm text-slate-200 mb-2 font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-sm text-slate-200 mb-2 font-medium`}>
               ⚠️ Viktig
             </Text>
-            <Text style={[tw`text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-sm text-slate-300`}>
               Expo Go på emulator har begrensninger med notifications. Hvis scheduled notifications ikke fungerer, test på en ekte enhet eller bruk en development build.
             </Text>
           </View>
 
           {/* Debug Section */}
           <View style={tw`bg-warning/10 rounded-lg p-4 border border-warning/30 mb-4`}>
-            <Text style={[tw`text-sm text-slate-200 mb-3 font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-sm text-slate-200 mb-3 font-medium`}>
               🔧 Debug / Testing
             </Text>
 
@@ -303,7 +300,7 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
               onPress={handleTestNotification}
               disabled={saving}
             >
-              <Text style={[tw`text-base text-white text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={tw`text-base text-white text-center`}>
                 Send test-varsling (10 sek)
               </Text>
             </TouchableOpacity>
@@ -313,14 +310,14 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
               onPress={handleCheckScheduled}
               disabled={saving}
             >
-              <Text style={[tw`text-base text-white text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={tw`text-base text-white text-center`}>
                 Sjekk schedulerte varslinger
               </Text>
             </TouchableOpacity>
 
             {debugInfo ? (
               <View style={tw`bg-background rounded-lg p-3 mt-2`}>
-                <Text style={[tw`text-xs text-text-muted font-mono`, { fontFamily: 'Manrope_400Regular' }]}>
+                <Text style={tw`text-xs text-text-muted font-mono`}>
                   {debugInfo}
                 </Text>
               </View>
@@ -329,10 +326,10 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
 
           {/* Info Section */}
           <View style={tw`bg-info/10 rounded-lg p-4 border border-info/30`}>
-            <Text style={[tw`text-sm text-slate-200 mb-2 font-medium`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-sm text-slate-200 mb-2 font-medium`}>
               💡 Om varslinger
             </Text>
-            <Text style={[tw`text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={tw`text-sm text-slate-300`}>
               Du får varsling hver morgen på det valgte tidspunktet hvis du har kritisk utstyr som mangler. Dette hjelper deg å huske å ta med det som er nødvendig til barnehagen.
             </Text>
           </View>
@@ -340,7 +337,7 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
           {saving && (
             <View style={tw`mt-4 flex-row items-center justify-center gap-2`}>
               <ActivityIndicator size="small" color="#7fa884" />
-              <Text style={[tw`text-text-muted text-sm`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={tw`text-text-muted text-sm`}>
                 Lagrer...
               </Text>
             </View>
