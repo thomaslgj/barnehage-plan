@@ -1,21 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { HouseholdProvider } from "@/lib/HouseholdContext";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Barnehage-plan",
-  description: "Barnehage-plan for T&H",
+  title: "Flyt - Få flyt i hverdagen",
+  description: "Den enkle familiappen som gir deg full oversikt og kontroll over barnehageuken. Planlegg levering, henting og utstyr - sammen.",
 };
 
 export default function RootLayout({
@@ -24,11 +19,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <HouseholdProvider>{children}</HouseholdProvider>
+    <html lang="no">
+      <body className={`${manrope.variable} antialiased`}>
+        {children}
       </body>
     </html>
   );

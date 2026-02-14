@@ -1,28 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Warm, family-friendly color scheme matching mobile app */
+  --background: #2d2520;
+  --foreground: #f5f1ed;
+  --primary: #6b8e6f;
+  --primary-light: #7fa884;
+  --secondary: #e8c96f;
+  --secondary-light: #f0d689;
+  --text-muted: #d4c5b9;
+  --text-light: #a89985;
+  --card: #3d332d;
+  --border: #4a3f38;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --font-sans: var(--font-manrope);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @keyframes shimmer {
