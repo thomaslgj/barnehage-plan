@@ -40,7 +40,6 @@ export default function MainScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
-  const [templateAutoApplied, setTemplateAutoApplied] = useState(false);
   const [templateWasSuccessful, setTemplateWasSuccessful] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [childName, setChildName] = useState<string>('');
@@ -53,6 +52,7 @@ export default function MainScreen({ navigation }: any) {
   const [weekChanging, setWeekChanging] = useState(false);
   const initialFetchDone = useRef(false);
   const animationsTriggered = useRef(false);
+  const prevWeekChanging = useRef(false);
 
   // Animation refs
   const celebrationConfettiRef = useRef<any>(null);
@@ -87,6 +87,14 @@ export default function MainScreen({ navigation }: any) {
   const today = dayjs().format('YYYY-MM-DD');
   const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
 
+  // Check if all slots in current week are empty
+  const allSlotsEmpty = daysToShow.every(day => {
+    const dateStr = day.format('YYYY-MM-DD');
+    const dropoffKey = `${dateStr}-dropoff`;
+    const pickupKey = `${dateStr}-pickup`;
+    return !assignments[dropoffKey] && !assignments[pickupKey];
+  });
+
   // On weekends, show next Monday instead of today/tomorrow
   const todayOrTomorrow = (() => {
     if (currentDayOfWeek === 0 || currentDayOfWeek === 6) {
@@ -99,19 +107,23 @@ export default function MainScreen({ navigation }: any) {
     );
   })();
 
-  const fetchAssignments = useCallback(async (isInitialLoad = false) => {
+  const fetchAssignments = useCallback(async (isInitialLoad = false, targetWeekOffset?: number) => {
     if (!childId || !householdId) return;
 
+    // Use provided offset or fall back to current weekOffset
+    const effectiveOffset = targetWeekOffset !== undefined ? targetWeekOffset : weekOffset;
+
     // Show appropriate loading state
+    // Only set weekChanging if not already set by changeWeek (targetWeekOffset is undefined when called from refresh)
     if (isInitialLoad) {
       setLoading(true);
-    } else if (!refreshing) {
+    } else if (!refreshing && targetWeekOffset === undefined) {
       setWeekChanging(true);
     }
 
     try {
-      // Recalculate days based on current weekOffset
-      const currentStartOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
+      // Recalculate days based on effective weekOffset
+      const currentStartOfWeek = dayjs().add(effectiveOffset, 'week').startOf('isoWeek');
       const currentDays: dayjs.Dayjs[] = [];
       for (let i = 0; i < 7; i++) {
         const day = currentStartOfWeek.add(i, 'day');
@@ -154,8 +166,17 @@ export default function MainScreen({ navigation }: any) {
       }
       setWeekChanging(false);
       setRefreshing(false);
+
+      // Fade in animation after week change
+      if (!isInitialLoad && targetWeekOffset !== undefined) {
+        Animated.timing(scheduleFade, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }
     }
-  }, [childId, householdId, weekOffset, refreshing]);
+  }, [childId, householdId, weekOffset, refreshing, scheduleFade]);
 
   // Initial fetch - deferred to avoid choppy splash animations
   useEffect(() => {
@@ -184,26 +205,8 @@ export default function MainScreen({ navigation }: any) {
     }
   }, [loading]);
 
-  // Smooth fade animation for week changes (only after initial load)
-  useEffect(() => {
-    if (!initialLoadComplete) return; // Skip until after first load
-
-    if (weekChanging) {
-      // Fade out
-      Animated.timing(scheduleFade, {
-        toValue: 0.3,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      // Fade in
-      Animated.timing(scheduleFade, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [weekChanging, initialLoadComplete]);
+  // Note: Fade animation is now handled directly in changeWeek and fetchAssignments
+  // to avoid double-animation issues from effect re-running
 
   // Fetch child name
   useEffect(() => {
@@ -267,9 +270,8 @@ export default function MainScreen({ navigation }: any) {
     fetchInviteCodeAndPlaceholder();
   }, [householdId, members]); // Re-check when members change
 
-  // Reset template message when week changes
+  // Reset template success message when week changes (but keep templateAutoApplied to prevent re-triggering)
   useEffect(() => {
-    setTemplateAutoApplied(false);
     setTemplateWasSuccessful(false);
     setWeekWasFullyFilled(false);
   }, [weekOffset]);
@@ -294,39 +296,19 @@ export default function MainScreen({ navigation }: any) {
     }
   }, [assignments, daysToShow.length, loading]);
 
-  // Auto-apply template if all visible slots are empty
-  useEffect(() => {
-    if (!childId || !householdId || !user || loading || applyingTemplate || templateAutoApplied) return;
-
-    // Check if all slots in current view are null
-    const allSlotsEmpty = daysToShow.every(day => {
-      const dateStr = day.format('YYYY-MM-DD');
-      const dropoffKey = `${dateStr}-dropoff`;
-      const pickupKey = `${dateStr}-pickup`;
-      return !assignments[dropoffKey] && !assignments[pickupKey];
-    });
-
-    // Only auto-apply if we have days to show and all are empty
-    if (allSlotsEmpty && daysToShow.length > 0) {
-      setApplyingTemplate(true);
-      applyTemplateToWeek()
-        .then((wasApplied) => {
-          // Always mark as attempted to prevent infinite loop
-          setTemplateAutoApplied(true);
-          // Only set success flag if templates were actually applied
-          setTemplateWasSuccessful(wasApplied);
-        })
-        .catch((error) => {
-          console.error('Error applying template:', error);
-          // Mark as attempted even on error to prevent infinite loop
-          setTemplateAutoApplied(true);
-          setTemplateWasSuccessful(false);
-        })
-        .finally(() => {
-          setApplyingTemplate(false);
-        });
+  // Manual template application
+  const handleApplyTemplate = async () => {
+    setApplyingTemplate(true);
+    try {
+      const wasApplied = await applyTemplateToWeek();
+      setTemplateWasSuccessful(wasApplied);
+    } catch (error) {
+      console.error('Error applying template:', error);
+      setTemplateWasSuccessful(false);
+    } finally {
+      setApplyingTemplate(false);
     }
-  }, [assignments, daysToShow.length, loading]);
+  };
 
   // Note: Automatic template application is disabled
   // Use the debug button below to manually apply template when needed
@@ -544,17 +526,21 @@ export default function MainScreen({ navigation }: any) {
 
   // Week navigation helper - sets loading state and fetches immediately
   const changeWeek = useCallback((offset: number) => {
+    if (!initialLoadComplete) return;
+
     setWeekChanging(true);
     setWeekOffset(offset);
 
-    // Fetch data for new week immediately
-    // Note: fetchAssignments depends on weekOffset, so we need to fetch after state updates
-    setTimeout(() => {
-      if (initialLoadComplete) {
-        fetchAssignments(false);
-      }
-    }, 0);
-  }, [initialLoadComplete, fetchAssignments]);
+    // Fade out animation
+    Animated.timing(scheduleFade, {
+      toValue: 0.3,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      // Fetch data after fade out completes
+      fetchAssignments(false, offset);
+    });
+  }, [initialLoadComplete, fetchAssignments, scheduleFade]);
 
   // Swipe gesture for week navigation
   const swipeGesture = Gesture.Pan()
@@ -686,19 +672,24 @@ export default function MainScreen({ navigation }: any) {
           </View>
         )}
 
-          {/* Empty State Message - show when current week and all slots empty */}
-          {weekOffset === 0 && !loading && !applyingTemplate && !templateWasSuccessful && !weekChanging &&
-           daysToShow.every(day => {
-             const dateStr = day.format('YYYY-MM-DD');
-             return !assignments[`${dateStr}-dropoff`] && !assignments[`${dateStr}-pickup`];
-           }) && (
-            <View style={tw`mb-3 p-4 bg-secondary/10 rounded-lg border border-secondary/30`}>
+          {/* Apply Template Button - show when week is empty */}
+          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && daysToShow.length > 0 && (
+            <View style={tw`mb-3 p-4 bg-primary/20 rounded-lg border border-primary/50`}>
               <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
-                Få flyt i hverdagen 🌊
+                Fyll inn fra standard-uke ✨
               </Text>
-              <Text style={tw`text-sm text-text-light text-center`}>
-                Planlegg uken din for mindre stress og mer familietid
+              <Text style={tw`text-sm text-text-light text-center mb-3`}>
+                Få flyt i hverdagen ved å bruke ditt vanlige oppsett
               </Text>
+              <TouchableOpacity
+                style={tw`bg-primary py-2.5 px-4 rounded-lg`}
+                onPress={handleApplyTemplate}
+                activeOpacity={0.7}
+              >
+                <Text style={tw`text-center text-base font-semibold text-white`}>
+                  Fyll inn uken
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </Animated.View>
@@ -754,7 +745,7 @@ export default function MainScreen({ navigation }: any) {
         {/* Schedule List */}
         <GestureDetector gesture={swipeGesture}>
           <Animated.View style={{ opacity: scheduleFade }}>
-            {(loading || weekChanging) ? (
+            {loading ? (
               <ScheduleSkeleton />
             ) : (
               <View style={tw`gap-2`}>
