@@ -79,9 +79,19 @@ export default function MainScreen({ navigation }: any) {
 
   const daysToShow = getDaysToShow();
   const today = dayjs().format('YYYY-MM-DD');
-  const todayOrTomorrow = daysToShow.find(
-    (d) => d.format('YYYY-MM-DD') === today || d.format('YYYY-MM-DD') === dayjs().add(1, 'day').format('YYYY-MM-DD')
-  );
+  const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
+
+  // On weekends, show next Monday instead of today/tomorrow
+  const todayOrTomorrow = (() => {
+    if (currentDayOfWeek === 0 || currentDayOfWeek === 6) {
+      // It's weekend - find next Monday (first day in daysToShow)
+      return daysToShow[0];
+    }
+    // Weekday - find today or tomorrow
+    return daysToShow.find(
+      (d) => d.format('YYYY-MM-DD') === today || d.format('YYYY-MM-DD') === dayjs().add(1, 'day').format('YYYY-MM-DD')
+    );
+  })();
 
   const fetchAssignments = useCallback(async () => {
     if (!childId || !householdId) return;
