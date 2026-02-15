@@ -156,7 +156,7 @@ export default function SplashScreen() {
       {/* Tagline */}
       <Animated.View style={{ opacity: taglineFade, transform: [{ translateY: taglineFade.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
         <Text style={[tw`text-lg text-center tracking-wide`, { fontFamily: 'Manrope_400Regular', color: '#a89985' }]}>
-          Flyt i hverdagen
+          Gjør hverdagen enklere
         </Text>
       </Animated.View>
       </View>
