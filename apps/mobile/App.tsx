@@ -13,7 +13,7 @@ import PersonalInfoScreen from './src/screens/PersonalInfoScreen';
 import NotificationsSettingsScreen from './src/screens/NotificationsSettingsScreen';
 import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Animated } from 'react-native';
 import tw from './src/lib/tw';
 import { useFonts, Manrope_300Light, Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
 import * as Notifications from 'expo-notifications';
@@ -42,9 +42,11 @@ const Stack = createNativeStackNavigator();
 function AppNavigator() {
   const { user, needsOnboarding, loading, householdId, members } = useHousehold();
   const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const prevLoadingRef = useRef<boolean | null>(null);
   const splashTimerRef = useRef<NodeJS.Timeout | null>(null);
   const notificationInitializedRef = useRef(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Initialize notifications when user is logged in
   // NOTE: When running in Expo Go, you'll see warnings about remote push notifications
@@ -124,11 +126,23 @@ function AppNavigator() {
       // Start new timer
       splashTimerRef.current = setTimeout(() => {
         setMinSplashTimeElapsed(true);
-      }, 2500);
+      }, 3000);
     }
 
     prevLoadingRef.current = loading;
   }, [loading]);
+
+  // Trigger fade-out when ready to show main content
+  useEffect(() => {
+    if (!loading && minSplashTimeElapsed && !isFadingOut) {
+      setIsFadingOut(true);
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [loading, minSplashTimeElapsed, isFadingOut, fadeAnim]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -139,66 +153,82 @@ function AppNavigator() {
     };
   }, []);
 
-  // Show splash until both loading is done AND minimum time has elapsed
-  if (loading || !minSplashTimeElapsed) {
-    return <SplashScreen />;
-  }
+  const shouldShowSplash = loading || !minSplashTimeElapsed || fadeAnim._value > 0;
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: '#2d2520' }, // bg-background color (warm brown)
-      }}
-    >
-      {!user ? (
-        <Stack.Screen name="Auth" component={AuthScreen} />
-      ) : needsOnboarding ? (
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      ) : (
-        <>
-          <Stack.Screen
-            name="Main"
-            component={MainScreen}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="PersonalInfo"
-            component={PersonalInfoScreen}
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="NotificationsSettings"
-            component={NotificationsSettingsScreen}
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="EquipmentManagement"
-            component={EquipmentManagementScreen}
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-        </>
+    <View style={{ flex: 1 }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#2d2520' }, // bg-background color (warm brown)
+        }}
+      >
+        {!user ? (
+          <Stack.Screen name="Auth" component={AuthScreen} />
+        ) : needsOnboarding ? (
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : (
+          <>
+            <Stack.Screen
+              name="Main"
+              component={MainScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="PersonalInfo"
+              component={PersonalInfoScreen}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="NotificationsSettings"
+              component={NotificationsSettingsScreen}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="EquipmentManagement"
+              component={EquipmentManagementScreen}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+          </>
+        )}
+      </Stack.Navigator>
+
+      {/* Splash screen overlay with fade-out animation */}
+      {shouldShowSplash && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: fadeAnim,
+          }}
+          pointerEvents={isFadingOut ? 'none' : 'auto'}
+        >
+          <SplashScreen />
+        </Animated.View>
       )}
-    </Stack.Navigator>
+    </View>
   );
 }
 
