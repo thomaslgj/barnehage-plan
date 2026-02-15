@@ -20,7 +20,9 @@ import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import { Text } from '../components/Text';
 import TodayCard from '../components/TodayCard';
+import TodayCardSkeleton from '../components/TodayCardSkeleton';
 import ScheduleSlot from '../components/ScheduleSlot';
+import ScheduleSkeleton from '../components/ScheduleSkeleton';
 import type { ScheduleAssignment } from '../types/db';
 import tw from '../lib/tw';
 
@@ -54,10 +56,10 @@ export default function MainScreen({ navigation }: any) {
 
   // Animation refs
   const celebrationConfettiRef = useRef<any>(null);
-  const todayCardFade = useRef(new Animated.Value(0)).current;
-  const messagesFade = useRef(new Animated.Value(0)).current;
-  const navigationFade = useRef(new Animated.Value(0)).current;
-  const scheduleFade = useRef(new Animated.Value(0)).current;
+  const todayCardFade = useRef(new Animated.Value(1)).current;
+  const messagesFade = useRef(new Animated.Value(1)).current;
+  const navigationFade = useRef(new Animated.Value(1)).current;
+  const scheduleFade = useRef(new Animated.Value(1)).current;
   const prevButtonScale = useRef(new Animated.Value(1)).current;
   const nextButtonScale = useRef(new Animated.Value(1)).current;
   const profileButtonScale = useRef(new Animated.Value(1)).current;
@@ -155,19 +157,19 @@ export default function MainScreen({ navigation }: any) {
     }
   }, [childId, householdId, weekOffset, refreshing]);
 
+  // Initial fetch - deferred to avoid choppy splash animations
   useEffect(() => {
     if (childId && householdId && !initialFetchDone.current) {
       initialFetchDone.current = true;
 
-      // Defer data fetching until after splash animation completes
-      // This prevents choppy animations during splash
+      // Defer initial data fetching until after splash animation completes
       const fetchTimer = setTimeout(() => {
         fetchAssignments(true);
       }, 2600); // Wait for splash (2s) + fade (500ms) + small buffer (100ms)
 
       return () => clearTimeout(fetchTimer);
     }
-  }, [childId, householdId, fetchAssignments]);
+  }, [childId, householdId]);
 
   // Set content to visible immediately when loading completes (no fade-in animation)
   useEffect(() => {
@@ -403,25 +405,25 @@ export default function MainScreen({ navigation }: any) {
         }
       }
 
-      // Insert new assignments from template
+      // Insert/update new assignments from template (use upsert to handle duplicates)
       if (newAssignments.length > 0) {
-        console.log('Inserting assignments:', newAssignments.length);
-        console.log('Assignments to insert:', JSON.stringify(newAssignments, null, 2));
-        const { error: insertError } = await supabase
+        console.log('Upserting assignments:', newAssignments.length);
+        console.log('Assignments to upsert:', JSON.stringify(newAssignments, null, 2));
+        const { error: upsertError } = await supabase
           .from('schedule_assignments')
-          .insert(newAssignments);
+          .upsert(newAssignments, { onConflict: 'child_id,date,slot' });
 
-        if (insertError) {
-          console.error('Insert error:', insertError);
+        if (upsertError) {
+          console.error('Upsert error:', upsertError);
           return false;
         } else {
-          console.log('Successfully inserted, refreshing...');
+          console.log('Successfully upserted, refreshing...');
           // Refresh assignments
           await fetchAssignments();
           return true; // Successfully applied template
         }
       } else {
-        console.log('No new assignments to insert');
+        console.log('No new assignments to upsert');
         return false;
       }
     } catch (error) {
@@ -540,11 +542,19 @@ export default function MainScreen({ navigation }: any) {
     callback();
   };
 
-  // Week navigation helper - sets loading state immediately
-  const changeWeek = (offset: number) => {
+  // Week navigation helper - sets loading state and fetches immediately
+  const changeWeek = useCallback((offset: number) => {
     setWeekChanging(true);
     setWeekOffset(offset);
-  };
+
+    // Fetch data for new week immediately
+    // Note: fetchAssignments depends on weekOffset, so we need to fetch after state updates
+    setTimeout(() => {
+      if (initialLoadComplete) {
+        fetchAssignments(false);
+      }
+    }, 0);
+  }, [initialLoadComplete, fetchAssignments]);
 
   // Swipe gesture for week navigation
   const swipeGesture = Gesture.Pan()
@@ -614,16 +624,20 @@ export default function MainScreen({ navigation }: any) {
         )}
 
         {/* Today/Tomorrow Card */}
-        {todayOrTomorrow && weekOffset === 0 && (
+        {weekOffset === 0 && (
           <Animated.View style={{ opacity: todayCardFade }}>
-            <TodayCard
-              date={todayOrTomorrow.format('YYYY-MM-DD')}
-              dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
-              pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
-              dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
-              pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
-              members={members}
-            />
+            {(loading || weekChanging) ? (
+              <TodayCardSkeleton />
+            ) : todayOrTomorrow ? (
+              <TodayCard
+                date={todayOrTomorrow.format('YYYY-MM-DD')}
+                dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
+                pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
+                dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
+                pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
+                members={members}
+              />
+            ) : null}
           </Animated.View>
         )}
 
@@ -673,7 +687,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
           {/* Empty State Message - show when current week and all slots empty */}
-          {weekOffset === 0 && !applyingTemplate && !templateWasSuccessful && !weekChanging &&
+          {weekOffset === 0 && !loading && !applyingTemplate && !templateWasSuccessful && !weekChanging &&
            daysToShow.every(day => {
              const dateStr = day.format('YYYY-MM-DD');
              return !assignments[`${dateStr}-dropoff`] && !assignments[`${dateStr}-pickup`];
@@ -727,12 +741,12 @@ export default function MainScreen({ navigation }: any) {
           {/* Go to Current Week Button */}
           {weekOffset !== 0 && (
             <TouchableOpacity
-              style={tw`mb-3 py-2 px-3 bg-secondary/20 rounded-lg border border-secondary/50`}
+              style={tw`mb-3 flex-row items-center justify-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
               onPress={() => changeWeek(0)}
+              activeOpacity={0.7}
             >
-              <Text style={tw`text-center text-sm text-secondary-light font-medium`}>
-                📅 Gå til nåværende uke
-              </Text>
+              <Ionicons name="today-outline" size={20} color="#fff" />
+              <Text style={tw`text-base text-white font-medium`}>Gå til nåværende uke</Text>
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -740,27 +754,30 @@ export default function MainScreen({ navigation }: any) {
         {/* Schedule List */}
         <GestureDetector gesture={swipeGesture}>
           <Animated.View style={{ opacity: scheduleFade }}>
-            <View style={tw`gap-2`}>
-          {/* Header */}
-          <View style={tw`flex-row gap-2 mb-2 px-1`}>
-            <View style={tw`flex-1 items-center`}>
-              <Text style={tw`text-[10px] font-medium text-slate-400`}>Levering</Text>
-            </View>
-            <View style={tw`flex-1 items-center`}>
-              <Text style={tw`text-[10px] font-medium text-slate-400`}>Henting</Text>
-            </View>
-          </View>
+            {(loading || weekChanging) ? (
+              <ScheduleSkeleton />
+            ) : (
+              <View style={tw`gap-2`}>
+                {/* Header */}
+                <View style={tw`flex-row gap-2 mb-2 px-1`}>
+                  <View style={tw`flex-1 items-center`}>
+                    <Text style={tw`text-[10px] font-medium text-slate-400`}>Levering</Text>
+                  </View>
+                  <View style={tw`flex-1 items-center`}>
+                    <Text style={tw`text-[10px] font-medium text-slate-400`}>Henting</Text>
+                  </View>
+                </View>
 
-          {/* Template Auto-Applied Message */}
-          {templateWasSuccessful && !applyingTemplate && (
-            <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
-              <Text style={tw`text-sm text-primary-light text-center`}>
-                Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
-              </Text>
-            </View>
-          )}
+                {/* Template Auto-Applied Message */}
+                {templateWasSuccessful && !applyingTemplate && (
+                  <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
+                    <Text style={tw`text-sm text-primary-light text-center`}>
+                      Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
+                    </Text>
+                  </View>
+                )}
 
-          {daysToShow.map((day, index) => {
+                {daysToShow.map((day, index) => {
             const dateStr = day.format('YYYY-MM-DD');
             const dropoffKey = `${dateStr}-dropoff`;
             const pickupKey = `${dateStr}-pickup`;
@@ -808,7 +825,8 @@ export default function MainScreen({ navigation }: any) {
               </View>
             );
           })}
-            </View>
+              </View>
+            )}
           </Animated.View>
         </GestureDetector>
       </ScrollView>
