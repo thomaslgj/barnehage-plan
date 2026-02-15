@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2d2520"
       },
-      "backgroundColor": "#2d2520"
+      "backgroundColor": "#2d2520",
+      "package": "com.thomaslg.flyt"
     },
     "web": {
       "favicon": "./assets/favicon.png"

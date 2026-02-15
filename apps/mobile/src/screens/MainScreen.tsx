@@ -520,6 +520,8 @@ export default function MainScreen({ navigation }: any) {
 
   // Swipe gesture for week navigation
   const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20]) // Only activate on horizontal movement
+    .failOffsetY([-10, 10]) // Fail if vertical movement detected
     .onEnd((event) => {
       if (event.velocityX > 500) {
         // Swipe right - go to previous week
