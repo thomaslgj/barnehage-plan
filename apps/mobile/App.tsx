@@ -43,6 +43,7 @@ function AppNavigator() {
   const { user, needsOnboarding, loading, householdId, members } = useHousehold();
   const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const [fadeComplete, setFadeComplete] = useState(false);
   const prevLoadingRef = useRef<boolean | null>(null);
   const splashTimerRef = useRef<NodeJS.Timeout | null>(null);
   const notificationInitializedRef = useRef(false);
@@ -120,8 +121,11 @@ function AppNavigator() {
         clearTimeout(splashTimerRef.current);
       }
 
-      // Reset the elapsed flag
+      // Reset the elapsed flag and fade states
       setMinSplashTimeElapsed(false);
+      setIsFadingOut(false);
+      setFadeComplete(false);
+      fadeAnim.setValue(1);
 
       // Start new timer
       splashTimerRef.current = setTimeout(() => {
@@ -130,7 +134,7 @@ function AppNavigator() {
     }
 
     prevLoadingRef.current = loading;
-  }, [loading]);
+  }, [loading, fadeAnim]);
 
   // Trigger fade-out when ready to show main content
   useEffect(() => {
@@ -140,7 +144,11 @@ function AppNavigator() {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
-      }).start();
+      }).start(({ finished }) => {
+        if (finished) {
+          setFadeComplete(true);
+        }
+      });
     }
   }, [loading, minSplashTimeElapsed, isFadingOut, fadeAnim]);
 
@@ -153,7 +161,7 @@ function AppNavigator() {
     };
   }, []);
 
-  const shouldShowSplash = loading || !minSplashTimeElapsed || fadeAnim._value > 0;
+  const shouldShowSplash = loading || !minSplashTimeElapsed || !fadeComplete;
 
   return (
     <View style={{ flex: 1 }}>
