@@ -47,6 +47,8 @@ export default function MainScreen({ navigation }: any) {
   const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
   const [inviteMessageDismissed, setInviteMessageDismissed] = useState(false);
   const [weekWasFullyFilled, setWeekWasFullyFilled] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [weekChanging, setWeekChanging] = useState(false);
 
   // Animation refs
   const celebrationConfettiRef = useRef<any>(null);
@@ -93,8 +95,15 @@ export default function MainScreen({ navigation }: any) {
     );
   })();
 
-  const fetchAssignments = useCallback(async () => {
+  const fetchAssignments = useCallback(async (isInitialLoad = false) => {
     if (!childId || !householdId) return;
+
+    // Show appropriate loading state
+    if (isInitialLoad) {
+      setLoading(true);
+    } else if (!refreshing) {
+      setWeekChanging(true);
+    }
 
     try {
       // Recalculate days based on current weekOffset
@@ -135,21 +144,24 @@ export default function MainScreen({ navigation }: any) {
     } catch (error) {
       console.error('Error fetching assignments:', error);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+        setInitialLoadComplete(true);
+      }
+      setWeekChanging(false);
       setRefreshing(false);
     }
-  }, [childId, householdId, weekOffset]);
+  }, [childId, householdId, weekOffset, refreshing]);
 
   useEffect(() => {
     if (childId && householdId) {
-      setLoading(true);
-      fetchAssignments();
+      fetchAssignments(!initialLoadComplete);
     }
-  }, [fetchAssignments, childId, householdId]);
+  }, [fetchAssignments, childId, householdId, initialLoadComplete]);
 
-  // Trigger staggered animations when loading completes
+  // Trigger staggered animations when loading completes (initial load only)
   useEffect(() => {
-    if (!loading) {
+    if (!loading && initialLoadComplete) {
       // Reset all animations
       todayCardFade.setValue(0);
       messagesFade.setValue(0);
@@ -180,7 +192,26 @@ export default function MainScreen({ navigation }: any) {
         }),
       ]).start();
     }
-  }, [loading]);
+  }, [loading, initialLoadComplete]);
+
+  // Smooth fade animation for week changes
+  useEffect(() => {
+    if (weekChanging) {
+      // Fade out
+      Animated.timing(scheduleFade, {
+        toValue: 0.3,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    } else if (initialLoadComplete) {
+      // Fade in
+      Animated.timing(scheduleFade, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [weekChanging, initialLoadComplete]);
 
   // Fetch child name
   useEffect(() => {
@@ -518,6 +549,12 @@ export default function MainScreen({ navigation }: any) {
     callback();
   };
 
+  // Week navigation helper - sets loading state immediately
+  const changeWeek = (offset: number) => {
+    setWeekChanging(true);
+    setWeekOffset(offset);
+  };
+
   // Swipe gesture for week navigation
   const swipeGesture = Gesture.Pan()
     .activeOffsetX([-20, 20]) // Only activate on horizontal movement
@@ -528,13 +565,13 @@ export default function MainScreen({ navigation }: any) {
         if (Platform.OS !== 'web') {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        setWeekOffset(weekOffset - 1);
+        changeWeek(weekOffset - 1);
       } else if (event.velocityX < -500) {
         // Swipe left - go to next week
         if (Platform.OS !== 'web') {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        setWeekOffset(weekOffset + 1);
+        changeWeek(weekOffset + 1);
       }
     });
 
@@ -675,7 +712,7 @@ export default function MainScreen({ navigation }: any) {
           <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
             <TouchableOpacity
               style={tw`p-2 bg-slate-700/50 rounded-lg`}
-              onPress={() => animateButtonPress(prevButtonScale, () => setWeekOffset(weekOffset - 1))}
+              onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
               activeOpacity={0.7}
             >
               <Text style={tw`text-2xl text-text`}>‹</Text>
@@ -683,15 +720,20 @@ export default function MainScreen({ navigation }: any) {
           </Animated.View>
 
           <View style={tw`flex-1 items-center px-3`}>
-            <Text style={tw`text-base font-semibold text-text`}>
-              Uke {weekNumber}, {year}
-            </Text>
+            <View style={tw`flex-row items-center gap-2`}>
+              {weekChanging && (
+                <ActivityIndicator size="small" color="#7fa884" />
+              )}
+              <Text style={tw`text-base font-semibold text-text`}>
+                Uke {weekNumber}, {year}
+              </Text>
+            </View>
           </View>
 
           <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
             <TouchableOpacity
               style={tw`p-2 bg-slate-700/50 rounded-lg`}
-              onPress={() => animateButtonPress(nextButtonScale, () => setWeekOffset(weekOffset + 1))}
+              onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
               activeOpacity={0.7}
             >
               <Text style={tw`text-2xl text-text`}>›</Text>
@@ -703,7 +745,7 @@ export default function MainScreen({ navigation }: any) {
           {weekOffset !== 0 && (
             <TouchableOpacity
               style={tw`mb-3 py-2 px-3 bg-secondary/20 rounded-lg border border-secondary/50`}
-              onPress={() => setWeekOffset(0)}
+              onPress={() => changeWeek(0)}
             >
               <Text style={tw`text-center text-sm text-secondary-light font-medium`}>
                 📅 Gå til nåværende uke
