@@ -49,6 +49,8 @@ export default function MainScreen({ navigation }: any) {
   const [weekWasFullyFilled, setWeekWasFullyFilled] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [weekChanging, setWeekChanging] = useState(false);
+  const initialFetchDone = useRef(false);
+  const animationsTriggered = useRef(false);
 
   // Animation refs
   const celebrationConfettiRef = useRef<any>(null);
@@ -154,43 +156,22 @@ export default function MainScreen({ navigation }: any) {
   }, [childId, householdId, weekOffset, refreshing]);
 
   useEffect(() => {
-    if (childId && householdId) {
-      fetchAssignments(!initialLoadComplete);
+    if (childId && householdId && !initialFetchDone.current) {
+      initialFetchDone.current = true;
+      fetchAssignments(true);
     }
-  }, [fetchAssignments, childId, householdId, initialLoadComplete]);
+  }, [childId, householdId, fetchAssignments]);
 
-  // Trigger staggered animations when loading completes (initial load only)
+  // Set content to visible immediately when loading completes (no fade-in animation)
   useEffect(() => {
-    if (!loading) {
-      // Reset all animations
-      todayCardFade.setValue(0);
-      messagesFade.setValue(0);
-      navigationFade.setValue(0);
-      scheduleFade.setValue(0);
+    if (!loading && !animationsTriggered.current) {
+      animationsTriggered.current = true;
 
-      // Stagger the animations
-      Animated.stagger(100, [
-        Animated.timing(todayCardFade, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(messagesFade, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(navigationFade, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scheduleFade, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Set all animations to fully visible immediately (no fade-in)
+      todayCardFade.setValue(1);
+      messagesFade.setValue(1);
+      navigationFade.setValue(1);
+      scheduleFade.setValue(1);
     }
   }, [loading]);
 
@@ -577,14 +558,6 @@ export default function MainScreen({ navigation }: any) {
         changeWeek(weekOffset + 1);
       }
     });
-
-  if (loading) {
-    return (
-      <View style={tw`flex-1 justify-center items-center bg-background`}>
-        <ActivityIndicator size="large" color="#6b8e6f" />
-      </View>
-    );
-  }
 
   return (
     <>

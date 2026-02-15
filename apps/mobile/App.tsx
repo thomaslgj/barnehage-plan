@@ -47,6 +47,7 @@ function AppNavigator() {
   const prevLoadingRef = useRef<boolean | null>(null);
   const splashTimerRef = useRef<NodeJS.Timeout | null>(null);
   const notificationInitializedRef = useRef(false);
+  const splashCompletedRef = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Initialize notifications when user is logged in
@@ -110,12 +111,13 @@ function AppNavigator() {
     }
   }, [user, householdId, members, needsOnboarding]);
 
-  // Start timer when loading begins
+  // Start timer when loading begins (but only on first render, never reset after splash completes)
   useEffect(() => {
     const isFirstRender = prevLoadingRef.current === null;
     const loadingStarted = loading && !prevLoadingRef.current;
 
-    if (isFirstRender || loadingStarted) {
+    // Only initialize splash on first render, never reset after completion
+    if ((isFirstRender || loadingStarted) && !splashCompletedRef.current) {
       // Clear any existing timer
       if (splashTimerRef.current) {
         clearTimeout(splashTimerRef.current);
@@ -130,7 +132,7 @@ function AppNavigator() {
       // Start new timer
       splashTimerRef.current = setTimeout(() => {
         setMinSplashTimeElapsed(true);
-      }, 3000);
+      }, 2000);
     }
 
     prevLoadingRef.current = loading;
@@ -138,8 +140,11 @@ function AppNavigator() {
 
   // Trigger fade-out when ready to show main content
   useEffect(() => {
-    if (!loading && minSplashTimeElapsed && !isFadingOut) {
+    if (!loading && minSplashTimeElapsed && !isFadingOut && !splashCompletedRef.current) {
+      // Mark as completed immediately to prevent any resets during fade
+      splashCompletedRef.current = true;
       setIsFadingOut(true);
+
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 500,
@@ -161,7 +166,7 @@ function AppNavigator() {
     };
   }, []);
 
-  const shouldShowSplash = loading || !minSplashTimeElapsed || !fadeComplete;
+  const shouldShowSplash = !splashCompletedRef.current && (loading || !minSplashTimeElapsed || !fadeComplete);
 
   return (
     <View style={{ flex: 1 }}>
