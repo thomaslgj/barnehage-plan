@@ -158,7 +158,14 @@ export default function MainScreen({ navigation }: any) {
   useEffect(() => {
     if (childId && householdId && !initialFetchDone.current) {
       initialFetchDone.current = true;
-      fetchAssignments(true);
+
+      // Defer data fetching until after splash animation completes
+      // This prevents choppy animations during splash
+      const fetchTimer = setTimeout(() => {
+        fetchAssignments(true);
+      }, 2600); // Wait for splash (2s) + fade (500ms) + small buffer (100ms)
+
+      return () => clearTimeout(fetchTimer);
     }
   }, [childId, householdId, fetchAssignments]);
 
