@@ -161,7 +161,7 @@ export default function MainScreen({ navigation }: any) {
 
   // Trigger staggered animations when loading completes (initial load only)
   useEffect(() => {
-    if (!loading && initialLoadComplete) {
+    if (!loading) {
       // Reset all animations
       todayCardFade.setValue(0);
       messagesFade.setValue(0);
@@ -192,10 +192,12 @@ export default function MainScreen({ navigation }: any) {
         }),
       ]).start();
     }
-  }, [loading, initialLoadComplete]);
+  }, [loading]);
 
-  // Smooth fade animation for week changes
+  // Smooth fade animation for week changes (only after initial load)
   useEffect(() => {
+    if (!initialLoadComplete) return; // Skip until after first load
+
     if (weekChanging) {
       // Fade out
       Animated.timing(scheduleFade, {
@@ -203,7 +205,7 @@ export default function MainScreen({ navigation }: any) {
         duration: 150,
         useNativeDriver: true,
       }).start();
-    } else if (initialLoadComplete) {
+    } else {
       // Fade in
       Animated.timing(scheduleFade, {
         toValue: 1,
@@ -278,6 +280,7 @@ export default function MainScreen({ navigation }: any) {
   // Reset template message when week changes
   useEffect(() => {
     setTemplateAutoApplied(false);
+    setTemplateWasSuccessful(false);
     setWeekWasFullyFilled(false);
   }, [weekOffset]);
 
@@ -690,7 +693,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
           {/* Empty State Message - show when current week and all slots empty */}
-          {weekOffset === 0 && !applyingTemplate && !templateWasSuccessful &&
+          {weekOffset === 0 && !applyingTemplate && !templateWasSuccessful && !weekChanging &&
            daysToShow.every(day => {
              const dateStr = day.format('YYYY-MM-DD');
              return !assignments[`${dateStr}-dropoff`] && !assignments[`${dateStr}-pickup`];
