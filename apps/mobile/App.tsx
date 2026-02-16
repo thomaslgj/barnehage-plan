@@ -235,6 +235,8 @@ function AppNavigator() {
             right: 0,
             bottom: 0,
             opacity: fadeAnim,
+            zIndex: 9999,
+            backgroundColor: '#2B1E16', // Match splash background color
           }}
           pointerEvents={isFadingOut ? 'none' : 'auto'}
         >

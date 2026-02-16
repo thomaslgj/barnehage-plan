@@ -9,7 +9,6 @@ import Animated, {
 import SplashBackground from './SplashBackground';
 
 const LOGO_COLOR = '#EDE7DF';
-const SUBTITLE_COLOR = 'rgba(237, 231, 223, 0.55)';
 
 export default function SplashScreen() {
   // Text animation values
@@ -54,9 +53,6 @@ export default function SplashScreen() {
         <Animated.View style={textStyle}>
           {/* FLYT wordmark */}
           <Text style={styles.wordmark}>F L Y T</Text>
-
-          {/* Subtitle */}
-          <Text style={styles.subtitle}>Planen. Synlig for begge.</Text>
         </Animated.View>
       </View>
     </View>
@@ -79,13 +75,5 @@ const styles = StyleSheet.create({
     color: LOGO_COLOR,
     textAlign: 'center',
     letterSpacing: 8,
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontFamily: 'Manrope_400Regular',
-    fontSize: 18,
-    color: SUBTITLE_COLOR,
-    textAlign: 'center',
-    letterSpacing: 1,
   },
 });
