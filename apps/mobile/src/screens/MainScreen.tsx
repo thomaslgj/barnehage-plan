@@ -420,15 +420,17 @@ export default function MainScreen({ navigation }: any) {
   };
 
   const handleSlotPress = async (date: string, slot: 'dropoff' | 'pickup') => {
-    // Clear template auto-applied message when user makes manual changes
-    if (templateAutoApplied) {
-      setTemplateAutoApplied(false);
-    }
+    console.log('🔥 handleSlotPress called!', { date, slot });
 
-    if (!childId || !householdId || !user) return;
+    if (!childId || !householdId || !user) {
+      console.log('❌ Missing required data:', { childId, householdId, user: !!user });
+      return;
+    }
 
     const key = `${date}-${slot}`;
     const currentUserId = assignments[key] || null;
+
+    console.log('📊 Current state:', { key, currentUserId, members: members.length });
 
     // Build cycle order: null -> person1 -> person2 -> null
     // Always use member_id to match what we store in the database
@@ -437,10 +439,14 @@ export default function MainScreen({ navigation }: any) {
       ...members.slice(0, 2).map(m => m.id)
     ];
 
+    console.log('🔄 Cycle order:', order);
+
     // Find current index and get next
     const currentIndex = order.indexOf(currentUserId);
     const nextIndex = (currentIndex + 1) % order.length;
     const nextUserId = order[nextIndex];
+
+    console.log('➡️ Cycling:', { from: currentUserId, to: nextUserId });
 
     // OPTIMISTIC UPDATE: Update UI immediately
     setAssignments((prev) => ({
@@ -542,25 +548,7 @@ export default function MainScreen({ navigation }: any) {
     });
   }, [initialLoadComplete, fetchAssignments, scheduleFade]);
 
-  // Swipe gesture for week navigation
-  const swipeGesture = Gesture.Pan()
-    .activeOffsetX([-20, 20]) // Only activate on horizontal movement
-    .failOffsetY([-10, 10]) // Fail if vertical movement detected
-    .onEnd((event) => {
-      if (event.velocityX > 500) {
-        // Swipe right - go to previous week
-        if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        changeWeek(weekOffset - 1);
-      } else if (event.velocityX < -500) {
-        // Swipe left - go to next week
-        if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        changeWeek(weekOffset + 1);
-      }
-    });
+  // Swipe gesture removed - use arrow buttons for week navigation to avoid blocking slot taps
 
   return (
     <>
@@ -622,6 +610,8 @@ export default function MainScreen({ navigation }: any) {
                 dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
                 pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
                 members={members}
+                onDropoffPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'dropoff')}
+                onPickupPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'pickup')}
               />
             ) : null}
           </Animated.View>
@@ -743,8 +733,7 @@ export default function MainScreen({ navigation }: any) {
         </Animated.View>
 
         {/* Schedule List */}
-        <GestureDetector gesture={swipeGesture}>
-          <Animated.View style={{ opacity: scheduleFade }}>
+        <Animated.View style={{ opacity: scheduleFade }} pointerEvents="box-none">
             {loading ? (
               <ScheduleSkeleton />
             ) : (
@@ -819,7 +808,6 @@ export default function MainScreen({ navigation }: any) {
               </View>
             )}
           </Animated.View>
-        </GestureDetector>
       </ScrollView>
     </SafeAreaView>
     </>

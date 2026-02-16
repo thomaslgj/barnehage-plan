@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import dayjs from 'dayjs';
 import 'dayjs/locale/nb';
@@ -28,6 +29,8 @@ interface TodayCardProps {
   dropoffUserId?: string | null;
   pickupUserId?: string | null;
   members?: Array<{ id: string; user_id: string | null; display_name: string | null }>;
+  onDropoffPress?: () => void;
+  onPickupPress?: () => void;
 }
 
 const MODAL_SHOWN_KEY = 'equipment_modal_last_shown';
@@ -38,7 +41,9 @@ export default function TodayCard({
   pickupName,
   dropoffUserId,
   pickupUserId,
-  members = []
+  members = [],
+  onDropoffPress,
+  onPickupPress,
 }: TodayCardProps) {
   const { user, householdId } = useHousehold();
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
@@ -180,7 +185,7 @@ export default function TodayCard({
                     displayName={dropoffName}
                     userId={dropoffUserId}
                     members={members}
-                    onPress={() => {}}
+                    onPress={onDropoffPress || (() => {})}
                     loading={false}
                     isInHero={true}
                   />
@@ -193,7 +198,7 @@ export default function TodayCard({
                     displayName={pickupName}
                     userId={pickupUserId}
                     members={members}
-                    onPress={() => {}}
+                    onPress={onPickupPress || (() => {})}
                     loading={false}
                     isInHero={true}
                   />
@@ -201,9 +206,12 @@ export default function TodayCard({
               )}
             </>
           ) : (
-            <Text style={[tw`text-sm py-2 text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>
-              Ingen oppgaver {isToday ? 'i dag' : 'i morgen'}
-            </Text>
+            <View style={tw`flex-row items-center gap-2 py-2`}>
+              <Ionicons name="alert-circle-outline" size={18} color="#f87171" />
+              <Text style={[tw`text-sm text-red-400`, { fontFamily: 'Manrope_400Regular' }]}>
+                Ingen valgt for levering eller henting {isToday ? 'i dag' : 'i morgen'}
+              </Text>
+            </View>
           )}
         </View>
 
