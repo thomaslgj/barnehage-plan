@@ -580,7 +580,7 @@ export default function MainScreen({ navigation }: any) {
       <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
         <ScrollView
           style={tw`flex-1`}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7fa884']} />
           }
