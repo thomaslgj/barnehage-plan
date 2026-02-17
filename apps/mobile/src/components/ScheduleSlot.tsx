@@ -22,8 +22,6 @@ const ScheduleSlot = memo(function ScheduleSlot({
   loading,
   isInHero = false
 }: ScheduleSlotProps) {
-  // Use consistent arrow symbols
-  const icon = slotType === 'dropoff' ? '▶' : '◀';
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   // Determine which person this is - memoized
@@ -57,7 +55,6 @@ const ScheduleSlot = memo(function ScheduleSlot({
     : 'h-[50px] py-2.5 px-3';
 
   const textSize = isInHero ? 'text-xl' : 'text-base';
-  const iconSize = 'text-lg'; // Consistent size for both arrows
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -82,32 +79,19 @@ const ScheduleSlot = memo(function ScheduleSlot({
     onPress();
   };
 
-  // Render content - arrow on left, centered text that never overlaps
+  // Render content - centered text without arrow (chevron shape indicates direction)
   const content = (
-    <View style={tw`flex-1 flex-row items-center`}>
+    <View style={tw`flex-1 items-center justify-center px-2`}>
       {loading ? (
-        <View style={tw`flex-1 items-center justify-center`}>
-          <ActivityIndicator size="small" color={hasAssignment ? (useDarkText ? "#2d2520" : "#f5f1ed") : "#a89985"} />
-        </View>
+        <ActivityIndicator size="small" color={hasAssignment ? (useDarkText ? "#2d2520" : "#f5f1ed") : "#a89985"} />
       ) : (
-        <>
-          {/* Arrow icon on the left with fixed width */}
-          <View style={tw`w-6 items-center justify-center`}>
-            <Text style={[tw`${iconSize}`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}>
-              {icon}
-            </Text>
-          </View>
-          {/* Centered text in remaining space */}
-          <View style={tw`flex-1 items-center justify-center pr-6`}>
-            <Text
-              style={[tw`${textSize} font-bold`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {displayName || '—'}
-            </Text>
-          </View>
-        </>
+        <Text
+          style={[tw`${textSize} font-bold`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {displayName || '—'}
+        </Text>
       )}
     </View>
   );
@@ -132,7 +116,7 @@ const ScheduleSlot = memo(function ScheduleSlot({
         activeOpacity={0.7}
         style={[
           tw.style(
-            `${containerClasses} items-center justify-center rounded-lg overflow-hidden`,
+            `${containerClasses} items-center justify-center rounded-lg`,
             !hasAssignment && 'border border-border/50',
             loading && 'opacity-50'
           ),

@@ -712,12 +712,12 @@ export default function MainScreen({ navigation }: any) {
             ) : (
               <View style={tw`gap-2`}>
                 {/* Header */}
-                <View style={tw`flex-row gap-2 mb-2 px-1`}>
+                <View style={tw`flex-row gap-4 mb-2 px-1`}>
                   <View style={tw`flex-1 items-center`}>
-                    <Text style={tw`text-[10px] font-medium text-slate-400`}>Levering</Text>
+                    <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
                   </View>
                   <View style={tw`flex-1 items-center`}>
-                    <Text style={tw`text-[10px] font-medium text-slate-400`}>Henting</Text>
+                    <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
                   </View>
                 </View>
 
@@ -754,7 +754,7 @@ export default function MainScreen({ navigation }: any) {
                     </Text>
                   </View>
 
-                  <View style={tw`flex-row gap-2`}>
+                  <View style={tw`flex-row gap-4`}>
                     <View style={tw`flex-1`}>
                       <ScheduleSlot
                         key={`${dropoffKey}-${assignments[dropoffKey] || 'empty'}`}

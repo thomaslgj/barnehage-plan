@@ -175,7 +175,7 @@ export default function TodayCard({
           <Text style={[tw`text-base text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>{dayName}</Text>
         </View>
 
-        <View style={tw`flex-row gap-2 mb-4`}>
+        <View style={tw`flex-row gap-4 mb-4`}>
           <View style={tw`flex-1`}>
             <ScheduleSlot
               key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
