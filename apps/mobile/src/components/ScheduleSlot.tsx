@@ -52,12 +52,16 @@ const ScheduleSlot = memo(function ScheduleSlot({
   // Determine which person this is - memoized
   const personIndex = useMemo(() => {
     if (!userId || members.length === 0) {
+      console.log('personIndex: userId is null or no members');
       return null;
     }
-    return members.findIndex(m => m.user_id === userId || m.id === userId);
+    const index = members.findIndex(m => m.user_id === userId || m.id === userId);
+    console.log('personIndex calculation:', { userId, index, members: members.map(m => ({ id: m.id, user_id: m.user_id })) });
+    return index;
   }, [userId, members]);
 
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
+  console.log('ScheduleSlot computed values:', { personIndex, hasAssignment, displayName, userId });
 
   // Person 2 (yellow background) needs dark text for contrast
   const useDarkText = personIndex === 1;
@@ -138,11 +142,11 @@ const ScheduleSlot = memo(function ScheduleSlot({
         </View>
       ) : (
         <>
-          <Text style={[tw`${iconSize} ${hasAssignment ? (useDarkText ? 'text-background/90' : 'text-white/90') : 'text-text-light'}`, { fontFamily: 'Manrope_400Regular' }]}>
+          <Text style={[tw`${iconSize}`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}>
             {icon}
           </Text>
           <Text
-            style={[tw`${textSize} font-bold ${hasAssignment ? (useDarkText ? 'text-background' : 'text-text') : 'text-text-light'} mt-0.5`, { fontFamily: 'Manrope_400Regular' }]}
+            style={[tw`${textSize} font-bold mt-0.5`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -153,36 +157,47 @@ const ScheduleSlot = memo(function ScheduleSlot({
     </View>
   );
 
-  // Always use the same structure - just change colors based on assignment state
-  const [startColor, endColor] = hasAssignment
-    ? gradientColors
-    : ['#4a3f38', '#3d332d']; // warm brown-700 to brown-800 for empty slots
+  // Get background color based on assignment (simplified - no gradient for testing)
+  const backgroundColor = useMemo(() => {
+    let color;
+    if (!hasAssignment) color = '#4a3f38'; // empty slot color
+    else if (personIndex === 0) color = '#6b8e6f'; // person 1 color
+    else if (personIndex === 1) color = '#e8c96f'; // person 2 color
+    else color = '#8b7a6a'; // fallback
+    console.log('backgroundColor calculated:', { hasAssignment, personIndex, backgroundColor: color });
+    return color;
+  }, [hasAssignment, personIndex]);
 
   return (
-    <View style={tw`flex-1`}>
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <TouchableOpacity
-          style={tw.style('rounded-lg overflow-hidden', loading && 'opacity-50')}
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
           onPress={handlePress}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           disabled={loading}
           activeOpacity={0.7}
+          style={[
+            tw.style(
+              `${containerClasses} items-center justify-center rounded-lg overflow-hidden`,
+              !hasAssignment && 'border border-border/50',
+              loading && 'opacity-50'
+            ),
+            { backgroundColor }
+          ]}
         >
-          <LinearGradient
-            colors={[startColor, endColor]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={tw.style(
-              `${containerClasses} items-center justify-center`,
-              !hasAssignment && 'border border-border/50'
-            )}
-          >
-            {content}
-          </LinearGradient>
+          {content}
         </TouchableOpacity>
-      </Animated.View>
-    </View>
+    </Animated.View>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if these specific props change
+  return (
+    prevProps.displayName === nextProps.displayName &&
+    prevProps.userId === nextProps.userId &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.slotType === nextProps.slotType &&
+    prevProps.isInHero === nextProps.isInHero
+    // Deliberately skip members and onPress - they shouldn't cause re-renders
   );
 });
 
