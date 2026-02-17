@@ -132,7 +132,7 @@ function AppNavigator() {
       // Start new timer
       splashTimerRef.current = setTimeout(() => {
         setMinSplashTimeElapsed(true);
-      }, 2000);
+      }, 100); // Reduced from 2000ms to 100ms for faster startup
     }
 
     prevLoadingRef.current = loading;
@@ -147,7 +147,7 @@ function AppNavigator() {
 
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 500,
+        duration: 200, // Reduced from 500ms for faster startup
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) {

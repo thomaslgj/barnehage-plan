@@ -176,43 +176,30 @@ export default function TodayCard({
         </View>
 
         <View style={tw`flex-row gap-2 mb-4`}>
-          {(dropoffName || pickupName) ? (
-            <>
-              {dropoffName && (
-                <View style={tw`flex-1`}>
-                  <ScheduleSlot
-                    slotType="dropoff"
-                    displayName={dropoffName}
-                    userId={dropoffUserId}
-                    members={members}
-                    onPress={onDropoffPress || (() => {})}
-                    loading={false}
-                    isInHero={true}
-                  />
-                </View>
-              )}
-              {pickupName && (
-                <View style={tw`flex-1`}>
-                  <ScheduleSlot
-                    slotType="pickup"
-                    displayName={pickupName}
-                    userId={pickupUserId}
-                    members={members}
-                    onPress={onPickupPress || (() => {})}
-                    loading={false}
-                    isInHero={true}
-                  />
-                </View>
-              )}
-            </>
-          ) : (
-            <View style={tw`flex-row items-center gap-2 py-2`}>
-              <Ionicons name="alert-circle-outline" size={18} color="#f87171" />
-              <Text style={[tw`text-sm text-red-400`, { fontFamily: 'Manrope_400Regular' }]}>
-                Ingen valgt for levering eller henting {isToday ? 'i dag' : 'i morgen'}
-              </Text>
-            </View>
-          )}
+          <View style={tw`flex-1`}>
+            <ScheduleSlot
+              key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
+              slotType="dropoff"
+              displayName={dropoffName}
+              userId={dropoffUserId}
+              members={members}
+              onPress={onDropoffPress || (() => {})}
+              loading={false}
+              isInHero={true}
+            />
+          </View>
+          <View style={tw`flex-1`}>
+            <ScheduleSlot
+              key={`${date}-pickup-${pickupUserId || 'empty'}`}
+              slotType="pickup"
+              displayName={pickupName}
+              userId={pickupUserId}
+              members={members}
+              onPress={onPickupPress || (() => {})}
+              loading={false}
+              isInHero={true}
+            />
+          </View>
         </View>
 
         {/* Equipment Status Badge - only show when data is loaded */}

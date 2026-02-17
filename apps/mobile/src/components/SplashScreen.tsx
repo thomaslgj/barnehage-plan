@@ -1,59 +1,18 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import SplashBackground from './SplashBackground';
 
 const LOGO_COLOR = '#EDE7DF';
 
 export default function SplashScreen() {
-  // Text animation values
-  const textOpacity = useSharedValue(0);
-  const textTranslateY = useSharedValue(10);
-
-  useEffect(() => {
-    // Fade in animation - 800ms
-    textOpacity.value = withTiming(1, {
-      duration: 800,
-      easing: Easing.out(Easing.ease),
-    });
-
-    textTranslateY.value = withTiming(0, {
-      duration: 800,
-      easing: Easing.out(Easing.ease),
-    });
-
-    // Fade out text just before splash ends (at 1.8s, 200ms before 2s splash fade starts)
-    const fadeOutTimer = setTimeout(() => {
-      textOpacity.value = withTiming(0, {
-        duration: 300,
-        easing: Easing.in(Easing.ease),
-      });
-    }, 1800);
-
-    return () => clearTimeout(fadeOutTimer);
-  }, []);
-
-  const textStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textTranslateY.value }],
-  }));
-
   return (
     <View style={styles.container}>
-      {/* Skia background with animated blob */}
+      {/* Skia background */}
       <SplashBackground />
 
       {/* Text content */}
       <View style={styles.textContainer}>
-        <Animated.View style={textStyle}>
-          {/* FLYT wordmark */}
-          <Text style={styles.wordmark}>F L Y T</Text>
-        </Animated.View>
+        <Text style={styles.wordmark}>F L Y T</Text>
       </View>
     </View>
   );
