@@ -55,15 +55,14 @@ export default function TodayCard({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const confettiRef = useRef<any>(null);
 
-  // Animation refs for intro sequence
-  const hasAnimated = useRef(false);
+  // No animation - everything visible immediately
   const leftAvatarX = useRef(new Animated.Value(0)).current;
-  const leftAvatarOpacity = useRef(new Animated.Value(0)).current;
-  const leftTextOpacity = useRef(new Animated.Value(0)).current;
+  const leftAvatarOpacity = useRef(new Animated.Value(1)).current;
+  const leftTextOpacity = useRef(new Animated.Value(1)).current;
   const rightAvatarX = useRef(new Animated.Value(0)).current;
-  const rightAvatarOpacity = useRef(new Animated.Value(0)).current;
-  const rightTextOpacity = useRef(new Animated.Value(0)).current;
-  const lineOpacity = useRef(new Animated.Value(0)).current;
+  const rightAvatarOpacity = useRef(new Animated.Value(1)).current;
+  const rightTextOpacity = useRef(new Animated.Value(1)).current;
+  const lineOpacity = useRef(new Animated.Value(1)).current;
 
   const dateObj = dayjs(date);
   const isToday = dateObj.isSame(dayjs(), 'day');
@@ -72,67 +71,6 @@ export default function TodayCard({
   const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd D. MMM').toUpperCase();
   const dayName = dateObj.format('dddd');
   const equipmentStatus = useMemo(() => calculateEquipmentStatus(equipmentItems), [equipmentItems]);
-
-  // Intro animation sequence (only on first mount)
-  useEffect(() => {
-    if (!hasAnimated.current) {
-      hasAnimated.current = true;
-
-      // Both avatars start in absolute center of the container
-      // Each container is roughly half the width, so to reach center:
-      // Left needs to move right ~25% of total width, right needs to move left ~25%
-      const centerOffset = 90; // Offset to reach absolute center from each container
-
-      // Set initial positions (both in center)
-      leftAvatarX.setValue(centerOffset); // Left avatar moves right to center
-      rightAvatarX.setValue(-centerOffset); // Right avatar moves left to center
-
-      Animated.sequence([
-        // 1. Left avatar fades in (already in center)
-        Animated.timing(leftAvatarOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        // 2. Left avatar moves to its final position
-        Animated.timing(leftAvatarX, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        // 3. Left text fades in
-        Animated.timing(leftTextOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        // 4. Right avatar fades in (already in center)
-        Animated.timing(rightAvatarOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        // 5. Right avatar moves to its final position
-        Animated.timing(rightAvatarX, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        // 6. Right text fades in
-        Animated.timing(rightTextOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        // 7. Connecting line fades in
-        Animated.timing(lineOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, []);
 
   // Trigger confetti when status changes to 'ready'
   useEffect(() => {

@@ -13,6 +13,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import 'dayjs/locale/nb';
@@ -114,29 +115,43 @@ export default function MainScreen({ navigation }: any) {
     // Use provided offset or fall back to current weekOffset
     const effectiveOffset = targetWeekOffset !== undefined ? targetWeekOffset : weekOffset;
 
-    // Show appropriate loading state
-    // Only set weekChanging if not already set by changeWeek (targetWeekOffset is undefined when called from refresh)
+    // Recalculate days based on effective weekOffset
+    const currentStartOfWeek = dayjs().add(effectiveOffset, 'week').startOf('isoWeek');
+    const currentDays: dayjs.Dayjs[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = currentStartOfWeek.add(i, 'day');
+      const dayOfWeek = day.day();
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        currentDays.push(day);
+      }
+    }
+
+    const fromDate = currentDays[0].format('YYYY-MM-DD');
+    const toDate = currentDays[currentDays.length - 1].format('YYYY-MM-DD');
+    const cacheKey = `schedule_${childId}_${fromDate}_${toDate}`;
+
+    // Try to load from cache first on initial load
     if (isInitialLoad) {
-      setLoading(true);
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          setAssignments(cachedData);
+          setLoading(false);
+          setInitialLoadComplete(true);
+          // Continue to fetch fresh data in background
+        } else {
+          setLoading(true);
+        }
+      } catch (error) {
+        console.error('Error loading cache:', error);
+        setLoading(true);
+      }
     } else if (!refreshing && targetWeekOffset === undefined) {
       setWeekChanging(true);
     }
 
     try {
-      // Recalculate days based on effective weekOffset
-      const currentStartOfWeek = dayjs().add(effectiveOffset, 'week').startOf('isoWeek');
-      const currentDays: dayjs.Dayjs[] = [];
-      for (let i = 0; i < 7; i++) {
-        const day = currentStartOfWeek.add(i, 'day');
-        const dayOfWeek = day.day();
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-          currentDays.push(day);
-        }
-      }
-
-      const fromDate = currentDays[0].format('YYYY-MM-DD');
-      const toDate = currentDays[currentDays.length - 1].format('YYYY-MM-DD');
-
       const { data, error } = await supabase
         .from('schedule_assignments')
         .select('date, slot, assigned_member_id, assigned_user_id')
@@ -156,7 +171,10 @@ export default function MainScreen({ navigation }: any) {
         assignmentMap[key] = memberId;
       });
 
-      // Replace assignments with fresh data from database
+      // Save to cache
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(assignmentMap));
+
+      // Update with fresh data from database
       setAssignments(assignmentMap);
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -179,19 +197,14 @@ export default function MainScreen({ navigation }: any) {
     }
   }, [childId, householdId, weekOffset, refreshing, scheduleFade]);
 
-  // Initial fetch - deferred to avoid choppy splash animations
+  // Initial fetch - start immediately, cache will make it fast
   useEffect(() => {
     if (childId && householdId && !initialFetchDone.current) {
       initialFetchDone.current = true;
-
-      // Defer initial data fetching until after splash animation completes
-      const fetchTimer = setTimeout(() => {
-        fetchAssignments(true);
-      }, 2600); // Wait for splash (2s) + fade (500ms) + small buffer (100ms)
-
-      return () => clearTimeout(fetchTimer);
+      // Fetch immediately - cached data will show instantly if available
+      fetchAssignments(true);
     }
-  }, [childId, householdId]);
+  }, [childId, householdId, fetchAssignments]);
 
   // Set content to visible immediately when loading completes (no fade-in animation)
   useEffect(() => {
