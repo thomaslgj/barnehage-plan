@@ -420,7 +420,10 @@ export default function MainScreen({ navigation }: any) {
     fetchAssignments();
   };
 
-  const handleSlotPress = useCallback(async (date: string, slot: 'dropoff' | 'pickup') => {
+  // Track pending database saves
+  const pendingSavesRef = useRef<Map<string, { date: string; slot: 'dropoff' | 'pickup'; userId: string | null }>>(new Map());
+
+  const handleSlotPress = useCallback((date: string, slot: 'dropoff' | 'pickup') => {
     if (!childId || !householdId || !user) return;
 
     const key = `${date}-${slot}`;
@@ -437,45 +440,52 @@ export default function MainScreen({ navigation }: any) {
     const nextIndex = (currentIndex + 1) % order.length;
     const nextUserId = order[nextIndex];
 
-    // Optimistic update - update UI immediately
+    // SYNCHRONOUS update - update UI immediately
     setAssignments((prev) => ({
       ...prev,
       [key]: nextUserId,
     }));
 
-    // Persist to database in background
-    try {
-      if (nextUserId === null) {
-        // Delete assignment if cycling to null
-        await supabase
-          .from('schedule_assignments')
-          .delete()
-          .eq('child_id', childId)
-          .eq('date', date)
-          .eq('slot', slot);
-      } else {
-        // Upsert assignment
-        await supabase
-          .from('schedule_assignments')
-          .upsert({
-            household_id: householdId,
-            child_id: childId,
-            date: date,
-            slot: slot,
-            assigned_member_id: nextUserId,
-            assigned_user_id: nextUserId, // Keep for backwards compatibility
-            updated_by: user.id,
-          }, { onConflict: 'child_id,date,slot' });
-      }
-    } catch (error) {
-      console.error('Error saving assignment:', error);
-      // Revert optimistic update on error
-      setAssignments((prev) => ({
-        ...prev,
-        [key]: currentUserId,
-      }));
-    }
+    // Queue database save (will be processed by useEffect)
+    pendingSavesRef.current.set(key, { date, slot, userId: nextUserId });
   }, [childId, householdId, user, assignments, members]);
+
+  // Separate useEffect to handle database persistence
+  useEffect(() => {
+    if (pendingSavesRef.current.size === 0) return;
+    if (!childId || !householdId || !user) return;
+
+    const saves = Array.from(pendingSavesRef.current.entries());
+    pendingSavesRef.current.clear();
+
+    // Process all pending saves
+    saves.forEach(async ([key, { date, slot, userId }]) => {
+      try {
+        if (userId === null) {
+          await supabase
+            .from('schedule_assignments')
+            .delete()
+            .eq('child_id', childId)
+            .eq('date', date)
+            .eq('slot', slot);
+        } else {
+          await supabase
+            .from('schedule_assignments')
+            .upsert({
+              household_id: householdId,
+              child_id: childId,
+              date: date,
+              slot: slot,
+              assigned_member_id: userId,
+              assigned_user_id: userId,
+              updated_by: user.id,
+            }, { onConflict: 'child_id,date,slot' });
+        }
+      } catch (error) {
+        console.error('Error saving assignment:', error);
+      }
+    });
+  }, [assignments, childId, householdId, user]);
 
   const getDisplayName = useCallback((memberId: string | null): string | undefined => {
     if (!memberId) {
