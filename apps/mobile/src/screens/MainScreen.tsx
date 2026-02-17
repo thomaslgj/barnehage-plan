@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -69,8 +69,8 @@ export default function MainScreen({ navigation }: any) {
   const weekNumber = startOfWeek.isoWeek();
   const year = startOfWeek.year();
 
-  // Generate 7 days (1 week), Mon-Fri only
-  const getDaysToShow = () => {
+  // Generate 7 days (1 week), Mon-Fri only - memoized to avoid recalculation
+  const daysToShow = useMemo(() => {
     const days: dayjs.Dayjs[] = [];
     for (let i = 0; i < 7; i++) {
       const day = startOfWeek.add(i, 'day');
@@ -81,22 +81,23 @@ export default function MainScreen({ navigation }: any) {
       }
     }
     return days;
-  };
+  }, [weekOffset]);
 
-  const daysToShow = getDaysToShow();
   const today = dayjs().format('YYYY-MM-DD');
   const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
 
-  // Check if all slots in current week are empty
-  const allSlotsEmpty = daysToShow.every(day => {
-    const dateStr = day.format('YYYY-MM-DD');
-    const dropoffKey = `${dateStr}-dropoff`;
-    const pickupKey = `${dateStr}-pickup`;
-    return !assignments[dropoffKey] && !assignments[pickupKey];
-  });
+  // Check if all slots in current week are empty - memoized
+  const allSlotsEmpty = useMemo(() => {
+    return daysToShow.every(day => {
+      const dateStr = day.format('YYYY-MM-DD');
+      const dropoffKey = `${dateStr}-dropoff`;
+      const pickupKey = `${dateStr}-pickup`;
+      return !assignments[dropoffKey] && !assignments[pickupKey];
+    });
+  }, [daysToShow, assignments]);
 
-  // On weekends, show next Monday instead of today/tomorrow
-  const todayOrTomorrow = (() => {
+  // On weekends, show next Monday instead of today/tomorrow - memoized
+  const todayOrTomorrow = useMemo(() => {
     if (currentDayOfWeek === 0 || currentDayOfWeek === 6) {
       // It's weekend - find next Monday (first day in daysToShow)
       return daysToShow[0];
@@ -105,7 +106,7 @@ export default function MainScreen({ navigation }: any) {
     return daysToShow.find(
       (d) => d.format('YYYY-MM-DD') === today || d.format('YYYY-MM-DD') === dayjs().add(1, 'day').format('YYYY-MM-DD')
     );
-  })();
+  }, [daysToShow, currentDayOfWeek, today]);
 
   const fetchAssignments = useCallback(async (isInitialLoad = false, targetWeekOffset?: number) => {
     if (!childId || !householdId) return;
@@ -419,87 +420,64 @@ export default function MainScreen({ navigation }: any) {
     fetchAssignments();
   };
 
-  const handleSlotPress = async (date: string, slot: 'dropoff' | 'pickup') => {
-    console.log('🔥 handleSlotPress called!', { date, slot });
-
-    if (!childId || !householdId || !user) {
-      console.log('❌ Missing required data:', { childId, householdId, user: !!user });
-      return;
-    }
+  const handleSlotPress = useCallback(async (date: string, slot: 'dropoff' | 'pickup') => {
+    if (!childId || !householdId || !user) return;
 
     const key = `${date}-${slot}`;
     const currentUserId = assignments[key] || null;
 
-    console.log('📊 Current state:', { key, currentUserId, members: members.length });
-
     // Build cycle order: null -> person1 -> person2 -> null
-    // Always use member_id to match what we store in the database
     const order: (string | null)[] = [
       null,
       ...members.slice(0, 2).map(m => m.id)
     ];
-
-    console.log('🔄 Cycle order:', order);
 
     // Find current index and get next
     const currentIndex = order.indexOf(currentUserId);
     const nextIndex = (currentIndex + 1) % order.length;
     const nextUserId = order[nextIndex];
 
-    console.log('➡️ Cycling:', { from: currentUserId, to: nextUserId });
-
-    // OPTIMISTIC UPDATE: Update UI immediately
+    // Optimistic update - update UI immediately
     setAssignments((prev) => ({
       ...prev,
       [key]: nextUserId,
     }));
 
-    // Trigger haptic feedback for immediate response
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    // Database update in background
+    // Persist to database in background
     try {
-      // Find the member corresponding to nextUserId (could be user_id or member id)
-      const member = nextUserId ? members.find(m => m.user_id === nextUserId || m.id === nextUserId) : null;
-
-      // Upsert assignment (set to null if empty)
-      const { error } = await supabase
-        .from('schedule_assignments')
-        .upsert(
-          {
+      if (nextUserId === null) {
+        // Delete assignment if cycling to null
+        await supabase
+          .from('schedule_assignments')
+          .delete()
+          .eq('child_id', childId)
+          .eq('date', date)
+          .eq('slot', slot);
+      } else {
+        // Upsert assignment
+        await supabase
+          .from('schedule_assignments')
+          .upsert({
             household_id: householdId,
             child_id: childId,
             date: date,
             slot: slot,
-            assigned_member_id: member?.id || null,
-            assigned_user_id: member?.user_id || null,
+            assigned_member_id: nextUserId,
+            assigned_user_id: nextUserId, // Keep for backwards compatibility
             updated_by: user.id,
-          },
-          { onConflict: 'child_id,date,slot' }
-        );
-
-      if (error) {
-        console.error('Error updating assignment:', error);
-        throw error;
+          }, { onConflict: 'child_id,date,slot' });
       }
     } catch (error) {
-      console.error('!!! CAUGHT ERROR - REVERTING !!!', error);
-      // Revert on error
+      console.error('Error saving assignment:', error);
+      // Revert optimistic update on error
       setAssignments((prev) => ({
         ...prev,
         [key]: currentUserId,
       }));
-
-      // Show error feedback
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
     }
-  };
+  }, [childId, householdId, user, assignments, members]);
 
-  const getDisplayName = (memberId: string | null): string | undefined => {
+  const getDisplayName = useCallback((memberId: string | null): string | undefined => {
     if (!memberId) {
       return undefined;
     }
@@ -508,7 +486,7 @@ export default function MainScreen({ navigation }: any) {
     // Also check user_id for backwards compatibility
     const member = members.find((m) => m.id === memberId || m.user_id === memberId);
     return member?.display_name;
-  };
+  }, [members]);
 
   // Button animation helpers
   const animateButtonPress = (animValue: Animated.Value, callback: () => void) => {
@@ -733,7 +711,7 @@ export default function MainScreen({ navigation }: any) {
         </Animated.View>
 
         {/* Schedule List */}
-        <Animated.View style={{ opacity: scheduleFade }} pointerEvents="box-none">
+        <View>
             {loading ? (
               <ScheduleSkeleton />
             ) : (
@@ -783,7 +761,7 @@ export default function MainScreen({ navigation }: any) {
 
                   <View style={tw`flex-row gap-2`}>
                     <ScheduleSlot
-                      key={`${dropoffKey}-${assignments[dropoffKey] ?? 'empty'}`}
+                      key={dropoffKey}
                       slotType="dropoff"
                       displayName={getDisplayName(assignments[dropoffKey])}
                       userId={assignments[dropoffKey]}
@@ -792,7 +770,7 @@ export default function MainScreen({ navigation }: any) {
                       loading={savingSlot === dropoffKey}
                     />
                     <ScheduleSlot
-                      key={`${pickupKey}-${assignments[pickupKey] ?? 'empty'}`}
+                      key={pickupKey}
                       slotType="pickup"
                       displayName={getDisplayName(assignments[pickupKey])}
                       userId={assignments[pickupKey]}
@@ -807,7 +785,7 @@ export default function MainScreen({ navigation }: any) {
           })}
               </View>
             )}
-          </Animated.View>
+          </View>
       </ScrollView>
     </SafeAreaView>
     </>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View, Animated, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -14,7 +14,7 @@ interface ScheduleSlotProps {
   isInHero?: boolean;
 }
 
-export default function ScheduleSlot({
+const ScheduleSlot = memo(function ScheduleSlot({
   slotType,
   displayName,
   userId,
@@ -47,25 +47,23 @@ export default function ScheduleSlot({
     } else {
       shimmerAnim.setValue(0);
     }
-  }, [loading]);
+  }, [loading, shimmerAnim]);
 
-  // Determine which person this is
-  const getPersonIndex = () => {
+  // Determine which person this is - memoized
+  const personIndex = useMemo(() => {
     if (!userId || members.length === 0) {
       return null;
     }
-    const index = members.findIndex(m => m.user_id === userId || m.id === userId);
-    return index;
-  };
+    return members.findIndex(m => m.user_id === userId || m.id === userId);
+  }, [userId, members]);
 
-  const personIndex = getPersonIndex();
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
 
   // Person 2 (yellow background) needs dark text for contrast
   const useDarkText = personIndex === 1;
 
-  // Get gradient colors based on person
-  const getGradientColors = (): [string, string] => {
+  // Get gradient colors based on person - memoized
+  const gradientColors = useMemo((): [string, string] => {
     if (personIndex === 0) {
       return ['#6b8e6f', '#5d8a7f']; // sage green to warm teal
     } else if (personIndex === 1) {
@@ -73,7 +71,7 @@ export default function ScheduleSlot({
     }
     // Safeguard: if we somehow get here with hasAssignment=true, use a fallback color instead of transparent
     return ['#8b7a6a', '#6e5e4f']; // warm brown-gray fallback
-  };
+  }, [personIndex]);
 
   // Fixed dimensions - adjusted padding for more space at bottom
   const containerClasses = isInHero
@@ -83,10 +81,10 @@ export default function ScheduleSlot({
   const textSize = isInHero ? 'text-xl' : 'text-base';
   const iconSize = 'text-lg'; // Consistent size for both arrows
 
-  const shimmerTranslate = shimmerAnim.interpolate({
+  const shimmerTranslate = useMemo(() => shimmerAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-200, 200],
-  });
+  }), [shimmerAnim]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -157,7 +155,7 @@ export default function ScheduleSlot({
 
   // Always use the same structure - just change colors based on assignment state
   const [startColor, endColor] = hasAssignment
-    ? getGradientColors()
+    ? gradientColors
     : ['#4a3f38', '#3d332d']; // warm brown-700 to brown-800 for empty slots
 
   return (
@@ -186,4 +184,6 @@ export default function ScheduleSlot({
       </Animated.View>
     </View>
   );
-}
+});
+
+export default ScheduleSlot;

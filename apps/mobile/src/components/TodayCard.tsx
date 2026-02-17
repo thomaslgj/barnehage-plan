@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -61,7 +61,7 @@ export default function TodayCard({
 
   const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd D. MMM').toUpperCase();
   const dayName = dateObj.format('dddd');
-  const equipmentStatus = calculateEquipmentStatus(equipmentItems);
+  const equipmentStatus = useMemo(() => calculateEquipmentStatus(equipmentItems), [equipmentItems]);
 
   // Trigger confetti when status changes to 'ready'
   useEffect(() => {
