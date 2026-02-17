@@ -9,6 +9,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { TextInputField } from '../components/TextInputField';
 import { Button } from '../components/Button';
 import { Text } from '../components/Text';
+import AvatarPicker from '../components/AvatarPicker';
 
 export default function PersonalInfoScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
@@ -17,17 +18,21 @@ export default function PersonalInfoScreen({ navigation }: any) {
   // Get current user's member record
   const currentMember = members.find(m => m.user_id === user?.id);
 
-  // State for editable name
+  // State for editable name and avatar
   const [displayName, setDisplayName] = useState('');
+  const [avatarId, setAvatarId] = useState<string | null>(null);
 
-  // Load current display name
+  // Load current display name and avatar
   useEffect(() => {
     if (currentMember?.display_name) {
       setDisplayName(currentMember.display_name);
     }
+    if (currentMember?.avatar_id) {
+      setAvatarId(currentMember.avatar_id);
+    }
   }, [currentMember]);
 
-  const handleSaveName = async () => {
+  const handleSave = async () => {
     if (!displayName.trim()) {
       Alert.alert('Feil', 'Navnet kan ikke være tomt');
       return;
@@ -40,26 +45,35 @@ export default function PersonalInfoScreen({ navigation }: any) {
 
     setSaving(true);
     try {
+      const updateData: { display_name: string; avatar_id?: string | null } = {
+        display_name: displayName.trim()
+      };
+
+      // Only update avatar_id if it has changed
+      if (avatarId !== currentMember.avatar_id) {
+        updateData.avatar_id = avatarId;
+      }
+
       const { error } = await supabase
         .from('household_members')
-        .update({ display_name: displayName.trim() })
+        .update(updateData)
         .eq('id', currentMember.id);
 
       if (error) throw error;
 
-      // Refresh household data to show updated name
+      // Refresh household data to show updated info
       await refresh();
 
-      Alert.alert('Lagret', 'Navnet ditt er oppdatert');
+      Alert.alert('Lagret', 'Profilen din er oppdatert');
     } catch (error) {
-      console.error('Error saving name:', error);
-      Alert.alert('Feil', 'Kunne ikke lagre navnet');
+      console.error('Error saving profile:', error);
+      Alert.alert('Feil', 'Kunne ikke lagre profilen');
     } finally {
       setSaving(false);
     }
   };
 
-  const isUnchanged = displayName.trim() === currentMember?.display_name;
+  const isUnchanged = displayName.trim() === currentMember?.display_name && avatarId === currentMember?.avatar_id;
 
   return (
     <View style={tw`flex-1 bg-background`}>
@@ -75,7 +89,7 @@ export default function PersonalInfoScreen({ navigation }: any) {
             subtitle="Rediger dine personlige opplysninger"
           />
 
-          {/* Name Section */}
+          {/* Profile Section */}
           <View style={tw`bg-slate-800/50 rounded-lg p-4 border border-slate-700`}>
             <Text style={tw`text-sm text-text-muted mb-2`}>Ditt navn</Text>
 
@@ -87,14 +101,21 @@ export default function PersonalInfoScreen({ navigation }: any) {
               editable={!saving}
             />
 
+            <View style={tw`mt-4 mb-4`}>
+              <AvatarPicker
+                selectedAvatarId={avatarId}
+                onSelect={setAvatarId}
+              />
+            </View>
+
             <Button
               variant="primary"
-              onPress={handleSaveName}
+              onPress={handleSave}
               disabled={saving || isUnchanged}
               loading={saving}
               fullWidth
             >
-              {saving ? 'Lagrer...' : 'Lagre navn'}
+              {saving ? 'Lagrer...' : 'Lagre endringer'}
             </Button>
           </View>
         </ScrollView>

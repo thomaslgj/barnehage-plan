@@ -2,12 +2,13 @@ import React, { useMemo, memo, useRef } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
+import Avatar from './Avatar';
 
 interface ScheduleSlotProps {
   slotType: 'dropoff' | 'pickup';
   displayName?: string;
   userId?: string | null;
-  members?: Array<{ id: string; user_id: string | null }>;
+  members?: Array<{ id: string; user_id: string | null; avatar_id?: string | null }>;
   onPress: () => void;
   loading?: boolean;
   isInHero?: boolean;
@@ -33,6 +34,15 @@ const ScheduleSlot = memo(function ScheduleSlot({
     return index;
   }, [userId, members]);
 
+  // Get avatar ID from member
+  const avatarId = useMemo(() => {
+    if (!userId || members.length === 0) {
+      return null;
+    }
+    const member = members.find(m => m.user_id === userId || m.id === userId);
+    return member?.avatar_id || null;
+  }, [userId, members]);
+
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
 
   // Person 2 (yellow background) needs dark text for contrast
@@ -49,10 +59,10 @@ const ScheduleSlot = memo(function ScheduleSlot({
     return ['#8b7a6a', '#6e5e4f']; // warm brown-gray fallback
   }, [personIndex]);
 
-  // Fixed dimensions - reduced height with horizontal layout
+  // Fixed dimensions - reduced vertical padding for avatars
   const containerClasses = isInHero
-    ? 'h-[50px] py-2.5 px-3'
-    : 'h-[50px] py-2.5 px-3';
+    ? 'h-[60px] py-1.5 px-3'
+    : 'h-[60px] py-1.5 px-3';
 
   const textSize = isInHero ? 'text-xl' : 'text-base';
 
@@ -79,19 +89,24 @@ const ScheduleSlot = memo(function ScheduleSlot({
     onPress();
   };
 
-  // Render content - centered text without arrow (chevron shape indicates direction)
+  // Render content - avatar + name
   const content = (
-    <View style={tw`flex-1 items-center justify-center px-2`}>
+    <View style={tw`flex-1 flex-row items-center justify-center px-2 gap-2`}>
       {loading ? (
         <ActivityIndicator size="small" color={hasAssignment ? (useDarkText ? "#2d2520" : "#f5f1ed") : "#a89985"} />
       ) : (
-        <Text
-          style={[tw`${textSize} font-bold`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {displayName || '—'}
-        </Text>
+        <>
+          {hasAssignment && avatarId && (
+            <Avatar avatarId={avatarId} size={48} />
+          )}
+          <Text
+            style={[tw`${textSize} font-bold`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? (useDarkText ? '#2d2520' : '#ffffff') : '#a89985' }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {displayName || '—'}
+          </Text>
+        </>
       )}
     </View>
   );

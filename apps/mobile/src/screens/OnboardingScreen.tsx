@@ -19,6 +19,7 @@ import { DEFAULT_EQUIPMENT_ITEMS } from '../lib/equipment';
 import SuccessIllustration from '../components/SuccessIllustration';
 import EquipmentList from '../components/EquipmentList';
 import AddEquipmentItem from '../components/AddEquipmentItem';
+import AvatarPicker from '../components/AvatarPicker';
 
 interface EquipmentItemDraft {
   key: string;
@@ -54,9 +55,11 @@ export default function OnboardingScreen() {
 
   // Step 1: My name
   const [myName, setMyName] = useState('');
+  const [myAvatarId, setMyAvatarId] = useState<string | null>(null);
 
   // Step 2: Partner name
   const [partnerName, setPartnerName] = useState('');
+  const [partnerAvatarId, setPartnerAvatarId] = useState<string | null>(null);
 
   // Step 3: Child name
   const [childName, setChildName] = useState('');
@@ -320,12 +323,19 @@ export default function OnboardingScreen() {
           }
         }
 
-        // Update member names
-        // Update current user's display name
+        // Update member names and avatars
+        // Update current user's display name and avatar
         if (myName.trim()) {
+          const updateData: { display_name: string; avatar_id?: string } = {
+            display_name: myName.trim()
+          };
+          if (myAvatarId) {
+            updateData.avatar_id = myAvatarId;
+          }
+
           const { error: myNameError } = await supabase
             .from('household_members')
-            .update({ display_name: myName.trim() })
+            .update(updateData)
             .eq('household_id', household_id)
             .eq('user_id', user.id);
 
@@ -354,9 +364,16 @@ export default function OnboardingScreen() {
             console.log('Partner member found:', partnerMember);
 
             if (partnerMember) {
+              const updateData: { display_name: string; avatar_id?: string } = {
+                display_name: partnerName.trim()
+              };
+              if (partnerAvatarId) {
+                updateData.avatar_id = partnerAvatarId;
+              }
+
               const { error: partnerUpdateError } = await supabase
                 .from('household_members')
-                .update({ display_name: partnerName.trim() })
+                .update(updateData)
                 .eq('id', partnerMember.id);
 
               if (partnerUpdateError) {
@@ -393,6 +410,32 @@ export default function OnboardingScreen() {
 
         // Save invite code to show later
         setGeneratedInviteCode(result.invite_code);
+
+        // Update avatar IDs for newly created members
+        if (myAvatarId) {
+          await supabase
+            .from('household_members')
+            .update({ avatar_id: myAvatarId })
+            .eq('household_id', household_id)
+            .eq('user_id', user.id);
+        }
+
+        if (partnerAvatarId && partnerName.trim()) {
+          // Find partner member (not current user)
+          const { data: partnerMembers } = await supabase
+            .from('household_members')
+            .select('id')
+            .eq('household_id', household_id)
+            .neq('user_id', user.id)
+            .limit(1);
+
+          if (partnerMembers && partnerMembers.length > 0) {
+            await supabase
+              .from('household_members')
+              .update({ avatar_id: partnerAvatarId })
+              .eq('id', partnerMembers[0].id);
+          }
+        }
       }
 
       // Get household members to map names to member_ids
@@ -712,6 +755,13 @@ export default function OnboardingScreen() {
               autoFocus
             />
 
+            <View style={tw`mb-6`}>
+              <AvatarPicker
+                selectedAvatarId={myAvatarId}
+                onSelect={setMyAvatarId}
+              />
+            </View>
+
             <TouchableOpacity
               style={tw.style('bg-primary rounded py-3.5 items-center', !myName.trim() && 'opacity-50')}
               onPress={() => myName.trim() && setStep(2)}
@@ -746,6 +796,13 @@ export default function OnboardingScreen() {
               editable={!loading}
               autoFocus
             />
+
+            <View style={tw`mb-6`}>
+              <AvatarPicker
+                selectedAvatarId={partnerAvatarId}
+                onSelect={setPartnerAvatarId}
+              />
+            </View>
 
             <TouchableOpacity
               style={tw`bg-primary rounded py-3.5 items-center`}
