@@ -175,31 +175,46 @@ export default function TodayCard({
           <Text style={[tw`text-base text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>{dayName}</Text>
         </View>
 
-        <View style={tw`flex-row gap-4 mb-4`}>
-          <View style={tw`flex-1`}>
-            <ScheduleSlot
-              key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
-              slotType="dropoff"
-              displayName={dropoffName}
-              userId={dropoffUserId}
-              members={members}
-              onPress={onDropoffPress || (() => {})}
-              loading={false}
-              isInHero={true}
-            />
+        <View style={{ position: 'relative', marginBottom: 16 }}>
+          <View style={tw`flex-row gap-4`}>
+            <View style={tw`flex-1`}>
+              <ScheduleSlot
+                key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
+                slotType="dropoff"
+                displayName={dropoffName}
+                userId={dropoffUserId}
+                members={members}
+                onPress={onDropoffPress || (() => {})}
+                loading={false}
+                isInHero={true}
+              />
+            </View>
+            <View style={tw`flex-1`}>
+              <ScheduleSlot
+                key={`${date}-pickup-${pickupUserId || 'empty'}`}
+                slotType="pickup"
+                displayName={pickupName}
+                userId={pickupUserId}
+                members={members}
+                onPress={onPickupPress || (() => {})}
+                loading={false}
+                isInHero={true}
+              />
+            </View>
           </View>
-          <View style={tw`flex-1`}>
-            <ScheduleSlot
-              key={`${date}-pickup-${pickupUserId || 'empty'}`}
-              slotType="pickup"
-              displayName={pickupName}
-              userId={pickupUserId}
-              members={members}
-              onPress={onPickupPress || (() => {})}
-              loading={false}
-              isInHero={true}
-            />
-          </View>
+          {/* Connecting line between avatars */}
+          <View
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              width: 96, // gap-4 (16px) + padding on both sides (~40px each)
+              height: 2,
+              backgroundColor: '#a89985',
+              transform: [{ translateX: -48 }, { translateY: -1 }],
+              zIndex: -1,
+            }}
+          />
         </View>
 
         {/* Equipment Status Badge - only show when data is loaded */}

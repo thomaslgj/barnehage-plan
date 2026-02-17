@@ -710,9 +710,9 @@ export default function MainScreen({ navigation }: any) {
             {loading ? (
               <ScheduleSkeleton />
             ) : (
-              <View style={tw`gap-2`}>
+              <View>
                 {/* Header */}
-                <View style={tw`flex-row gap-4 mb-2 px-1`}>
+                <View style={tw`flex-row gap-8 mb-2 px-1`}>
                   <View style={tw`flex-1 items-center`}>
                     <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
                   </View>
@@ -720,6 +720,9 @@ export default function MainScreen({ navigation }: any) {
                     <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
                   </View>
                 </View>
+
+                {/* Divider after header */}
+                <View style={tw`h-0.5 bg-slate-600/60 mb-2`} />
 
                 {/* Template Auto-Applied Message */}
                 {templateWasSuccessful && !applyingTemplate && (
@@ -735,16 +738,12 @@ export default function MainScreen({ navigation }: any) {
             const dropoffKey = `${dateStr}-dropoff`;
             const pickupKey = `${dateStr}-pickup`;
             const isToday = day.isSame(dayjs(), 'day');
+            const isLastDay = index === daysToShow.length - 1;
 
             return (
               <View key={dateStr}>
-                <View style={tw.style(
-                  'p-2.5 rounded-lg',
-                  isToday
-                    ? 'bg-secondary/20 border-2 border-secondary/50'
-                    : 'bg-slate-800/50 border border-slate-700/50'
-                )}>
-                  <View style={tw`flex-row items-center gap-1.5 mb-2`}>
+                <View style={tw`py-1.5`}>
+                  <View style={tw`flex-row items-center gap-1.5 mb-1.5`}>
                     {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
                     <Text style={tw.style(
                       'text-xs font-semibold capitalize',
@@ -754,31 +753,50 @@ export default function MainScreen({ navigation }: any) {
                     </Text>
                   </View>
 
-                  <View style={tw`flex-row gap-4`}>
-                    <View style={tw`flex-1`}>
-                      <ScheduleSlot
-                        key={`${dropoffKey}-${assignments[dropoffKey] || 'empty'}`}
-                        slotType="dropoff"
-                        displayName={getDisplayName(assignments[dropoffKey])}
-                        userId={assignments[dropoffKey]}
-                        members={members}
-                        onPress={() => handleSlotPress(dateStr, 'dropoff')}
-                        loading={savingSlot === dropoffKey}
-                      />
+                  <View style={{ position: 'relative' }}>
+                    <View style={tw`flex-row gap-8`}>
+                      <View style={tw`flex-1`}>
+                        <ScheduleSlot
+                          key={`${dropoffKey}-${assignments[dropoffKey] || 'empty'}`}
+                          slotType="dropoff"
+                          displayName={getDisplayName(assignments[dropoffKey])}
+                          userId={assignments[dropoffKey]}
+                          members={members}
+                          onPress={() => handleSlotPress(dateStr, 'dropoff')}
+                          loading={savingSlot === dropoffKey}
+                        />
+                      </View>
+                      <View style={tw`flex-1`}>
+                        <ScheduleSlot
+                          key={`${pickupKey}-${assignments[pickupKey] || 'empty'}`}
+                          slotType="pickup"
+                          displayName={getDisplayName(assignments[pickupKey])}
+                          userId={assignments[pickupKey]}
+                          members={members}
+                          onPress={() => handleSlotPress(dateStr, 'pickup')}
+                          loading={savingSlot === pickupKey}
+                        />
+                      </View>
                     </View>
-                    <View style={tw`flex-1`}>
-                      <ScheduleSlot
-                        key={`${pickupKey}-${assignments[pickupKey] || 'empty'}`}
-                        slotType="pickup"
-                        displayName={getDisplayName(assignments[pickupKey])}
-                        userId={assignments[pickupKey]}
-                        members={members}
-                        onPress={() => handleSlotPress(dateStr, 'pickup')}
-                        loading={savingSlot === pickupKey}
-                      />
-                    </View>
+                    {/* Connecting line between avatars */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: 32, // gap-8 = 32px
+                        height: 2,
+                        backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle
+                        transform: [{ translateX: -16 }, { translateY: -1 }],
+                        zIndex: -1,
+                      }}
+                    />
                   </View>
                 </View>
+                {/* Horizontal divider between days */}
+                {!isLastDay && (
+                  <View style={tw`h-0.5 bg-slate-600/60 my-2`} />
+                )}
               </View>
             );
           })}
