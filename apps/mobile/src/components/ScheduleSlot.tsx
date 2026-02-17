@@ -12,6 +12,7 @@ interface ScheduleSlotProps {
   onPress: () => void;
   loading?: boolean;
   isInHero?: boolean;
+  textOpacity?: Animated.Value;
 }
 
 const ScheduleSlot = memo(function ScheduleSlot({
@@ -21,7 +22,8 @@ const ScheduleSlot = memo(function ScheduleSlot({
   members = [],
   onPress,
   loading,
-  isInHero = false
+  isInHero = false,
+  textOpacity
 }: ScheduleSlotProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -120,13 +122,20 @@ const ScheduleSlot = memo(function ScheduleSlot({
         <>
           <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
           {displayName && (
-            <Text
-              style={[tw`${textSize} font-bold`, { fontFamily: 'Manrope_400Regular', color: hasAssignment ? '#ffffff' : '#a89985' }]}
+            <Animated.Text
+              style={[
+                tw`${textSize} font-bold`,
+                {
+                  fontFamily: 'Manrope_400Regular',
+                  color: hasAssignment ? '#ffffff' : '#a89985',
+                  opacity: textOpacity || 1,
+                }
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {displayName}
-            </Text>
+            </Animated.Text>
           )}
         </>
       )}
