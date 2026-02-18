@@ -78,20 +78,20 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-40 sm:pt-48 sm:pb-48">
           <div className="text-center">
-            <h1 ref={heroLogoRef} className="text-5xl font-medium text-[#EDE7DF] mb-20" style={{ fontFamily: 'Plus Jakarta Sans', letterSpacing: '0.5em' }}>
+            <h1 ref={heroLogoRef} className="text-5xl font-medium text-[#EDE7DF] mb-20" style={{ fontFamily: 'Plus Jakarta Sans', letterSpacing: '8px', opacity: 0, transform: 'translateY(20px)' }}>
               flyt
             </h1>
 
-            <h2 ref={heroTitleRef} className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[#f5f1ed] mb-10 leading-snug max-w-3xl mx-auto">
+            <h2 ref={heroTitleRef} className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[#f5f1ed] mb-10 leading-snug max-w-3xl mx-auto" style={{ opacity: 0, transform: 'translateY(20px)' }}>
               Slipp å holde alt i hodet.
             </h2>
 
-            <p ref={heroSubtextRef} className="text-lg sm:text-xl text-[#d4c5b9] max-w-3xl mx-auto mb-16 leading-relaxed">
-              Flyt samler henting, levering og det som mangler – så avtalen er synlig for begge.
+            <p ref={heroSubtextRef} className="text-lg sm:text-xl text-[#d4c5b9] max-w-3xl mx-auto mb-16 leading-relaxed" style={{ opacity: 0, transform: 'translateY(20px)' }}>
+              Flyt samler henting, levering og det som mangler – så dere alltid vet hvem som gjør hva.
             </p>
 
-            <div ref={heroButtonsRef} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="group relative px-8 py-4 bg-[#6b8e6f] hover:bg-[#7fa884] text-white rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto">
+            <div ref={heroButtonsRef} className="flex flex-col sm:flex-row gap-4 justify-center items-center" style={{ opacity: 0, transform: 'translateY(20px)' }}>
+              <button className="group relative px-8 py-4 bg-[#6b8e6f] hover:bg-transparent text-white rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl border-[3px] border-transparent hover:border-[#6b8e6f] focus:bg-transparent focus:border-[#6b8e6f] outline-none focus:ring-2 focus:ring-[#6b8e6f] focus:ring-offset-2 focus:ring-offset-[#2d2520] w-full sm:w-auto">
                 <span className="flex items-center justify-center gap-2">
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -99,7 +99,7 @@ export default function LandingPage() {
                   Last ned for iOS
                 </span>
               </button>
-              <button className="group relative px-8 py-4 bg-[#e8c96f] hover:bg-[#f0d689] text-[#2d2520] rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto">
+              <button className="group relative px-8 py-4 bg-[#e8c96f] hover:bg-transparent text-[#2d2520] hover:text-white rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl border-[3px] border-transparent hover:border-[#e8c96f] focus:bg-transparent focus:border-[#e8c96f] focus:text-white outline-none focus:ring-2 focus:ring-[#e8c96f] focus:ring-offset-2 focus:ring-offset-[#2d2520] w-full sm:w-auto">
                 <span className="flex items-center justify-center gap-2">
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
@@ -195,7 +195,7 @@ export default function LandingPage() {
               Mindre å huske. Mer oversikt.
             </h2>
             <p className="text-lg text-[#a89985] max-w-3xl mx-auto leading-relaxed">
-              Når avtalen er synlig for begge, blir hverdagen enklere.
+              Når begge vet hva som skjer, blir hverdagen enklere.
             </p>
           </div>
 
@@ -256,7 +256,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#f5f1ed] mb-6 leading-snug">
-              Avtalen. Synlig for begge.
+              Alt på ett sted. For begge.
             </h2>
             <p className="text-lg text-[#a89985] max-w-3xl mx-auto leading-relaxed">
               En felles oversikt over det som skal skje – og det som mangler.
@@ -347,15 +347,12 @@ export default function LandingPage() {
       {/* Final CTA */}
       <section ref={ctaRef} className="py-40 bg-gradient-to-b from-[#3d332d]/30 to-[#2d2520]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#f5f1ed] mb-8 leading-snug">
-            Klar for en enklere hverdag?
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#f5f1ed] mb-14 leading-snug">
+            Få en enklere hverdag.
           </h2>
-          <p className="text-lg text-[#a89985] mb-14 leading-relaxed">
-            Start med Flyt i dag.
-          </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="group relative px-8 py-4 bg-[#6b8e6f] hover:bg-[#7fa884] text-white rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto">
+            <button className="group relative px-8 py-4 bg-[#6b8e6f] hover:bg-transparent text-white rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl border-[3px] border-transparent hover:border-[#6b8e6f] focus:bg-transparent focus:border-[#6b8e6f] outline-none focus:ring-2 focus:ring-[#6b8e6f] focus:ring-offset-2 focus:ring-offset-[#2d2520] w-full sm:w-auto">
               <span className="flex items-center justify-center gap-2">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -364,7 +361,7 @@ export default function LandingPage() {
               </span>
             </button>
 
-            <button className="group relative px-8 py-4 bg-[#e8c96f] hover:bg-[#f0d689] text-[#2d2520] rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto">
+            <button className="group relative px-8 py-4 bg-[#e8c96f] hover:bg-transparent text-[#2d2520] hover:text-white rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl border-[3px] border-transparent hover:border-[#e8c96f] focus:bg-transparent focus:border-[#e8c96f] focus:text-white outline-none focus:ring-2 focus:ring-[#e8c96f] focus:ring-offset-2 focus:ring-offset-[#2d2520] w-full sm:w-auto">
               <span className="flex items-center justify-center gap-2">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
@@ -376,11 +373,48 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 border-t border-[#4a3f38]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-[#a89985] text-sm">
-            <p>© 2025 Flyt. Gjør hverdagen enklere.</p>
+      {/* Footer - About */}
+      <footer className="py-16 border-t border-[#4a3f38]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center text-center">
+            {/* Intro */}
+            <p className="text-sm text-[#a89985] uppercase tracking-wider mb-6">Laget av</p>
+
+            {/* Avatar */}
+            <div className="mb-6">
+              <div className="relative w-20 h-20 rounded-full border-4 border-[#6b8e6f] flex items-center justify-center" style={{ backgroundColor: 'rgba(45, 37, 32, 1)' }}>
+                <svg width="100%" height="100%" viewBox="0 0 290 374" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M96.7594 16.2329C98.1395 14.9 99.5617 13.6101 101.023 12.3717C112.511 2.72305 136.726 -1.21554 151.367 0.323775C181.591 3.5056 208.565 16.0093 228.152 39.5807C249.485 65.2417 257.009 102.357 253.965 134.898C251.342 162.855 243.733 203.135 221.127 221.788L221.54 228.96C218.255 234.764 212.434 239.013 205.598 235.917C204.781 234.747 203.706 233.664 202.743 232.597C198.135 234.274 193.629 234.962 188.719 234.902L188.229 235.005C188.332 237.275 189.012 244.92 187.851 246.253C158.837 265.215 135.253 267.357 105.508 247.216C105.657 243.433 105.608 239.227 105.646 235.401C102.606 233.595 102.545 231.927 97.5866 229.467C96.9297 229.338 96.2762 229.209 95.6244 229.063C79.8057 225.571 71.815 212.105 63.8975 199.67C66.7986 210.462 68.7256 213.162 74.0162 222.949C42.2833 194.733 32.2746 108.988 46.7047 69.4125C55.5689 45.1016 69.3791 21.0315 96.7594 16.2329Z" fill="#F9DBB7"/>
+                  <path d="M103.964 63.2723C109.241 89.1311 115.5 98.7367 139.041 111.395C129.366 101.05 127.289 95.7527 123.325 82.2428C139.975 105.599 156.224 110.69 181.324 120.115C175.073 114.362 170.851 110.2 165.169 103.905C188.014 117.071 185.357 119.298 214.154 127.614C217.137 139.731 219.665 146.946 218.341 159.441C221.05 152.269 226.088 134.752 232.142 131.449C249.176 131.14 244.025 183.528 213.543 189.763C209.08 203.849 204.386 216.636 194.016 227.584C192.09 229.613 189.312 232.219 188.719 234.902L188.229 235.005C188.332 237.275 189.011 244.92 187.851 246.253C158.837 265.215 135.253 267.356 105.508 247.216C105.657 243.432 105.608 239.227 105.646 235.401C102.606 233.595 102.545 231.926 97.5866 229.467C96.547 226.165 94.1153 223.181 92.16 220.291C85.6767 210.72 81.8607 200.529 78.1925 189.634C50.0701 183.958 43.4871 133.315 59.256 134.184C66.8786 138.131 70.8795 151.667 73.5743 159.725C73.944 138.08 73.5175 123.658 86.8771 105.728C96.2401 93.1643 101.454 78.7171 103.964 63.2723Z" fill="#F1B48E"/>
+                  <path d="M105.646 235.401C126.267 250.011 148.149 257.923 171.986 244.602C176.397 242.126 183.689 236.028 188.229 235.005C188.332 237.275 189.011 244.92 187.851 246.253C158.837 265.215 135.253 267.356 105.508 247.216C105.657 243.433 105.608 239.227 105.646 235.401Z" fill="#8A6A48"/>
+                  <path d="M202.743 232.597C203.044 222.002 212.056 214.349 221.127 221.788L221.54 228.959C218.255 234.764 212.434 239.012 205.598 235.917C204.781 234.747 203.706 233.663 202.743 232.597Z" fill="#E9BD71"/>
+                  <path d="M187.851 246.253C188.435 249.375 188.668 253.202 190.293 255.635C189.785 282.758 200.92 282.578 223.947 288.64L257.06 297.937C266.691 301.935 281.334 307.405 289.477 313.287C209.949 393.297 80.8392 394.363 0 315.677C16.6115 307.534 30.9367 299.011 49.3728 295.038C55.3987 293.749 64.0248 290.524 70.0403 290.558C99.9271 283.033 103.301 276.283 105.508 247.216C135.253 267.356 158.837 265.215 187.851 246.253Z" fill="#9C7056"/>
+                  <path d="M187.851 246.253C188.435 249.375 188.668 253.202 190.293 255.635C189.785 282.758 200.92 282.578 223.947 288.64C220.568 290.033 219.614 291.796 216.656 293.594C211.041 297.016 205.134 300.121 199.132 302.838C168.04 315.953 130.691 317.337 98.8033 306.029C90.442 303.062 75.6629 296.948 70.0403 290.558C99.9271 283.033 103.301 276.283 105.508 247.216C135.253 267.356 158.837 265.215 187.851 246.253Z" fill="#F1B48E"/>
+                  <path d="M221.54 228.96C222.735 224.952 224.051 223.636 227.817 221.753C245.298 212.982 266.046 227.472 273.613 243.011C278.582 253.219 278.668 260.098 277.147 270.289C273.243 262.635 271.678 259.419 266.39 252.574C272.899 269.954 275.074 287.015 257.06 297.936L223.947 288.64C200.92 282.578 189.785 282.758 190.293 255.635C188.667 253.202 188.435 249.375 187.851 246.253C189.011 244.92 188.332 237.275 188.229 235.005L188.719 234.902C193.629 234.962 198.134 234.274 202.743 232.597C203.706 233.663 204.781 234.747 205.598 235.917C212.434 239.012 218.255 234.764 221.54 228.96Z" fill="#F9DBB7"/>
+                  <path d="M202.743 232.597C203.706 233.663 204.781 234.747 205.598 235.917C196.931 239.073 192.236 246.984 190.293 255.635C188.667 253.202 188.435 249.375 187.851 246.253C189.011 244.92 188.332 237.275 188.229 235.005L188.719 234.902C193.629 234.962 198.134 234.274 202.743 232.597Z" fill="#E9BD71"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Name */}
+            <h3 className="text-xl font-semibold text-[#f5f1ed] mb-3">Thomas</h3>
+
+            {/* Bio */}
+            <p className="text-base text-[#a89985] max-w-xl mb-4 leading-relaxed">
+              Jeg er en småbarnsfar som bygger verktøy for å gjøre hverdagen enklere.
+              Flyt kom fra et personlig behov – og nå håper jeg det kan hjelpe andre familier også.
+            </p>
+
+            {/* Email */}
+            <a
+              href="mailto:flyt-app@gmail.com"
+              className="flex items-center gap-2 text-[#7fa884] hover:text-[#6b8e6f] underline hover:no-underline focus:no-underline transition-all duration-200 outline-none focus:ring-2 focus:ring-[#6b8e6f] focus:ring-offset-2 focus:ring-offset-[#2d2520] rounded"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 8L10.89 13.26C11.23 13.47 11.61 13.59 12 13.59C12.39 13.59 12.77 13.47 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              flyt-app@gmail.com
+            </a>
           </div>
         </div>
       </footer>
