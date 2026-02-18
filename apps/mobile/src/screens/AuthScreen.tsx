@@ -92,13 +92,10 @@ export default function AuthScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={tw`flex-1 justify-center px-6`}>
-        {/* Title + Tagline */}
+        {/* Title */}
         <Animated.View style={{ opacity: titleFade }}>
-          <Text style={[tw`text-4xl text-center mb-2`, { fontFamily: 'PlusJakartaSans_500Medium', letterSpacing: 12, color: '#d4c5b9' }]}>
-            FLYT
-          </Text>
-          <Text style={tw`text-base text-text-muted text-center mb-2`}>
-            Flyt i hverdagen
+          <Text style={[tw`text-5xl text-center mb-16`, { fontFamily: 'PlusJakartaSans_500Medium', letterSpacing: 8, color: '#EDE7DF' }]}>
+            flyt
           </Text>
           <Text style={tw`text-sm text-text-light text-center mb-12`}>
             {isSignUp ? 'Opprett en konto' : 'Logg inn på din konto'}

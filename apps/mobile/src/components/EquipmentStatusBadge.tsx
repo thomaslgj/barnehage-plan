@@ -2,13 +2,15 @@ import React from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
+import type { EquipmentItem } from '../types/db';
 
 interface EquipmentStatusBadgeProps {
   status: 'ready' | 'missing' | 'not_ready';
+  items: EquipmentItem[];
   onPress: () => void;
 }
 
-export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatusBadgeProps) {
+export default function EquipmentStatusBadge({ status, items, onPress }: EquipmentStatusBadgeProps) {
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
@@ -51,6 +53,23 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
 
   const config = getStatusConfig();
 
+  // Get missing items
+  const missingItems = items.filter(item => item.status === 'missing');
+  const criticalMissing = missingItems.filter(item => item.is_critical);
+  const nonCriticalMissing = missingItems.filter(item => !item.is_critical);
+
+  // Build details text
+  const getDetailsText = () => {
+    if (status === 'ready') return null;
+
+    const itemsToShow = status === 'not_ready' ? criticalMissing : nonCriticalMissing;
+    if (itemsToShow.length === 0) return null;
+
+    return itemsToShow.map(item => item.label).join(', ');
+  };
+
+  const detailsText = getDetailsText();
+
   return (
     <View style={tw`w-full`}>
       <TouchableOpacity
@@ -68,7 +87,14 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
           ) : (
             <View style={tw.style('w-2.5 h-2.5 rounded-full', config.dotStyle)} />
           )}
-          <Text style={[tw.style('text-base font-semibold flex-1', config.textStyle), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{config.label}</Text>
+          <View style={tw`flex-1`}>
+            <Text style={[tw.style('text-base font-semibold', config.textStyle), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{config.label}</Text>
+            {detailsText && (
+              <Text style={[tw`text-sm text-text-light mt-1`, { fontFamily: 'PlusJakartaSans_400Regular' }]} numberOfLines={2}>
+                {detailsText}
+              </Text>
+            )}
+          </View>
         </View>
         <Text style={[tw`text-text-light text-2xl`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>›</Text>
       </TouchableOpacity>

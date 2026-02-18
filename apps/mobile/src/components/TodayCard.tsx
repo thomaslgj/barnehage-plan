@@ -258,6 +258,7 @@ export default function TodayCard({
         {equipmentItems.length > 0 ? (
           <EquipmentStatusBadge
             status={equipmentStatus}
+            items={equipmentItems}
             onPress={() => setBottomSheetVisible(true)}
           />
         ) : (
