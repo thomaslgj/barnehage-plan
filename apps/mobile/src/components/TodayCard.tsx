@@ -175,94 +175,96 @@ export default function TodayCard({
       )}
 
       <View style={[
-        tw`bg-slate-900 rounded-xl p-5 mb-6 border ${
-          isToday ? 'border-slate-600/80' : 'border-slate-700/50'
-        }`,
+        tw`bg-slate-800 rounded-xl mb-6 overflow-hidden border border-slate-700/20`,
         {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.35,
-          shadowRadius: 20,
-          elevation: 16,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.5,
+          shadowRadius: 24,
+          elevation: 20,
         }
       ]}>
-        <View style={tw`mb-4`}>
-          <Text style={[tw.style(
-            isToday ? 'text-2xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
-          ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
-          <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>{dayName}</Text>
-        </View>
-
-        <View style={{ position: 'relative', marginBottom: 16 }}>
-          <View style={tw`flex-row gap-4`}>
-            <Animated.View
-              style={[
-                tw`flex-1`,
-                {
-                  opacity: leftAvatarOpacity,
-                  transform: [{ translateX: leftAvatarX }],
-                }
-              ]}
-            >
-              <ScheduleSlot
-                key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
-                slotType="dropoff"
-                displayName={dropoffName}
-                userId={dropoffUserId}
-                members={members}
-                onPress={onDropoffPress || (() => {})}
-                loading={false}
-                isInHero={true}
-                textOpacity={leftTextOpacity}
-              />
-            </Animated.View>
-            <Animated.View
-              style={[
-                tw`flex-1`,
-                {
-                  opacity: rightAvatarOpacity,
-                  transform: [{ translateX: rightAvatarX }],
-                }
-              ]}
-            >
-              <ScheduleSlot
-                key={`${date}-pickup-${pickupUserId || 'empty'}`}
-                slotType="pickup"
-                displayName={pickupName}
-                userId={pickupUserId}
-                members={members}
-                onPress={onPickupPress || (() => {})}
-                loading={false}
-                isInHero={true}
-                textOpacity={rightTextOpacity}
-              />
-            </Animated.View>
+        {/* Main content section with padding */}
+        <View style={tw`px-5 pt-5 pb-4`}>
+          <View style={tw`mb-4 flex-row items-baseline gap-2`}>
+            <Text style={[tw.style(
+              isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
+            ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
+            <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
           </View>
-          {/* Connecting line between avatars */}
-          <Animated.View
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              width: 96, // gap-4 (16px) + padding on both sides (~40px each)
-              height: 2,
-              backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle - matches schedule
-              transform: [{ translateX: -48 }, { translateY: -1 }],
-              zIndex: -1,
-              opacity: lineOpacity,
-            }}
-          />
+
+          <View style={{ position: 'relative', marginBottom: 0 }}>
+            <View style={tw`flex-row gap-4`}>
+              <Animated.View
+                style={[
+                  tw`flex-1`,
+                  {
+                    opacity: leftAvatarOpacity,
+                    transform: [{ translateX: leftAvatarX }],
+                  }
+                ]}
+              >
+                <ScheduleSlot
+                  key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
+                  slotType="dropoff"
+                  displayName={dropoffName}
+                  userId={dropoffUserId}
+                  members={members}
+                  onPress={onDropoffPress || (() => {})}
+                  loading={false}
+                  isInHero={true}
+                  textOpacity={leftTextOpacity}
+                />
+              </Animated.View>
+              <Animated.View
+                style={[
+                  tw`flex-1`,
+                  {
+                    opacity: rightAvatarOpacity,
+                    transform: [{ translateX: rightAvatarX }],
+                  }
+                ]}
+              >
+                <ScheduleSlot
+                  key={`${date}-pickup-${pickupUserId || 'empty'}`}
+                  slotType="pickup"
+                  displayName={pickupName}
+                  userId={pickupUserId}
+                  members={members}
+                  onPress={onPickupPress || (() => {})}
+                  loading={false}
+                  isInHero={true}
+                  textOpacity={rightTextOpacity}
+                />
+              </Animated.View>
+            </View>
+            {/* Connecting line between avatars */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: 96, // gap-4 (16px) + padding on both sides (~40px each)
+                height: 2,
+                backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle - matches schedule
+                transform: [{ translateX: -48 }, { translateY: -1 }],
+                zIndex: -1,
+                opacity: lineOpacity,
+              }}
+            />
+          </View>
         </View>
 
-        {/* Equipment Status Badge - only show when data is loaded */}
+        {/* Equipment Status Section - integrated footer */}
         {equipmentItems.length > 0 ? (
           <EquipmentStatusBadge
             status={equipmentStatus}
             items={equipmentItems}
             onPress={() => setBottomSheetVisible(true)}
+            isFooter={true}
           />
         ) : (
-          <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-3 rounded-full border border-slate-700 bg-slate-800/30`}>
+          <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-4 bg-[#2d2520]`}>
             <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
               Laster utstyr...
             </Text>

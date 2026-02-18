@@ -8,9 +8,10 @@ interface EquipmentStatusBadgeProps {
   status: 'ready' | 'missing' | 'not_ready';
   items: EquipmentItem[];
   onPress: () => void;
+  isFooter?: boolean;
 }
 
-export default function EquipmentStatusBadge({ status, items, onPress }: EquipmentStatusBadgeProps) {
+export default function EquipmentStatusBadge({ status, items, onPress, isFooter = false }: EquipmentStatusBadgeProps) {
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
@@ -70,6 +71,35 @@ export default function EquipmentStatusBadge({ status, items, onPress }: Equipme
 
   const detailsText = getDetailsText();
 
+  // Footer variant - integrated bottom section
+  if (isFooter) {
+    return (
+      <TouchableOpacity
+        style={tw`w-full flex-row items-center justify-between gap-3 px-5 py-4 bg-[#2d2520]`}
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
+        <View style={tw`flex-row items-center gap-3 flex-1`}>
+          {config.showCheckmark ? (
+            <Text style={[tw.style(config.iconStyle), { fontFamily: 'PlusJakartaSans_400Regular' }]}>✓</Text>
+          ) : (
+            <View style={tw.style('w-2.5 h-2.5 rounded-full', config.dotStyle)} />
+          )}
+          <View style={tw`flex-1`}>
+            <Text style={[tw.style('text-base font-semibold', config.textStyle), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{config.label}</Text>
+            {detailsText && (
+              <Text style={[tw`text-sm text-text-light mt-1`, { fontFamily: 'PlusJakartaSans_400Regular' }]} numberOfLines={2}>
+                {detailsText}
+              </Text>
+            )}
+          </View>
+        </View>
+        <Text style={[tw`text-text-light text-2xl`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>›</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // Default variant - standalone badge
   return (
     <View style={tw`w-full`}>
       <TouchableOpacity
