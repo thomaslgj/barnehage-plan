@@ -87,13 +87,8 @@ const ScheduleSlot = memo(function ScheduleSlot({
     : (slotType === 'dropoff' ? 'items-end justify-center' : 'items-start justify-center');
 
   const handlePress = () => {
-    // Call onPress immediately, don't wait for haptics
+    // Call onPress immediately - no effects for testing
     onPress();
-
-    // Fire haptic feedback asynchronously (non-blocking)
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
   };
 
   // Render content - avatar + name (layout depends on slotType)

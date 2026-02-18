@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import tw from '../lib/tw';
@@ -89,9 +90,14 @@ export default function AuthScreen() {
   return (
     <KeyboardAvoidingView
       style={tw`flex-1 bg-background`}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <View style={tw`flex-1 justify-center px-6`}>
+      <ScrollView
+        contentContainerStyle={tw`flex-grow justify-center px-6 py-8`}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Title */}
         <Animated.View style={{ opacity: titleFade }}>
           <Text style={[tw`text-5xl text-center mb-16`, { fontFamily: 'PlusJakartaSans_500Medium', letterSpacing: 8, color: '#EDE7DF' }]}>
@@ -162,7 +168,7 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

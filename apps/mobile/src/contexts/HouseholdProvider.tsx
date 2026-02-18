@@ -145,7 +145,14 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize');
+        // Don't show error for missing/invalid refresh token - just treat as logged out
+        const errorMessage = err instanceof Error ? err.message : 'Failed to initialize';
+        if (!errorMessage.includes('Refresh Token') && !errorMessage.includes('refresh token')) {
+          setError(errorMessage);
+        }
+        // Set user to null so app shows login screen
+        setUser(null);
+        setNeedsOnboarding(false);
       } finally {
         setLoading(false);
       }

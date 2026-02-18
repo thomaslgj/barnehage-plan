@@ -454,7 +454,6 @@ export default function MainScreen({ navigation }: any) {
     if (!childId || !householdId || !user) return;
 
     const key = `${date}-${slot}`;
-    const currentUserId = assignments[key] || null;
 
     // Build cycle order: null -> person1 -> person2 -> null
     const order: (string | null)[] = [
@@ -462,45 +461,49 @@ export default function MainScreen({ navigation }: any) {
       ...members.slice(0, 2).map(m => m.id)
     ];
 
-    // Find current index and get next
-    const currentIndex = order.indexOf(currentUserId);
-    const nextIndex = (currentIndex + 1) % order.length;
-    const nextUserId = order[nextIndex];
+    // Use functional update to get current value without depending on assignments
+    setAssignments((prev) => {
+      const currentUserId = prev[key] || null;
 
-    // SYNCHRONOUS update - update UI immediately
-    setAssignments((prev) => ({
-      ...prev,
-      [key]: nextUserId,
-    }));
+      // Find current index and get next
+      const currentIndex = order.indexOf(currentUserId);
+      const nextIndex = (currentIndex + 1) % order.length;
+      const nextUserId = order[nextIndex];
 
-    // Fire off database save without awaiting (non-blocking)
-    if (nextUserId === null) {
-      supabase
-        .from('schedule_assignments')
-        .delete()
-        .eq('child_id', childId)
-        .eq('date', date)
-        .eq('slot', slot)
-        .then(({ error }) => {
-          if (error) console.error('Error deleting assignment:', error);
-        });
-    } else {
-      supabase
-        .from('schedule_assignments')
-        .upsert({
-          household_id: householdId,
-          child_id: childId,
-          date: date,
-          slot: slot,
-          assigned_member_id: nextUserId,
-          assigned_user_id: nextUserId,
-          updated_by: user.id,
-        }, { onConflict: 'child_id,date,slot' })
-        .then(({ error }) => {
-          if (error) console.error('Error saving assignment:', error);
-        });
-    }
-  }, [childId, householdId, user, assignments, members]);
+      // Fire off database save without awaiting (non-blocking)
+      if (nextUserId === null) {
+        supabase
+          .from('schedule_assignments')
+          .delete()
+          .eq('child_id', childId)
+          .eq('date', date)
+          .eq('slot', slot)
+          .then(({ error }) => {
+            if (error) console.error('Error deleting assignment:', error);
+          });
+      } else {
+        supabase
+          .from('schedule_assignments')
+          .upsert({
+            household_id: householdId,
+            child_id: childId,
+            date: date,
+            slot: slot,
+            assigned_member_id: nextUserId,
+            assigned_user_id: nextUserId,
+            updated_by: user.id,
+          }, { onConflict: 'child_id,date,slot' })
+          .then(({ error }) => {
+            if (error) console.error('Error saving assignment:', error);
+          });
+      }
+
+      return {
+        ...prev,
+        [key]: nextUserId,
+      };
+    });
+  }, [childId, householdId, user, members]);
 
   const getDisplayName = useCallback((memberId: string | null): string | undefined => {
     if (!memberId) {
@@ -858,7 +861,7 @@ export default function MainScreen({ navigation }: any) {
                     <View style={tw`flex-row gap-8`}>
                       <View style={tw`flex-1`}>
                         <ScheduleSlot
-                          key={`${dropoffKey}-${assignments[dropoffKey] || 'empty'}`}
+                          key={dropoffKey}
                           slotType="dropoff"
                           displayName={getDisplayName(assignments[dropoffKey])}
                           userId={assignments[dropoffKey]}
@@ -869,7 +872,7 @@ export default function MainScreen({ navigation }: any) {
                       </View>
                       <View style={tw`flex-1`}>
                         <ScheduleSlot
-                          key={`${pickupKey}-${assignments[pickupKey] || 'empty'}`}
+                          key={pickupKey}
                           slotType="pickup"
                           displayName={getDisplayName(assignments[pickupKey])}
                           userId={assignments[pickupKey]}

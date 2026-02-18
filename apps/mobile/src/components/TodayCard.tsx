@@ -209,7 +209,7 @@ export default function TodayCard({
                 ]}
               >
                 <ScheduleSlot
-                  key={`${date}-dropoff-${dropoffUserId || 'empty'}`}
+                  key={`${date}-dropoff`}
                   slotType="dropoff"
                   displayName={dropoffName}
                   userId={dropoffUserId}
@@ -230,7 +230,7 @@ export default function TodayCard({
                 ]}
               >
                 <ScheduleSlot
-                  key={`${date}-pickup-${pickupUserId || 'empty'}`}
+                  key={`${date}-pickup`}
                   slotType="pickup"
                   displayName={pickupName}
                   userId={pickupUserId}
