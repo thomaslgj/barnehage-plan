@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { AVATAR_SVGS, AVAILABLE_AVATARS } from '../lib/avatars';
@@ -10,7 +10,7 @@ interface AvatarProps {
   style?: any;
 }
 
-export default function Avatar({ avatarId, size = 24, borderColor, style }: AvatarProps) {
+const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor, style }: AvatarProps) {
   // Always show border if we have an avatar
   const borderWidth = 4;
   const innerSize = size - (borderWidth * 2);
@@ -66,6 +66,7 @@ export default function Avatar({ avatarId, size = 24, borderColor, style }: Avat
       </View>
     </View>
   );
-}
+});
 
+export default Avatar;
 export { AVAILABLE_AVATARS };

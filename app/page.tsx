@@ -78,7 +78,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-40 sm:pt-48 sm:pb-48">
           <div className="text-center">
-            <h1 ref={heroLogoRef} className="text-5xl font-medium text-[#EDE7DF] mb-20" style={{ fontFamily: 'Plus Jakarta Sans', letterSpacing: '8px', opacity: 0, transform: 'translateY(20px)' }}>
+            <h1 ref={heroLogoRef} className="text-2xl font-medium text-[#EDE7DF] mb-20" style={{ fontFamily: 'Plus Jakarta Sans', letterSpacing: '8px', opacity: 0, transform: 'translateY(20px)' }}>
               flyt
             </h1>
 

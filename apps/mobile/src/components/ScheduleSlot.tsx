@@ -1,5 +1,5 @@
 import React, { useMemo, memo, useRef } from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
 import Avatar from './Avatar';
@@ -86,27 +86,14 @@ const ScheduleSlot = memo(function ScheduleSlot({
     ? 'items-center justify-center'
     : (slotType === 'dropoff' ? 'items-end justify-center' : 'items-start justify-center');
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-  };
-
   const handlePress = () => {
+    // Call onPress immediately, don't wait for haptics
+    onPress();
+
+    // Fire haptic feedback asynchronously (non-blocking)
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    onPress();
   };
 
   // Render content - avatar + name (layout depends on slotType)
@@ -143,26 +130,24 @@ const ScheduleSlot = memo(function ScheduleSlot({
   );
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity
+    <View>
+      <Pressable
         onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         disabled={loading}
-        activeOpacity={0.7}
-        style={[
+        style={({ pressed }) => [
           tw.style(
             `${containerClasses} ${containerAlignment} rounded-lg`,
             loading && 'opacity-50'
           ),
           {
             backgroundColor: 'transparent',
+            opacity: pressed ? 0.6 : 1,
           }
         ]}
       >
         {content}
-      </TouchableOpacity>
-    </Animated.View>
+      </Pressable>
+    </View>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison: only re-render if these specific props change
