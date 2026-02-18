@@ -1,7 +1,6 @@
-import React, { memo } from 'react';
-import { View } from 'react-native';
-import { SvgXml } from 'react-native-svg';
-import { AVATAR_SVGS, AVAILABLE_AVATARS } from '../lib/avatars';
+import React, { memo, useMemo } from 'react';
+import { View, Image } from 'react-native';
+import { AVATAR_IMAGES, AVAILABLE_AVATARS } from '../lib/avatar-images';
 
 interface AvatarProps {
   avatarId: string | null | undefined;
@@ -13,10 +12,13 @@ interface AvatarProps {
 const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor, style }: AvatarProps) {
   // Always show border if we have an avatar
   const borderWidth = 4;
-  const innerSize = size - (borderWidth * 2);
+  const innerSize = size - 8; // size - (borderWidth * 2) = size - 8
   const finalBorderColor = borderColor || '#6b8e6f'; // Fallback to green
 
-  if (!avatarId || !AVATAR_SVGS[avatarId]) {
+  // Direct lookup - no need for useMemo for simple lookups
+  const imageSource = avatarId && AVATAR_IMAGES[avatarId];
+
+  if (!avatarId || !AVATAR_IMAGES[avatarId]) {
     // Default avatar - empty circle with dashed border
     return (
       <View
@@ -36,6 +38,7 @@ const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor, style }:
     );
   }
 
+  // PNG image - much faster than SVG
   return (
     <View
       style={[
@@ -46,24 +49,23 @@ const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor, style }:
           borderWidth: borderWidth,
           borderColor: finalBorderColor,
           borderStyle: 'solid',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'transparent',
+          backgroundColor: 'rgba(45, 37, 32, 1)',
+          overflow: 'hidden',
         },
         style,
       ]}
     >
-      <View
-        style={{
-          width: innerSize,
-          height: innerSize,
-          borderRadius: innerSize / 2,
-          overflow: 'hidden',
-          backgroundColor: 'rgba(45, 37, 32, 1)', // Dark background for better contrast
-        }}
-      >
-        <SvgXml xml={AVATAR_SVGS[avatarId]} width="100%" height="100%" />
-      </View>
+      {imageSource && (
+        <Image
+          source={imageSource}
+          style={{
+            width: innerSize,
+            height: innerSize,
+            borderRadius: innerSize / 2,
+          }}
+          resizeMode="cover"
+        />
+      )}
     </View>
   );
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,7 +10,7 @@ interface NoteIconProps {
   size?: number;
 }
 
-export default function NoteIcon({ hasNotes, onPress, size = 18 }: NoteIconProps) {
+const NoteIcon = memo(function NoteIcon({ hasNotes, onPress, size = 18 }: NoteIconProps) {
   const handlePress = () => {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -32,4 +32,6 @@ export default function NoteIcon({ hasNotes, onPress, size = 18 }: NoteIconProps
       />
     </TouchableOpacity>
   );
-}
+});
+
+export default NoteIcon;

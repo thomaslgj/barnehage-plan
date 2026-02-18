@@ -1,4 +1,4 @@
-import React, { useMemo, memo, useRef } from 'react';
+import React, { useMemo, memo } from 'react';
 import { Pressable, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
@@ -25,8 +25,6 @@ const ScheduleSlot = memo(function ScheduleSlot({
   isInHero = false,
   textOpacity
 }: ScheduleSlotProps) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
   // Determine which person this is - memoized
   const personIndex = useMemo(() => {
     if (!userId || members.length === 0) {
@@ -47,13 +45,11 @@ const ScheduleSlot = memo(function ScheduleSlot({
 
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
 
-  // Get border color based on assignment - must be defined before content
-  const borderColor = useMemo(() => {
-    if (!hasAssignment) return '#4a3f38'; // empty slot color
-    if (personIndex === 0) return '#6b8e6f'; // person 1 color
-    if (personIndex === 1) return '#e8c96f'; // person 2 color
-    return '#8b7a6a'; // fallback
-  }, [hasAssignment, personIndex]);
+  // Get border color based on assignment - simple lookup, no memoization needed
+  const borderColor = !hasAssignment ? '#4a3f38'
+    : personIndex === 0 ? '#6b8e6f'
+    : personIndex === 1 ? '#e8c96f'
+    : '#8b7a6a';
 
   // Get gradient colors based on person - memoized
   const gradientColors = useMemo((): [string, string] => {
@@ -87,7 +83,10 @@ const ScheduleSlot = memo(function ScheduleSlot({
     : (slotType === 'dropoff' ? 'items-end justify-center' : 'items-start justify-center');
 
   const handlePress = () => {
-    // Call onPress immediately - no effects for testing
+    // Immediate haptic feedback for instant response feeling
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     onPress();
   };
 
@@ -96,13 +95,15 @@ const ScheduleSlot = memo(function ScheduleSlot({
   // For schedule: don't use flex-1 so content only takes space it needs
   const contentFlex = isInHero ? 'flex-1' : '';
 
-  const content = (
+  const renderContent = (pressed: boolean) => (
     <View style={tw`${contentFlex} ${slotType === 'dropoff' ? 'flex-row-reverse' : 'flex-row'} items-center ${contentPadding} ${contentGap}`}>
       {loading ? (
         <ActivityIndicator size="small" color={hasAssignment ? "#f5f1ed" : "#a89985"} />
       ) : (
         <>
-          <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
+          <View style={{ transform: [{ scale: pressed ? 0.9 : 1 }] }}>
+            <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
+          </View>
           {displayName && (
             <Animated.Text
               style={[
@@ -129,18 +130,13 @@ const ScheduleSlot = memo(function ScheduleSlot({
       <Pressable
         onPress={handlePress}
         disabled={loading}
-        style={({ pressed }) => [
-          tw.style(
-            `${containerClasses} ${containerAlignment} rounded-lg`,
-            loading && 'opacity-50'
-          ),
-          {
-            backgroundColor: 'transparent',
-            opacity: pressed ? 0.6 : 1,
-          }
-        ]}
+        style={tw.style(
+          `${containerClasses} ${containerAlignment} rounded-lg`,
+          loading && 'opacity-50',
+          { backgroundColor: 'transparent' }
+        )}
       >
-        {content}
+        {({ pressed }) => renderContent(pressed)}
       </Pressable>
     </View>
   );
