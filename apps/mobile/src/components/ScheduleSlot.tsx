@@ -1,5 +1,5 @@
 import React, { useMemo, memo } from 'react';
-import { Pressable, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import tw from '../lib/tw';
 import Avatar from './Avatar';
@@ -12,7 +12,6 @@ interface ScheduleSlotProps {
   onPress: () => void;
   loading?: boolean;
   isInHero?: boolean;
-  textOpacity?: Animated.Value;
 }
 
 const ScheduleSlot = memo(function ScheduleSlot({
@@ -22,26 +21,15 @@ const ScheduleSlot = memo(function ScheduleSlot({
   members = [],
   onPress,
   loading,
-  isInHero = false,
-  textOpacity
+  isInHero = false
 }: ScheduleSlotProps) {
-  // Determine which person this is - memoized
-  const personIndex = useMemo(() => {
-    if (!userId || members.length === 0) {
-      return null;
-    }
-    const index = members.findIndex(m => m.user_id === userId || m.id === userId);
-    return index;
-  }, [userId, members]);
+  // Determine which person this is and get avatar - single lookup instead of two
+  const member = userId && members.length > 0
+    ? members.find(m => m.user_id === userId || m.id === userId)
+    : null;
 
-  // Get avatar ID from member
-  const avatarId = useMemo(() => {
-    if (!userId || members.length === 0) {
-      return null;
-    }
-    const member = members.find(m => m.user_id === userId || m.id === userId);
-    return member?.avatar_id || null;
-  }, [userId, members]);
+  const personIndex = member ? members.indexOf(member) : null;
+  const avatarId = member?.avatar_id || null;
 
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
 
@@ -50,17 +38,6 @@ const ScheduleSlot = memo(function ScheduleSlot({
     : personIndex === 0 ? '#6b8e6f'
     : personIndex === 1 ? '#e8c96f'
     : '#8b7a6a';
-
-  // Get gradient colors based on person - memoized
-  const gradientColors = useMemo((): [string, string] => {
-    if (personIndex === 0) {
-      return ['#6b8e6f', '#5d8a7f']; // sage green to warm teal
-    } else if (personIndex === 1) {
-      return ['#e8c96f', '#d4b560']; // warm golden yellow
-    }
-    // Safeguard: if we somehow get here with hasAssignment=true, use a fallback color instead of transparent
-    return ['#8b7a6a', '#6e5e4f']; // warm brown-gray fallback
-  }, [personIndex]);
 
   // Fixed dimensions - transparent background with thick border
   // For schedule: remove padding on side facing center (dropoff: right, pickup: left)
@@ -105,20 +82,19 @@ const ScheduleSlot = memo(function ScheduleSlot({
             <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
           </View>
           {displayName && (
-            <Animated.Text
+            <Text
               style={[
                 tw`${textSize} font-bold`,
                 {
                   fontFamily: 'PlusJakartaSans_400Regular',
                   color: hasAssignment ? '#f5f1ed' : '#a89985',
-                  opacity: textOpacity || 1,
                 }
               ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {displayName}
-            </Animated.Text>
+            </Text>
           )}
         </>
       )}
