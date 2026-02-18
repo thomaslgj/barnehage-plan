@@ -79,7 +79,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'secondary' ? '#2d2520' : '#ffffff'}
+          color={variant === 'secondary' ? '#2d2520' : '#f5f1ed'}
         />
       ) : (
         <>

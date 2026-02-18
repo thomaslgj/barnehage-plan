@@ -142,7 +142,7 @@ export default function AuthScreen() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#f5f1ed" />
             ) : (
               <Text style={tw`text-white text-base font-semibold`}>
                 {isSignUp ? 'Opprett konto' : 'Logg inn'}

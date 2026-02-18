@@ -128,7 +128,7 @@ export default function ProfileScreen({ navigation }: any) {
           size={24}
           color={item.color ? tw.color(item.color) : tw.color('text-text')}
         />
-        <Text style={tw.style('text-base font-medium flex-1', item.color || 'text-white')}>
+        <Text style={tw.style('text-base font-medium flex-1', item.color || 'text-text')}>
           {item.title}
         </Text>
       </View>

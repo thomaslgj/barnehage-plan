@@ -575,7 +575,7 @@ export default function MainScreen({ navigation }: any) {
                 onPress={() => animateButtonPress(profileButtonScale, () => navigation.navigate('Profile'))}
                 activeOpacity={0.7}
               >
-                <Ionicons name="person-circle-outline" size={22} color="#fff" />
+                <Ionicons name="person-circle-outline" size={22} color="#f5f1ed" />
                 <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
                 <Text style={tw`text-text-light text-xl`}>›</Text>
               </TouchableOpacity>
@@ -675,11 +675,11 @@ export default function MainScreen({ navigation }: any) {
           <View style={tw`flex-row items-center justify-between mb-3`}>
           <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
             <TouchableOpacity
-              style={tw`p-2 bg-slate-700/50 rounded-lg`}
+              style={tw`p-2 bg-slate-700/50 rounded-lg flex items-center justify-center`}
               onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
               activeOpacity={0.7}
             >
-              <Text style={tw`text-2xl text-text`}>‹</Text>
+              <Text style={tw`text-2xl text-text leading-none`}>‹</Text>
             </TouchableOpacity>
           </Animated.View>
 
@@ -696,11 +696,11 @@ export default function MainScreen({ navigation }: any) {
 
           <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
             <TouchableOpacity
-              style={tw`p-2 bg-slate-700/50 rounded-lg`}
+              style={tw`p-2 bg-slate-700/50 rounded-lg flex items-center justify-center`}
               onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
               activeOpacity={0.7}
             >
-              <Text style={tw`text-2xl text-text`}>›</Text>
+              <Text style={tw`text-2xl text-text leading-none`}>›</Text>
             </TouchableOpacity>
           </Animated.View>
           </View>
@@ -712,7 +712,7 @@ export default function MainScreen({ navigation }: any) {
               onPress={() => changeWeek(0)}
               activeOpacity={0.7}
             >
-              <Ionicons name="today-outline" size={20} color="#fff" />
+              <Ionicons name="today-outline" size={20} color="#f5f1ed" />
               <Text style={tw`text-base text-white font-medium`}>Gå til nåværende uke</Text>
             </TouchableOpacity>
           )}

@@ -89,6 +89,20 @@ body {
   }
 }
 
+@keyframes scrollScreenshot {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(calc(-100% + 650px));
+  }
+}
+
+.screenshot-scroll {
+  animation: scrollScreenshot 15s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }

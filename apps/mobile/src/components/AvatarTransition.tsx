@@ -130,7 +130,7 @@ export default function AvatarTransition({
                     fontFamily: 'PlusJakartaSans_400Regular',
                     fontSize: 20,
                     fontWeight: 'bold',
-                    color: '#ffffff',
+                    color: '#f5f1ed',
                     opacity: leftTextOpacity,
                   }}
                   numberOfLines={1}
@@ -148,7 +148,7 @@ export default function AvatarTransition({
                     fontFamily: 'PlusJakartaSans_400Regular',
                     fontSize: 20,
                     fontWeight: 'bold',
-                    color: '#ffffff',
+                    color: '#f5f1ed',
                     opacity: rightTextOpacity,
                   }}
                   numberOfLines={1}

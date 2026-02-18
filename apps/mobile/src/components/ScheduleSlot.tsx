@@ -127,7 +127,7 @@ const ScheduleSlot = memo(function ScheduleSlot({
                 tw`${textSize} font-bold`,
                 {
                   fontFamily: 'PlusJakartaSans_400Regular',
-                  color: hasAssignment ? '#ffffff' : '#a89985',
+                  color: hasAssignment ? '#f5f1ed' : '#a89985',
                   opacity: textOpacity || 1,
                 }
               ]}

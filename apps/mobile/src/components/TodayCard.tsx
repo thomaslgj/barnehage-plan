@@ -174,9 +174,18 @@ export default function TodayCard({
         </View>
       )}
 
-      <View style={tw`bg-slate-800/50 rounded-xl p-5 mb-6 border ${
-        isToday ? 'border-slate-600/80' : 'border-slate-700/50'
-      }`}>
+      <View style={[
+        tw`bg-slate-900 rounded-xl p-5 mb-6 border ${
+          isToday ? 'border-slate-600/80' : 'border-slate-700/50'
+        }`,
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.35,
+          shadowRadius: 20,
+          elevation: 16,
+        }
+      ]}>
         <View style={tw`mb-4`}>
           <Text style={[tw.style(
             isToday ? 'text-2xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
@@ -237,7 +246,7 @@ export default function TodayCard({
               left: '50%',
               width: 96, // gap-4 (16px) + padding on both sides (~40px each)
               height: 2,
-              backgroundColor: '#a89985',
+              backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle - matches schedule
               transform: [{ translateX: -48 }, { translateY: -1 }],
               zIndex: -1,
               opacity: lineOpacity,

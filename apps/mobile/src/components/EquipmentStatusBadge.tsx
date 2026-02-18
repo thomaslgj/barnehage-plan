@@ -22,7 +22,7 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
           dotStyle: 'bg-success',
           borderStyle: 'border-success/40',
           bgStyle: 'bg-success/10',
-          textStyle: 'text-white',
+          textStyle: 'text-text',
           iconStyle: 'text-success text-2xl',
           showCheckmark: true,
         };

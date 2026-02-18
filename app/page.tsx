@@ -188,7 +188,7 @@ export default function LandingPage() {
       </section>
 
       {/* Solution Section - Benefits */}
-      <section ref={benefitsRef} className="py-48 bg-[#312b26]">
+      <section ref={benefitsRef} className="py-48 bg-[#3a322c]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-24">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#f5f1ed] mb-6 leading-snug">
@@ -263,9 +263,31 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Screenshot placeholder */}
-          <div className="bg-[#2d2520] rounded-3xl border border-[#4a3f38]/50 p-12 flex items-center justify-center min-h-[500px] shadow-2xl shadow-[#6b8e6f]/5">
-            <span className="text-[#a89985] text-lg">Skjermbilde av appen kommer her</span>
+          {/* Mobile phone mockup with scrolling screenshot */}
+          <div className="flex items-center justify-center">
+            <div
+              className="relative w-[400px] h-[650px] bg-[#1a1614] rounded-[3rem] border-[14px] border-[#1a1614] shadow-2xl overflow-hidden"
+              style={{
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(107, 142, 111, 0.2)'
+              }}
+            >
+              {/* Phone notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[#1a1614] rounded-b-3xl z-10" />
+
+              {/* Screenshot container with scroll animation */}
+              <div className="absolute inset-0 overflow-hidden rounded-[2.5rem]">
+                <img
+                  src="/screenshot.jpg"
+                  alt="Flyt app screenshot"
+                  className="w-full h-auto screenshot-scroll"
+                  style={{
+                    minHeight: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'top'
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>

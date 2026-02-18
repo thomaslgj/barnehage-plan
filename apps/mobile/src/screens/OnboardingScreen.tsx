@@ -696,7 +696,7 @@ export default function OnboardingScreen() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#f5f1ed" />
             ) : (
               <Text style={tw`text-white text-base font-semibold`}>Bli med</Text>
             )}
@@ -917,7 +917,7 @@ export default function OnboardingScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#f5f1ed" />
               ) : (
                 <Text style={tw`text-white text-base font-semibold`}>Hopp over</Text>
               )}
@@ -998,7 +998,7 @@ export default function OnboardingScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#f5f1ed" />
               ) : (
                 <Text style={tw`text-white text-base font-semibold`}>Fullfør</Text>
               )}
