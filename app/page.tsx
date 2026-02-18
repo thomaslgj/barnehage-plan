@@ -401,7 +401,7 @@ export default function LandingPage() {
 
             {/* Bio */}
             <p className="text-base text-[#a89985] max-w-xl mb-4 leading-relaxed">
-              Jeg er en småbarnsfar som bygger verktøy for å gjøre hverdagen enklere.
+              Jeg er en småbarnsfar som bygger verktøy for å gjøre hverdagen enklere.<br />
               Flyt kom fra et personlig behov – og nå håper jeg det kan hjelpe andre familier også.
             </p>
 
