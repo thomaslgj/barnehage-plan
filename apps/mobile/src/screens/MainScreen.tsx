@@ -244,14 +244,14 @@ export default function MainScreen({ navigation }: any) {
     if (!childId) return;
 
     const fetchChildName = async () => {
-      console.log('Fetching child name for childId:', childId);
+      // console.log('Fetching child name for childId:', childId);
       const { data, error } = await supabase
         .from('children')
         .select('name')
         .eq('id', childId)
         .single();
 
-      console.log('Child data fetched:', data, 'error:', error);
+      // console.log('Child data fetched:', data, 'error:', error);
 
       if (data) {
         setChildName(data.name);
@@ -420,8 +420,8 @@ export default function MainScreen({ navigation }: any) {
 
       // Insert/update new assignments from template (use upsert to handle duplicates)
       if (newAssignments.length > 0) {
-        console.log('Upserting assignments:', newAssignments.length);
-        console.log('Assignments to upsert:', JSON.stringify(newAssignments, null, 2));
+        // console.log('Upserting assignments:', newAssignments.length);
+        // console.log('Assignments to upsert:', JSON.stringify(newAssignments, null, 2));
         const { error: upsertError } = await supabase
           .from('schedule_assignments')
           .upsert(newAssignments, { onConflict: 'child_id,date,slot' });

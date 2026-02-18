@@ -100,7 +100,7 @@ export default function AssignmentModal({
           </ScrollView>
 
           <TouchableOpacity
-            style={tw`p-5 items-center border-t border-slate-700`}
+            style={tw`p-5 pb-8 items-center border-t border-slate-700`}
             onPress={onClose}
           >
             <Text style={tw`text-base text-slate-300 font-semibold`}>Avbryt</Text>

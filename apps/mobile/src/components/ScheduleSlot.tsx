@@ -1,7 +1,6 @@
-import React, { useMemo, memo } from 'react';
+import React, { memo } from 'react';
 import { Pressable, Text, ActivityIndicator, View, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import tw from '../lib/tw';
 import Avatar from './Avatar';
 
 interface ScheduleSlotProps {
@@ -33,31 +32,10 @@ const ScheduleSlot = memo(function ScheduleSlot({
 
   const hasAssignment = Boolean(displayName && personIndex !== null && personIndex >= 0);
 
-  // Get border color based on assignment - simple lookup, no memoization needed
   const borderColor = !hasAssignment ? '#4a3f38'
     : personIndex === 0 ? '#6b8e6f'
     : personIndex === 1 ? '#e8c96f'
     : '#8b7a6a';
-
-  // Fixed dimensions - transparent background with thick border
-  // For schedule: remove padding on side facing center (dropoff: right, pickup: left)
-  const containerClasses = isInHero
-    ? 'h-[70px] py-2 px-3'
-    : (slotType === 'dropoff' ? 'h-[70px] py-1 pl-1 pr-0' : 'h-[70px] py-1 pl-0 pr-1');
-
-  const textSize = isInHero ? 'text-xl' : 'text-base';
-  const contentGap = isInHero ? 'gap-3' : 'gap-2';
-  // For schedule: remove all padding
-  const contentPadding = isInHero
-    ? 'px-2'
-    : '';
-
-  // For schedule (non-hero), align content towards center instead of centering
-  // In a column layout (default): items-* controls horizontal alignment, justify-* controls vertical
-  // Dropoff: align right (items-end), Pickup: align left (items-start)
-  const containerAlignment = isInHero
-    ? 'items-center justify-center'
-    : (slotType === 'dropoff' ? 'items-end justify-center' : 'items-start justify-center');
 
   const handlePress = () => {
     // Immediate haptic feedback for instant response feeling
@@ -67,54 +45,54 @@ const ScheduleSlot = memo(function ScheduleSlot({
     onPress();
   };
 
-  // Render content - avatar + name (layout depends on slotType)
-  // Dropoff: text left, avatar right | Pickup: avatar left, text right
-  // For schedule: don't use flex-1 so content only takes space it needs
-  const contentFlex = isInHero ? 'flex-1' : '';
+  const contentStyle = {
+    flexDirection: slotType === 'dropoff' ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: isInHero ? 12 : 8,
+    paddingHorizontal: isInHero ? 8 : 0,
+    flex: isInHero ? 1 : undefined,
+  };
 
-  const renderContent = (pressed: boolean) => (
-    <View style={tw`${contentFlex} ${slotType === 'dropoff' ? 'flex-row-reverse' : 'flex-row'} items-center ${contentPadding} ${contentGap}`}>
-      {loading ? (
-        <ActivityIndicator size="small" color={hasAssignment ? "#f5f1ed" : "#a89985"} />
-      ) : (
-        <>
-          <View style={{ transform: [{ scale: pressed ? 0.9 : 1 }] }}>
-            <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
-          </View>
-          {displayName && (
-            <Text
-              style={[
-                tw`${textSize} font-bold`,
-                {
-                  fontFamily: 'PlusJakartaSans_400Regular',
-                  color: hasAssignment ? '#f5f1ed' : '#a89985',
-                }
-              ]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {displayName}
-            </Text>
-          )}
-        </>
-      )}
-    </View>
-  );
+  const containerStyle = {
+    height: 70,
+    paddingVertical: isInHero ? 8 : 4,
+    paddingLeft: isInHero ? 12 : (slotType === 'pickup' ? 0 : 4),
+    paddingRight: isInHero ? 12 : (slotType === 'dropoff' ? 0 : 4),
+    alignItems: isInHero ? 'center' : (slotType === 'dropoff' ? 'flex-end' : 'flex-start'),
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    opacity: loading ? 0.5 : 1,
+  };
+
+  const textStyle = {
+    fontSize: isInHero ? 20 : 16,
+    fontWeight: '700',
+    fontFamily: 'PlusJakartaSans_400Regular',
+    color: hasAssignment ? '#f5f1ed' : '#a89985',
+  };
 
   return (
-    <View>
-      <Pressable
-        onPress={handlePress}
-        disabled={loading}
-        style={tw.style(
-          `${containerClasses} ${containerAlignment} rounded-lg`,
-          loading && 'opacity-50',
-          { backgroundColor: 'transparent' }
-        )}
-      >
-        {({ pressed }) => renderContent(pressed)}
-      </Pressable>
-    </View>
+    <Pressable onPress={handlePress} disabled={loading} style={containerStyle}>
+      {({ pressed }) => (
+        <View style={contentStyle}>
+          {loading ? (
+            <ActivityIndicator size="small" color={hasAssignment ? "#f5f1ed" : "#a89985"} />
+          ) : (
+            <>
+              <View style={{ transform: [{ scale: pressed ? 0.9 : 1 }] }}>
+                <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
+              </View>
+              {displayName && (
+                <Text style={textStyle} numberOfLines={1} ellipsizeMode="tail">
+                  {displayName}
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+      )}
+    </Pressable>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison: only re-render if these specific props change

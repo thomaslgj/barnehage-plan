@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import { View, Image } from 'react-native';
 import { AVATAR_IMAGES, AVAILABLE_AVATARS } from '../lib/avatar-images';
 
@@ -9,65 +9,55 @@ interface AvatarProps {
   style?: any;
 }
 
-const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor, style }: AvatarProps) {
-  // Always show border if we have an avatar
+const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor = '#6b8e6f', style }: AvatarProps) {
   const borderWidth = 4;
-  const innerSize = size - 8; // size - (borderWidth * 2) = size - 8
-  const finalBorderColor = borderColor || '#6b8e6f'; // Fallback to green
-
-  // Direct lookup - no need for useMemo for simple lookups
+  const innerSize = size - 8;
   const imageSource = avatarId && AVATAR_IMAGES[avatarId];
 
-  if (!avatarId || !AVATAR_IMAGES[avatarId]) {
-    // Default avatar - empty circle with dashed border
+  if (!avatarId || !imageSource) {
     return (
       <View
-        style={[
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: borderWidth,
-            borderColor: '#a89985', // Gray/beige border for empty state
-            borderStyle: 'dashed',
-            backgroundColor: 'transparent',
-          },
-          style,
-        ]}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 4,
+          borderColor: '#a89985',
+          borderStyle: 'dashed',
+          backgroundColor: 'transparent',
+        }}
       />
     );
   }
 
-  // PNG image - much faster than SVG
   return (
     <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: borderWidth,
-          borderColor: finalBorderColor,
-          borderStyle: 'solid',
-          backgroundColor: 'rgba(45, 37, 32, 1)',
-          overflow: 'hidden',
-        },
-        style,
-      ]}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 4,
+        borderColor: borderColor,
+        borderStyle: 'solid',
+        backgroundColor: '#2d2520',
+        overflow: 'hidden',
+      }}
     >
-      {imageSource && (
-        <Image
-          source={imageSource}
-          style={{
-            width: innerSize,
-            height: innerSize,
-            borderRadius: innerSize / 2,
-          }}
-          resizeMode="cover"
-        />
-      )}
+      <Image
+        source={imageSource}
+        style={{
+          width: innerSize,
+          height: innerSize,
+        }}
+        resizeMode="contain"
+        fadeDuration={0}
+      />
     </View>
   );
+}, (prev, next) => {
+  return prev.avatarId === next.avatarId &&
+         prev.size === next.size &&
+         prev.borderColor === next.borderColor;
 });
 
 export default Avatar;

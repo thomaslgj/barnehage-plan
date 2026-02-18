@@ -178,7 +178,7 @@ export default function NotesBottomSheet({
 
           {/* Notes List */}
           <ScrollView style={tw`flex-1`}>
-            <View style={tw`p-5`}>
+            <View style={tw`p-5 pb-20`}>
               {notes.length === 0 ? (
                 <View style={tw`py-8 items-center`}>
                   <Ionicons name="document-text-outline" size={48} color="#a89985" />

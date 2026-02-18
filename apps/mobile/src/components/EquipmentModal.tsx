@@ -135,7 +135,7 @@ export default function EquipmentModal({
             </View>
           )}
 
-          <View style={tw`p-4 border-t border-slate-700`}>
+          <View style={tw`p-4 pb-8 border-t border-slate-700`}>
             <TouchableOpacity
               style={tw`bg-primary p-4 rounded-lg items-center`}
               onPress={onClose}
