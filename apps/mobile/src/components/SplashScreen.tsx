@@ -12,7 +12,7 @@ export default function SplashScreen() {
 
       {/* Text content */}
       <View style={styles.textContainer}>
-        <Text style={styles.wordmark}>F L Y T</Text>
+        <Text style={styles.wordmark}>flyt</Text>
       </View>
     </View>
   );
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   wordmark: {
-    fontFamily: 'Manrope_500Medium',
+    fontFamily: 'PlusJakartaSans_500Medium',
     fontSize: 48,
     color: LOGO_COLOR,
     textAlign: 'center',

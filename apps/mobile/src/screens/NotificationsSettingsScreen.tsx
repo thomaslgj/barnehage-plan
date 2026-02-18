@@ -253,7 +253,7 @@ export default function NotificationsSettingsScreen({ navigation }: any) {
           {/* Time Picker */}
           {settings.enabled && (
             <View style={tw`bg-slate-800/50 rounded-lg p-4 border border-slate-700 mb-4`}>
-              <Text style={[tw`text-sm text-text-muted mb-3`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={[tw`text-sm text-text-muted mb-3`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
                 Tidspunkt for varsling
               </Text>
               <TouchableOpacity

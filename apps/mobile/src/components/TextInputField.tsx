@@ -36,7 +36,7 @@ export function TextInputField({
       )}
 
       <RNTextInput
-        style={[inputStyle, { fontFamily: 'Manrope_400Regular' }]}
+        style={[inputStyle, { fontFamily: 'PlusJakartaSans_400Regular' }]}
         placeholderTextColor="#a89985"
         editable={editable}
         {...props}

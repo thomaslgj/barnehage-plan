@@ -127,7 +127,7 @@ export default function AvatarTransition({
               {leftName && (
                 <Animated.Text
                   style={{
-                    fontFamily: 'Manrope_400Regular',
+                    fontFamily: 'PlusJakartaSans_400Regular',
                     fontSize: 20,
                     fontWeight: 'bold',
                     color: '#ffffff',
@@ -145,7 +145,7 @@ export default function AvatarTransition({
               {rightName && (
                 <Animated.Text
                   style={{
-                    fontFamily: 'Manrope_400Regular',
+                    fontFamily: 'PlusJakartaSans_400Regular',
                     fontSize: 20,
                     fontWeight: 'bold',
                     color: '#ffffff',

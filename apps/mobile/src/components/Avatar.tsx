@@ -59,7 +59,7 @@ export default function Avatar({ avatarId, size = 24, borderColor, style }: Avat
           height: innerSize,
           borderRadius: innerSize / 2,
           overflow: 'hidden',
-          backgroundColor: 'rgba(45, 37, 32, 0.6)', // Dark background for better contrast
+          backgroundColor: 'rgba(45, 37, 32, 1)', // Dark background for better contrast
         }}
       >
         <SvgXml xml={AVATAR_SVGS[avatarId]} width="100%" height="100%" />

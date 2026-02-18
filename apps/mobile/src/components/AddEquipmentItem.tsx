@@ -15,12 +15,12 @@ export default function AddEquipmentItem({
 }: AddEquipmentItemProps) {
   return (
     <View>
-      <Text style={[tw`text-sm font-semibold text-slate-300 mb-2`, { fontFamily: 'Manrope_400Regular' }]}>
+      <Text style={[tw`text-sm font-semibold text-slate-300 mb-2`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
         Legg til nytt
       </Text>
       <View style={tw`flex-row gap-2`}>
         <TextInput
-          style={[tw`flex-1 bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-white`, { fontFamily: 'Manrope_400Regular' }]}
+          style={[tw`flex-1 bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-white`, { fontFamily: 'PlusJakartaSans_400Regular' }]}
           placeholder="Navn på utstyr"
           placeholderTextColor="#a89985"
           value={value}
@@ -31,7 +31,7 @@ export default function AddEquipmentItem({
           onPress={onAdd}
           disabled={!value.trim()}
         >
-          <Text style={[tw`text-white font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>+</Text>
+          <Text style={[tw`text-white font-semibold`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>+</Text>
         </TouchableOpacity>
       </View>
     </View>

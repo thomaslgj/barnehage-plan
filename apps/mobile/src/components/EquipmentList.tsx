@@ -27,11 +27,11 @@ export default function EquipmentList({
         <View key={item.key} style={tw`mb-3 bg-slate-800/50 rounded-lg p-3`}>
           {/* Item header with name and critical toggle */}
           <View style={tw`flex-row items-center justify-between mb-2`}>
-            <Text style={[tw`text-white flex-1`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={[tw`text-white flex-1`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
               {item.label}
             </Text>
             <View style={tw`flex-row items-center gap-2`}>
-              <Text style={[tw`text-xs text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={[tw`text-xs text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
                 {item.is_critical ? 'Nødvendig' : 'Valgfritt'}
               </Text>
               <Switch
@@ -49,7 +49,7 @@ export default function EquipmentList({
               style={tw`flex-1 bg-slate-700 rounded px-3 py-1.5`}
               onPress={() => onRename(item.key)}
             >
-              <Text style={[tw`text-slate-300 text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={[tw`text-slate-300 text-sm text-center`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
                 Endre
               </Text>
             </TouchableOpacity>
@@ -57,7 +57,7 @@ export default function EquipmentList({
               style={tw`flex-1 bg-error/20 rounded px-3 py-1.5`}
               onPress={() => onRemove(item.key)}
             >
-              <Text style={[tw`text-error text-sm text-center`, { fontFamily: 'Manrope_400Regular' }]}>
+              <Text style={[tw`text-error text-sm text-center`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
                 Slett
               </Text>
             </TouchableOpacity>

@@ -15,7 +15,7 @@ import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator, Animated } from 'react-native';
 import tw from './src/lib/tw';
-import { useFonts, Manrope_300Light, Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
+import { useFonts, PlusJakartaSans_300Light, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import * as Notifications from 'expo-notifications';
 import {
   setupNotificationChannel,
@@ -249,9 +249,11 @@ function AppNavigator() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Manrope_300Light,
-    Manrope_400Regular,
-    Manrope_500Medium,
+    PlusJakartaSans_300Light,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
   });
 
   if (!fontsLoaded) {

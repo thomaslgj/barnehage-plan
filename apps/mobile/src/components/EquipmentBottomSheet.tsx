@@ -84,7 +84,7 @@ function EquipmentItemRow({ item, onToggle, loading }: { item: EquipmentItem; on
       onPress={handlePress}
       disabled={loading}
     >
-      <Text style={[tw`text-base text-slate-200 flex-1`, { fontFamily: 'Manrope_400Regular' }]}>{item.label}</Text>
+      <Text style={[tw`text-base text-slate-200 flex-1`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>{item.label}</Text>
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <View
           style={[
@@ -97,7 +97,7 @@ function EquipmentItemRow({ item, onToggle, loading }: { item: EquipmentItem; on
           <Text
             style={[
               tw`text-sm font-semibold`,
-              { fontFamily: 'Manrope_400Regular', color: colors.text },
+              { fontFamily: 'PlusJakartaSans_400Regular', color: colors.text },
             ]}
           >
             {item.status === 'ok' ? 'OK' : 'Mangler'}
@@ -189,8 +189,8 @@ export default function EquipmentBottomSheet({
           ]}
         >
           <View style={tw`p-5 border-b border-slate-700`}>
-            <Text style={[tw`text-xl font-bold text-white mb-1`, { fontFamily: 'Manrope_400Regular' }]}>Utstyrsstatus</Text>
-            <Text style={[tw`text-sm text-slate-300`, { fontFamily: 'Manrope_400Regular' }]}>Trykk for å endre status</Text>
+            <Text style={[tw`text-xl font-bold text-white mb-1`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>Utstyrsstatus</Text>
+            <Text style={[tw`text-sm text-slate-300`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>Trykk for å endre status</Text>
           </View>
 
           <ScrollView style={tw`max-h-[400px]`}>
@@ -211,7 +211,7 @@ export default function EquipmentBottomSheet({
           )}
 
           <TouchableOpacity style={tw`p-5 items-center border-t border-slate-700`} onPress={onClose}>
-            <Text style={[tw`text-base text-slate-300 font-semibold`, { fontFamily: 'Manrope_400Regular' }]}>Lukk</Text>
+            <Text style={[tw`text-base text-slate-300 font-semibold`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>Lukk</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

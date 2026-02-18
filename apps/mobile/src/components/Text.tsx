@@ -11,35 +11,35 @@ interface TextProps extends RNTextProps {
 
 const variantStyles: Record<TextVariant, TextStyle> = {
   h1: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 30,
     fontWeight: '700',
     lineHeight: 36,
   },
   h2: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 32,
   },
   h3: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 20,
     fontWeight: '600',
     lineHeight: 28,
   },
   body: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 16,
     lineHeight: 24,
   },
   caption: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 14,
     lineHeight: 20,
   },
   small: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 12,
     lineHeight: 16,
   },

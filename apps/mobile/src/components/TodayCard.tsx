@@ -180,8 +180,8 @@ export default function TodayCard({
         <View style={tw`mb-4`}>
           <Text style={[tw.style(
             isToday ? 'text-2xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
-          ), { fontFamily: 'Manrope_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
-          <Text style={[tw`text-base text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>{dayName}</Text>
+          ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
+          <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>{dayName}</Text>
         </View>
 
         <View style={{ position: 'relative', marginBottom: 16 }}>
@@ -253,7 +253,7 @@ export default function TodayCard({
           />
         ) : (
           <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-3 rounded-full border border-slate-700 bg-slate-800/30`}>
-            <Text style={[tw`text-base text-slate-400`, { fontFamily: 'Manrope_400Regular' }]}>
+            <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
               Laster utstyr...
             </Text>
           </View>

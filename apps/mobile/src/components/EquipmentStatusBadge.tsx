@@ -64,13 +64,13 @@ export default function EquipmentStatusBadge({ status, onPress }: EquipmentStatu
       >
         <View style={tw`flex-row items-center gap-3 flex-1`}>
           {config.showCheckmark ? (
-            <Text style={[tw.style(config.iconStyle), { fontFamily: 'Manrope_400Regular' }]}>✓</Text>
+            <Text style={[tw.style(config.iconStyle), { fontFamily: 'PlusJakartaSans_400Regular' }]}>✓</Text>
           ) : (
             <View style={tw.style('w-2.5 h-2.5 rounded-full', config.dotStyle)} />
           )}
-          <Text style={[tw.style('text-base font-semibold flex-1', config.textStyle), { fontFamily: 'Manrope_400Regular' }]}>{config.label}</Text>
+          <Text style={[tw.style('text-base font-semibold flex-1', config.textStyle), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{config.label}</Text>
         </View>
-        <Text style={[tw`text-text-light text-2xl`, { fontFamily: 'Manrope_400Regular' }]}>›</Text>
+        <Text style={[tw`text-text-light text-2xl`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>›</Text>
       </TouchableOpacity>
     </View>
   );

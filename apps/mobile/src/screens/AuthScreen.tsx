@@ -94,7 +94,7 @@ export default function AuthScreen() {
       <View style={tw`flex-1 justify-center px-6`}>
         {/* Title + Tagline */}
         <Animated.View style={{ opacity: titleFade }}>
-          <Text style={[tw`text-4xl text-center mb-2`, { fontFamily: 'Manrope_500Medium', letterSpacing: 12, color: '#d4c5b9' }]}>
+          <Text style={[tw`text-4xl text-center mb-2`, { fontFamily: 'PlusJakartaSans_500Medium', letterSpacing: 12, color: '#d4c5b9' }]}>
             FLYT
           </Text>
           <Text style={tw`text-base text-text-muted text-center mb-2`}>
