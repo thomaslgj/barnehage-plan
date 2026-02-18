@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, Platform, Animated } from 'react-native';
+import { View, Text, Platform, Animated, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ import {
   calculateEquipmentStatus,
   shouldShowEquipmentModal,
 } from '../lib/equipment';
-import type { EquipmentItem } from '../types/db';
+import type { EquipmentItem, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
 dayjs.locale('nb');
@@ -31,6 +31,8 @@ interface TodayCardProps {
   members?: Array<{ id: string; user_id: string | null; display_name: string | null }>;
   onDropoffPress?: () => void;
   onPickupPress?: () => void;
+  notes?: DayNote[];
+  onNotePress?: () => void;
 }
 
 const MODAL_SHOWN_KEY = 'equipment_modal_last_shown';
@@ -44,6 +46,8 @@ export default function TodayCard({
   members = [],
   onDropoffPress,
   onPickupPress,
+  notes = [],
+  onNotePress,
 }: TodayCardProps) {
   const { user, householdId } = useHousehold();
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
@@ -254,6 +258,25 @@ export default function TodayCard({
             />
           </View>
         </View>
+
+        {/* Notes Section - between avatars and equipment */}
+        {notes.length > 0 && (
+          <TouchableOpacity
+            onPress={onNotePress}
+            activeOpacity={0.7}
+            disabled={!onNotePress}
+            style={tw`px-5 py-3 bg-[#2d2520] border-t border-slate-700/20 mb-0.5`}
+          >
+            {notes.map((note, index) => (
+              <View key={note.id} style={tw`flex-row gap-2 ${index < notes.length - 1 ? 'mb-2' : ''}`}>
+                <Ionicons name="document-text" size={16} color="#a89985" style={tw`mt-0.5`} />
+                <Text style={[tw`text-sm text-slate-300 flex-1`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
+                  {note.content}
+                </Text>
+              </View>
+            ))}
+          </TouchableOpacity>
+        )}
 
         {/* Equipment Status Section - integrated footer */}
         {equipmentItems.length > 0 ? (

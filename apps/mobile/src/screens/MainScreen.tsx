@@ -24,7 +24,10 @@ import TodayCard from '../components/TodayCard';
 import TodayCardSkeleton from '../components/TodayCardSkeleton';
 import ScheduleSlot from '../components/ScheduleSlot';
 import ScheduleSkeleton from '../components/ScheduleSkeleton';
-import type { ScheduleAssignment } from '../types/db';
+import NoteIcon from '../components/NoteIcon';
+import NotesBottomSheet from '../components/NotesBottomSheet';
+import { fetchNotesForDateRange, addNote, deleteNote } from '../lib/notes';
+import type { ScheduleAssignment, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
 dayjs.extend(isoWeek);
@@ -51,6 +54,10 @@ export default function MainScreen({ navigation }: any) {
   const [weekWasFullyFilled, setWeekWasFullyFilled] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [weekChanging, setWeekChanging] = useState(false);
+  const [notes, setNotes] = useState<Map<string, DayNote[]>>(new Map());
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesBottomSheetVisible, setNotesBottomSheetVisible] = useState(false);
+  const [selectedNoteDate, setSelectedNoteDate] = useState<string | null>(null);
   const initialFetchDone = useRef(false);
   const animationsTriggered = useRef(false);
   const prevWeekChanging = useRef(false);
@@ -86,6 +93,7 @@ export default function MainScreen({ navigation }: any) {
 
   const today = dayjs().format('YYYY-MM-DD');
   const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
+  const currentHour = dayjs().hour();
 
   // Check if all slots in current week are empty - memoized
   const allSlotsEmpty = useMemo(() => {
@@ -98,16 +106,21 @@ export default function MainScreen({ navigation }: any) {
   }, [daysToShow, assignments]);
 
   // On weekends, show next Monday instead of today/tomorrow - memoized
+  // After 16:00 on weekdays, show tomorrow instead of today
   const todayOrTomorrow = useMemo(() => {
     if (currentDayOfWeek === 0 || currentDayOfWeek === 6) {
       // It's weekend - find next Monday (first day in daysToShow)
       return daysToShow[0];
     }
-    // Weekday - find today or tomorrow
+    // Weekday - show tomorrow if after 16:00, otherwise show today or tomorrow
+    const targetDate = currentHour >= 16
+      ? dayjs().add(1, 'day').format('YYYY-MM-DD')
+      : today;
+
     return daysToShow.find(
-      (d) => d.format('YYYY-MM-DD') === today || d.format('YYYY-MM-DD') === dayjs().add(1, 'day').format('YYYY-MM-DD')
+      (d) => d.format('YYYY-MM-DD') === targetDate || d.format('YYYY-MM-DD') === dayjs().add(1, 'day').format('YYYY-MM-DD')
     );
-  }, [daysToShow, currentDayOfWeek, today]);
+  }, [daysToShow, currentDayOfWeek, today, currentHour]);
 
   const fetchAssignments = useCallback(async (isInitialLoad = false, targetWeekOffset?: number) => {
     if (!childId || !householdId) return;
@@ -176,6 +189,10 @@ export default function MainScreen({ navigation }: any) {
 
       // Update with fresh data from database
       setAssignments(assignmentMap);
+
+      // Also fetch notes for this date range
+      const notesMap = await fetchNotesForDateRange(householdId, childId, fromDate, toDate);
+      setNotes(notesMap);
     } catch (error) {
       console.error('Error fetching assignments:', error);
     } finally {
@@ -496,6 +513,69 @@ export default function MainScreen({ navigation }: any) {
     return member?.display_name;
   }, [members]);
 
+  const handleNotePress = (date: string) => {
+    setSelectedNoteDate(date);
+    setNotesBottomSheetVisible(true);
+  };
+
+  const handleAddNote = async (content: string) => {
+    if (!householdId || !childId || !user || !selectedNoteDate) return;
+
+    setNotesLoading(true);
+    try {
+      const newNote = await addNote(householdId, childId, selectedNoteDate, content, user.id);
+
+      if (newNote) {
+        // Update local state - add to existing notes array for this date
+        setNotes(prev => {
+          const newNotes = new Map(prev);
+          const existingNotes = newNotes.get(selectedNoteDate) || [];
+          newNotes.set(selectedNoteDate, [...existingNotes, newNote]);
+          return newNotes;
+        });
+      }
+    } catch (error) {
+      console.error('Error adding note:', error);
+      throw error;
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!childId || !selectedNoteDate) return;
+
+    setNotesLoading(true);
+    try {
+      await deleteNote(noteId, childId);
+
+      // Update local state - remove note from array
+      setNotes(prev => {
+        const newNotes = new Map(prev);
+        const existingNotes = newNotes.get(selectedNoteDate) || [];
+        const filteredNotes = existingNotes.filter(note => note.id !== noteId);
+
+        if (filteredNotes.length === 0) {
+          newNotes.delete(selectedNoteDate);
+        } else {
+          newNotes.set(selectedNoteDate, filteredNotes);
+        }
+
+        return newNotes;
+      });
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      throw error;
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleNoteClose = () => {
+    setNotesBottomSheetVisible(false);
+    setSelectedNoteDate(null);
+  };
+
   // Button animation helpers
   const animateButtonPress = (animValue: Animated.Value, callback: () => void) => {
     Animated.sequence([
@@ -598,6 +678,8 @@ export default function MainScreen({ navigation }: any) {
                 members={members}
                 onDropoffPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'dropoff')}
                 onPickupPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'pickup')}
+                notes={notes.get(todayOrTomorrow.format('YYYY-MM-DD')) || []}
+                onNotePress={() => handleNotePress(todayOrTomorrow.format('YYYY-MM-DD'))}
               />
             ) : null}
           </Animated.View>
@@ -764,6 +846,12 @@ export default function MainScreen({ navigation }: any) {
                     )}>
                       {day.format('dddd DD.MM')}
                     </Text>
+                    <View style={tw`ml-auto`}>
+                      <NoteIcon
+                        hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
+                        onPress={() => handleNotePress(dateStr)}
+                      />
+                    </View>
                   </View>
 
                   <View style={{ position: 'relative' }}>
@@ -818,6 +906,16 @@ export default function MainScreen({ navigation }: any) {
           </View>
       </ScrollView>
     </SafeAreaView>
+
+    <NotesBottomSheet
+      visible={notesBottomSheetVisible}
+      date={selectedNoteDate || ''}
+      notes={selectedNoteDate ? (notes.get(selectedNoteDate) || []) : []}
+      loading={notesLoading}
+      onAddNote={handleAddNote}
+      onDeleteNote={handleDeleteNote}
+      onClose={handleNoteClose}
+    />
     </>
   );
 }

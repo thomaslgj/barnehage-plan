@@ -78,6 +78,17 @@ export interface EquipmentItemDB {
   updated_by: string;
 }
 
+export interface DayNote {
+  id: string;
+  household_id: string;
+  child_id: string;
+  date: string; // YYYY-MM-DD format
+  content: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+}
+
 // RPC function parameter types
 export interface BootstrapHouseholdParams {
   p_name?: string | null;
