@@ -58,7 +58,7 @@ export default function MainScreen({ navigation }: any) {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesBottomSheetVisible, setNotesBottomSheetVisible] = useState(false);
   const [selectedNoteDate, setSelectedNoteDate] = useState<string | null>(null);
-  const [todayCardCollapsed, setTodayCardCollapsed] = useState(false);
+  const [todayCardCollapsed, setTodayCardCollapsed] = useState(true); // Start collapsed by default
   const initialFetchDone = useRef(false);
   const animationsTriggered = useRef(false);
   const prevWeekChanging = useRef(false);
@@ -843,24 +843,24 @@ export default function MainScreen({ navigation }: any) {
             return (
               <View key={dateStr}>
                 <View style={tw`pb-1`}>
-                  {/* Divider line with note icon */}
-                  <View style={tw`flex-row items-center gap-2`}>
-                    <View style={tw`flex-1 h-px bg-slate-600/40`} />
+                  {/* Divider line */}
+                  <View style={tw`h-px bg-slate-600/40 mt-3`} />
+
+                  {/* Day name with note icon */}
+                  <View style={tw`flex-row items-center justify-between mb-0.5 mt-1.5`}>
+                    <View style={tw`flex-row items-center gap-1.5`}>
+                      {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
+                      <Text style={tw.style(
+                        'text-[11px] font-semibold capitalize',
+                        isToday ? 'text-secondary-light' : 'text-slate-400'
+                      )}>
+                        {day.format('dddd')}
+                      </Text>
+                    </View>
                     <NoteIcon
                       hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
                       onPress={() => handleNotePress(dateStr)}
                     />
-                  </View>
-
-                  {/* Day name */}
-                  <View style={tw`flex-row items-center gap-1.5 mb-0.5 -mt-2`}>
-                    {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
-                    <Text style={tw.style(
-                      'text-[11px] font-semibold capitalize',
-                      isToday ? 'text-secondary-light' : 'text-slate-400'
-                    )}>
-                      {day.format('dddd')}
-                    </Text>
                   </View>
 
                   <View style={{ position: 'relative' }}>

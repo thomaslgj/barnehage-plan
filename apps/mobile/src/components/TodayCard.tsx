@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, Platform, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, Platform, Animated, TouchableOpacity, LayoutAnimation, UIManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,11 @@ import type { EquipmentItem, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
 dayjs.locale('nb');
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface TodayCardProps {
   date: string; // YYYY-MM-DD format
@@ -62,7 +67,10 @@ export default function TodayCard({
   const [lastModalShownDate, setLastModalShownDate] = useState<string | null>(null);
   const [prevEquipmentStatus, setPrevEquipmentStatus] = useState<'ready' | 'missing' | 'not_ready' | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [autoCollapseSet, setAutoCollapseSet] = useState(false);
   const confettiRef = useRef<any>(null);
+  const prevDate = useRef<string>(date);
+  const collapseAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current;
 
   // No animation - everything visible immediately
   const leftAvatarX = useRef(new Animated.Value(0)).current;
@@ -158,6 +166,59 @@ export default function TodayCard({
     loadEquipment();
   }, [householdId, date]);
 
+  // Auto-collapse logic: On initial load or date change, automatically set collapsed state
+  useEffect(() => {
+    if (!onToggleCollapse) return; // No toggle function provided, skip auto-collapse
+
+    // Check if this is initial load (equipment just loaded) or date changed
+    const isDateChange = prevDate.current !== date;
+
+    if (isDateChange) {
+      // Date changed - reset auto-collapse flag so it can run again
+      setAutoCollapseSet(false);
+      prevDate.current = date;
+    }
+
+    const shouldAutoCollapse = !autoCollapseSet && equipmentItems.length > 0;
+
+    if (shouldAutoCollapse) {
+      // Determine if we should show expanded or collapsed
+      const hasNotes = notes.length > 0;
+      const hasIssues = equipmentStatus === 'missing' || equipmentStatus === 'not_ready';
+
+      // If there are notes or issues, show expanded (collapsed = false)
+      // Otherwise, show collapsed (collapsed = true)
+      const shouldBeCollapsed = !hasNotes && !hasIssues;
+
+      // Only update if the current state doesn't match what it should be
+      if (collapsed !== shouldBeCollapsed) {
+        onToggleCollapse();
+      }
+
+      setAutoCollapseSet(true);
+    }
+  }, [equipmentItems.length, notes.length, date, collapsed, onToggleCollapse, autoCollapseSet, equipmentStatus]);
+
+  // Animate when collapsed state changes
+  useEffect(() => {
+    Animated.timing(collapseAnim, {
+      toValue: collapsed ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [collapsed, collapseAnim]);
+
+  const handleToggleCollapse = () => {
+    if (!onToggleCollapse) return;
+
+    // Trigger haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    onToggleCollapse();
+  };
+
   const handleToggleItem = async (itemKey: string) => {
     if (!householdId || !user) return;
 
@@ -211,9 +272,28 @@ export default function TodayCard({
       ]}>
         {/* Main content section with padding */}
         <View style={tw`px-5 pt-5 pb-4`}>
-          {collapsed ? (
-            // Collapsed view - single row with title and icons
-            <View style={tw`flex-row items-center gap-3`}>
+          {/* Collapsed view - single row with title and icons */}
+          <Animated.View
+            style={[
+              tw`flex-row items-center gap-3`,
+              {
+                opacity: collapseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0],
+                }),
+                maxHeight: collapseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [60, 0],
+                }),
+                marginBottom: collapseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0],
+                }),
+                overflow: 'hidden',
+              }
+            ]}
+            pointerEvents={collapsed ? 'auto' : 'none'}
+          >
               <Text style={[tw.style(
                 isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
               ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
@@ -251,12 +331,7 @@ export default function TodayCard({
               {/* Collapse icon */}
               {onToggleCollapse && (
                 <TouchableOpacity
-                  onPress={() => {
-                    if (Platform.OS !== 'web') {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                    onToggleCollapse();
-                  }}
+                  onPress={handleToggleCollapse}
                   style={tw`ml-auto p-1`}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   activeOpacity={0.7}
@@ -268,22 +343,28 @@ export default function TodayCard({
                   />
                 </TouchableOpacity>
               )}
-            </View>
-          ) : (
-            <>
-              <View style={tw`mb-4 flex-row items-baseline gap-2`}>
+          </Animated.View>
+
+          {/* Expanded view */}
+          <Animated.View
+            style={{
+              opacity: collapseAnim,
+              maxHeight: collapseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1000],
+              }),
+              overflow: 'hidden',
+            }}
+            pointerEvents={collapsed ? 'none' : 'auto'}
+          >
+            <View style={tw`mb-4 flex-row items-baseline gap-2`}>
                 <Text style={[tw.style(
                   isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
                 ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
                 <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
                 {onToggleCollapse && (
                   <TouchableOpacity
-                    onPress={() => {
-                      if (Platform.OS !== 'web') {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      }
-                      onToggleCollapse();
-                    }}
+                    onPress={handleToggleCollapse}
                     style={tw`ml-auto p-1`}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     activeOpacity={0.7}
@@ -358,8 +439,7 @@ export default function TodayCard({
                 }}
               />
             </View>
-            </>
-          )}
+          </Animated.View>
         </View>
 
         {/* Notes Section - between avatars and equipment (only show when expanded) */}
