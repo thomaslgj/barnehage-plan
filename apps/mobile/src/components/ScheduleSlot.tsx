@@ -48,16 +48,16 @@ const ScheduleSlot = memo(function ScheduleSlot({
   const contentStyle = {
     flexDirection: slotType === 'dropoff' ? 'row-reverse' : 'row',
     alignItems: 'center',
-    gap: isInHero ? 12 : 8,
+    gap: isInHero ? 10 : 6,
     paddingHorizontal: isInHero ? 8 : 0,
     flex: isInHero ? 1 : undefined,
   };
 
   const containerStyle = {
-    height: 70,
-    paddingVertical: isInHero ? 8 : 4,
-    paddingLeft: isInHero ? 12 : (slotType === 'pickup' ? 0 : 4),
-    paddingRight: isInHero ? 12 : (slotType === 'dropoff' ? 0 : 4),
+    height: isInHero ? 70 : 56,
+    paddingVertical: isInHero ? 8 : 3,
+    paddingLeft: isInHero ? 12 : (slotType === 'pickup' ? 0 : 3),
+    paddingRight: isInHero ? 12 : (slotType === 'dropoff' ? 0 : 3),
     alignItems: isInHero ? 'center' : (slotType === 'dropoff' ? 'flex-end' : 'flex-start'),
     justifyContent: 'center',
     borderRadius: 8,
@@ -66,7 +66,7 @@ const ScheduleSlot = memo(function ScheduleSlot({
   };
 
   const textStyle = {
-    fontSize: isInHero ? 20 : 16,
+    fontSize: isInHero ? 18 : 14,
     fontWeight: '700',
     fontFamily: 'PlusJakartaSans_400Regular',
     color: hasAssignment ? '#f5f1ed' : '#a89985',
@@ -81,7 +81,7 @@ const ScheduleSlot = memo(function ScheduleSlot({
           ) : (
             <>
               <View style={{ transform: [{ scale: pressed ? 0.9 : 1 }] }}>
-                <Avatar avatarId={avatarId} size={56} borderColor={borderColor} />
+                <Avatar avatarId={avatarId} size={isInHero ? 56 : 48} borderColor={borderColor} />
               </View>
               {displayName && (
                 <Text style={textStyle} numberOfLines={1} ellipsizeMode="tail">

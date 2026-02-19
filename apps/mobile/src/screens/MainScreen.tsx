@@ -58,6 +58,7 @@ export default function MainScreen({ navigation }: any) {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesBottomSheetVisible, setNotesBottomSheetVisible] = useState(false);
   const [selectedNoteDate, setSelectedNoteDate] = useState<string | null>(null);
+  const [todayCardCollapsed, setTodayCardCollapsed] = useState(false);
   const initialFetchDone = useRef(false);
   const animationsTriggered = useRef(false);
   const prevWeekChanging = useRef(false);
@@ -74,8 +75,10 @@ export default function MainScreen({ navigation }: any) {
 
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
+  const endOfWeek = startOfWeek.add(6, 'day');
   const weekNumber = startOfWeek.isoWeek();
   const year = startOfWeek.year();
+  const weekRange = `${startOfWeek.format('D. MMM')} - ${endOfWeek.format('D. MMM')}`;
 
   // Generate 7 days (1 week), Mon-Fri only - memoized to avoid recalculation
   const daysToShow = useMemo(() => {
@@ -683,6 +686,8 @@ export default function MainScreen({ navigation }: any) {
                 onPickupPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'pickup')}
                 notes={notes.get(todayOrTomorrow.format('YYYY-MM-DD')) || []}
                 onNotePress={() => handleNotePress(todayOrTomorrow.format('YYYY-MM-DD'))}
+                collapsed={todayCardCollapsed}
+                onToggleCollapse={() => setTodayCardCollapsed(!todayCardCollapsed)}
               />
             ) : null}
           </Animated.View>
@@ -756,7 +761,7 @@ export default function MainScreen({ navigation }: any) {
         </Animated.View>
 
         {/* Week Navigation Header */}
-        <Animated.View style={{ opacity: navigationFade }}>
+        <Animated.View style={[tw`mt-8`, { opacity: navigationFade }]}>
           <View style={tw`flex-row items-center justify-between mb-3`}>
           <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
             <TouchableOpacity
@@ -774,7 +779,7 @@ export default function MainScreen({ navigation }: any) {
                 <ActivityIndicator size="small" color="#7fa884" />
               )}
               <Text style={tw`text-base font-semibold text-text`}>
-                Uke {weekNumber}, {year}
+                {weekRange}
               </Text>
             </View>
           </View>
@@ -810,17 +815,14 @@ export default function MainScreen({ navigation }: any) {
             ) : (
               <View>
                 {/* Header */}
-                <View style={tw`flex-row gap-8 mb-2 px-1`}>
-                  <View style={tw`flex-1 items-center`}>
+                <View style={tw`flex-row gap-6 mb-3 px-1`}>
+                  <View style={tw`flex-1 items-end`}>
                     <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
                   </View>
-                  <View style={tw`flex-1 items-center`}>
+                  <View style={tw`flex-1 items-start`}>
                     <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
                   </View>
                 </View>
-
-                {/* Divider after header */}
-                <View style={tw`h-0.5 bg-slate-600/60 mb-2`} />
 
                 {/* Template Auto-Applied Message */}
                 {templateWasSuccessful && !applyingTemplate && (
@@ -840,25 +842,29 @@ export default function MainScreen({ navigation }: any) {
 
             return (
               <View key={dateStr}>
-                <View style={tw`py-1.5`}>
-                  <View style={tw`flex-row items-center gap-1.5 mb-1.5`}>
+                <View style={tw`pb-1`}>
+                  {/* Divider line with note icon */}
+                  <View style={tw`flex-row items-center gap-2`}>
+                    <View style={tw`flex-1 h-px bg-slate-600/40`} />
+                    <NoteIcon
+                      hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
+                      onPress={() => handleNotePress(dateStr)}
+                    />
+                  </View>
+
+                  {/* Day name */}
+                  <View style={tw`flex-row items-center gap-1.5 mb-0.5 -mt-2`}>
                     {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
                     <Text style={tw.style(
-                      'text-xs font-semibold capitalize',
-                      isToday ? 'text-secondary-light' : 'text-text-muted'
+                      'text-[11px] font-semibold capitalize',
+                      isToday ? 'text-secondary-light' : 'text-slate-400'
                     )}>
-                      {day.format('dddd DD.MM')}
+                      {day.format('dddd')}
                     </Text>
-                    <View style={tw`ml-auto`}>
-                      <NoteIcon
-                        hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
-                        onPress={() => handleNotePress(dateStr)}
-                      />
-                    </View>
                   </View>
 
                   <View style={{ position: 'relative' }}>
-                    <View style={tw`flex-row gap-8`}>
+                    <View style={tw`flex-row gap-6`}>
                       <View style={tw`flex-1`}>
                         <ScheduleSlot
                           key={dropoffKey}
@@ -897,10 +903,6 @@ export default function MainScreen({ navigation }: any) {
                     />
                   </View>
                 </View>
-                {/* Horizontal divider between days */}
-                {!isLastDay && (
-                  <View style={tw`h-0.5 bg-slate-600/60 my-2`} />
-                )}
               </View>
             );
           })}

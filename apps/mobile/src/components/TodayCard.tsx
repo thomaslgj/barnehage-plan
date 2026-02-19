@@ -11,6 +11,7 @@ import EquipmentStatusBadge from './EquipmentStatusBadge';
 import EquipmentBottomSheet from './EquipmentBottomSheet';
 import EquipmentModal from './EquipmentModal';
 import ScheduleSlot from './ScheduleSlot';
+import Avatar from './Avatar';
 import {
   fetchEquipmentStatus,
   updateEquipmentStatus,
@@ -28,11 +29,13 @@ interface TodayCardProps {
   pickupName?: string;
   dropoffUserId?: string | null;
   pickupUserId?: string | null;
-  members?: Array<{ id: string; user_id: string | null; display_name: string | null }>;
+  members?: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
   onDropoffPress?: () => void;
   onPickupPress?: () => void;
   notes?: DayNote[];
   onNotePress?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const MODAL_SHOWN_KEY = 'equipment_modal_last_shown';
@@ -48,6 +51,8 @@ export default function TodayCard({
   onPickupPress,
   notes = [],
   onNotePress,
+  collapsed = false,
+  onToggleCollapse,
 }: TodayCardProps) {
   const { user, householdId } = useHousehold();
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
@@ -73,8 +78,24 @@ export default function TodayCard({
   const isTomorrow = dateObj.isSame(dayjs().add(1, 'day'), 'day');
 
   const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd D. MMM').toUpperCase();
-  const dayName = dateObj.format('dddd');
+  const dayName = dateObj.format('dddd D. MMM');
   const equipmentStatus = useMemo(() => calculateEquipmentStatus(equipmentItems), [equipmentItems]);
+
+  // Helper to get avatar ID for a user
+  const getAvatarId = (userId?: string | null): string | null => {
+    if (!userId || !members.length) return null;
+    const member = members.find(m => m.user_id === userId || m.id === userId);
+    return member?.avatar_id || null;
+  };
+
+  // Helper to get border color based on person index
+  const getBorderColor = (userId?: string | null): string => {
+    if (!userId || !members.length) return '#4a3f38';
+    const member = members.find(m => m.user_id === userId || m.id === userId);
+    if (!member) return '#4a3f38';
+    const personIndex = members.indexOf(member);
+    return personIndex === 0 ? '#6b8e6f' : personIndex === 1 ? '#e8c96f' : '#8b7a6a';
+  };
 
   // Trigger confetti when status changes to 'ready'
   useEffect(() => {
@@ -190,77 +211,159 @@ export default function TodayCard({
       ]}>
         {/* Main content section with padding */}
         <View style={tw`px-5 pt-5 pb-4`}>
-          <View style={tw`mb-4 flex-row items-baseline gap-2`}>
-            <Text style={[tw.style(
-              isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
-            ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
-            <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
-          </View>
+          {collapsed ? (
+            // Collapsed view - single row with title and icons
+            <View style={tw`flex-row items-center gap-3`}>
+              <Text style={[tw.style(
+                isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
+              ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
 
-          <View style={{ position: 'relative', marginBottom: 0 }}>
-            <View style={tw`flex-row gap-4`}>
-              <Animated.View
-                style={[
-                  tw`flex-1`,
-                  {
-                    opacity: leftAvatarOpacity,
-                    transform: [{ translateX: leftAvatarX }],
-                  }
-                ]}
-              >
-                <ScheduleSlot
-                  key={`${date}-dropoff`}
-                  slotType="dropoff"
-                  displayName={dropoffName}
-                  userId={dropoffUserId}
-                  members={members}
-                  onPress={onDropoffPress || (() => {})}
-                  loading={false}
-                  isInHero={true}
-                  textOpacity={leftTextOpacity}
-                />
-              </Animated.View>
-              <Animated.View
-                style={[
-                  tw`flex-1`,
-                  {
-                    opacity: rightAvatarOpacity,
-                    transform: [{ translateX: rightAvatarX }],
-                  }
-                ]}
-              >
-                <ScheduleSlot
-                  key={`${date}-pickup`}
-                  slotType="pickup"
-                  displayName={pickupName}
-                  userId={pickupUserId}
-                  members={members}
-                  onPress={onPickupPress || (() => {})}
-                  loading={false}
-                  isInHero={true}
-                  textOpacity={rightTextOpacity}
-                />
-              </Animated.View>
+              {/* Dropoff avatar */}
+              <Avatar
+                avatarId={getAvatarId(dropoffUserId)}
+                size={36}
+                borderColor={getBorderColor(dropoffUserId)}
+              />
+
+              {/* Pickup avatar */}
+              <Avatar
+                avatarId={getAvatarId(pickupUserId)}
+                size={36}
+                borderColor={getBorderColor(pickupUserId)}
+              />
+
+              {/* Note icon if has notes */}
+              {notes.length > 0 && (
+                <Ionicons name="document-text" size={18} color="#e8c96f" />
+              )}
+
+              {/* Equipment status icon */}
+              {equipmentStatus === 'ready' && (
+                <Ionicons name="checkmark-circle" size={22} color="#7fa884" />
+              )}
+              {equipmentStatus === 'missing' && (
+                <Ionicons name="alert-circle" size={22} color="#d17166" />
+              )}
+              {equipmentStatus === 'not_ready' && (
+                <Ionicons name="time" size={22} color="#e8c96f" />
+              )}
+
+              {/* Collapse icon */}
+              {onToggleCollapse && (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (Platform.OS !== 'web') {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    onToggleCollapse();
+                  }}
+                  style={tw`ml-auto p-1`}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={collapsed ? 'chevron-down' : 'chevron-up'}
+                    size={20}
+                    color="#a89985"
+                  />
+                </TouchableOpacity>
+              )}
             </View>
-            {/* Connecting line between avatars */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                width: 96, // gap-4 (16px) + padding on both sides (~40px each)
-                height: 2,
-                backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle - matches schedule
-                transform: [{ translateX: -48 }, { translateY: -1 }],
-                zIndex: -1,
-                opacity: lineOpacity,
-              }}
-            />
-          </View>
+          ) : (
+            <>
+              <View style={tw`mb-4 flex-row items-baseline gap-2`}>
+                <Text style={[tw.style(
+                  isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
+                ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
+                <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
+                {onToggleCollapse && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (Platform.OS !== 'web') {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      }
+                      onToggleCollapse();
+                    }}
+                    style={tw`ml-auto p-1`}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={collapsed ? 'chevron-down' : 'chevron-up'}
+                      size={20}
+                      color="#a89985"
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Expanded view - full schedule slots */}
+              <View style={{ position: 'relative', marginBottom: 0 }}>
+              <View style={tw`flex-row gap-4`}>
+                <Animated.View
+                  style={[
+                    tw`flex-1`,
+                    {
+                      opacity: leftAvatarOpacity,
+                      transform: [{ translateX: leftAvatarX }],
+                    }
+                  ]}
+                >
+                  <ScheduleSlot
+                    key={`${date}-dropoff`}
+                    slotType="dropoff"
+                    displayName={dropoffName}
+                    userId={dropoffUserId}
+                    members={members}
+                    onPress={onDropoffPress || (() => {})}
+                    loading={false}
+                    isInHero={true}
+                    textOpacity={leftTextOpacity}
+                  />
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    tw`flex-1`,
+                    {
+                      opacity: rightAvatarOpacity,
+                      transform: [{ translateX: rightAvatarX }],
+                    }
+                  ]}
+                >
+                  <ScheduleSlot
+                    key={`${date}-pickup`}
+                    slotType="pickup"
+                    displayName={pickupName}
+                    userId={pickupUserId}
+                    members={members}
+                    onPress={onPickupPress || (() => {})}
+                    loading={false}
+                    isInHero={true}
+                    textOpacity={rightTextOpacity}
+                  />
+                </Animated.View>
+              </View>
+              {/* Connecting line between avatars */}
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: 96, // gap-4 (16px) + padding on both sides (~40px each)
+                  height: 2,
+                  backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle - matches schedule
+                  transform: [{ translateX: -48 }, { translateY: -1 }],
+                  zIndex: -1,
+                  opacity: lineOpacity,
+                }}
+              />
+            </View>
+            </>
+          )}
         </View>
 
-        {/* Notes Section - between avatars and equipment */}
-        {notes.length > 0 && (
+        {/* Notes Section - between avatars and equipment (only show when expanded) */}
+        {!collapsed && notes.length > 0 && (
           <TouchableOpacity
             onPress={onNotePress}
             activeOpacity={0.7}
@@ -278,20 +381,22 @@ export default function TodayCard({
           </TouchableOpacity>
         )}
 
-        {/* Equipment Status Section - integrated footer */}
-        {equipmentItems.length > 0 ? (
-          <EquipmentStatusBadge
-            status={equipmentStatus}
-            items={equipmentItems}
-            onPress={() => setBottomSheetVisible(true)}
-            isFooter={true}
-          />
-        ) : (
-          <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-4 bg-[#2d2520]`}>
-            <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
-              Laster utstyr...
-            </Text>
-          </View>
+        {/* Equipment Status Section - integrated footer (only show when expanded) */}
+        {!collapsed && (
+          equipmentItems.length > 0 ? (
+            <EquipmentStatusBadge
+              status={equipmentStatus}
+              items={equipmentItems}
+              onPress={() => setBottomSheetVisible(true)}
+              isFooter={true}
+            />
+          ) : (
+            <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-4 bg-[#2d2520]`}>
+              <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
+                Laster utstyr...
+              </Text>
+            </View>
+          )
         )}
       </View>
 

@@ -1,21 +1,27 @@
 {
-  "cli": {
-    "version": ">= 18.0.1",
-    "appVersionSource": "remote"
-  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://iyaeviwtklvspfvpizdw.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5YWV2aXd0a2x2c3BmdnBpemR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTQwMDYsImV4cCI6MjA3NzkzMDAwNn0.6TM4JSLo50kPxPgwF6gK3vU17JNQ2ryxxHGMKJ4z4dY"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://iyaeviwtklvspfvpizdw.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5YWV2aXd0a2x2c3BmdnBpemR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTQwMDYsImV4cCI6MjA3NzkzMDAwNn0.6TM4JSLo50kPxPgwF6gK3vU17JNQ2ryxxHGMKJ4z4dY"
+      }
     }
   },
   "submit": {
     "production": {}
+  },
+  "cli": {
+    "version": ">= 0.48.2"
   }
 }
