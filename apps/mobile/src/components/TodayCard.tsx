@@ -334,10 +334,10 @@ export default function TodayCard({
               {equipmentStatus === 'ready' && (
                 <Ionicons name="checkmark-circle" size={22} color="#7fa884" />
               )}
-              {equipmentStatus === 'missing' && (
+              {equipmentStatus === 'not_ready' && (
                 <Ionicons name="alert-circle" size={22} color="#d17166" />
               )}
-              {equipmentStatus === 'not_ready' && (
+              {equipmentStatus === 'missing' && (
                 <Ionicons name="time" size={22} color="#e8c96f" />
               )}
               </View>

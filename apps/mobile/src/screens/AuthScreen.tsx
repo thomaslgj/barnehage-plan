@@ -22,6 +22,7 @@ import {
   getBiometricTypeName,
   type BiometricCapability,
 } from '../lib/biometric';
+import { isRateLimited, getRateLimitMessage } from '../lib/rateLimit';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -94,6 +95,15 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
+      // Check rate limit before attempting auth
+      const action = isSignUp ? 'signup' : 'login';
+      const limited = await isRateLimited(action, email);
+
+      if (limited) {
+        Alert.alert('For mange forsøk', getRateLimitMessage(action));
+        return;
+      }
+
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,

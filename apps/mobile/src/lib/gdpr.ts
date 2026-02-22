@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Alert } from 'react-native';
+import { isRateLimited, getRateLimitMessage } from './rateLimit';
 
 /**
  * Export all user data as JSON (GDPR Right to Data Portability)
@@ -10,6 +11,13 @@ export async function exportUserData(userId: string, householdId: string, childI
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
+
+    // Check rate limit (2 exports per day)
+    const limited = await isRateLimited('data_export', user.email || userId);
+    if (limited) {
+      Alert.alert('For mange eksporter', getRateLimitMessage('data_export'));
+      throw new Error(getRateLimitMessage('data_export'));
+    }
 
     // Fetch all user data
     const [
@@ -83,6 +91,14 @@ export async function deleteUserAccount(
   isOwner: boolean
 ) {
   try {
+    // Check rate limit (1 deletion attempt per hour to prevent spam)
+    const { data: { user } } = await supabase.auth.getUser();
+    const limited = await isRateLimited('account_deletion', user?.email || userId);
+    if (limited) {
+      Alert.alert('For mange forsøk', getRateLimitMessage('account_deletion'));
+      throw new Error(getRateLimitMessage('account_deletion'));
+    }
+
     // Check if user is household owner
     if (isOwner) {
       // Check if there are other members

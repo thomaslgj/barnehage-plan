@@ -144,8 +144,8 @@ Denne filen inneholder forslag til forbedringer og nye features for Flyt-prosjek
 ## 🔐 Sikkerhet & Infrastruktur
 
 ### Foreslått
-- [ ] **Sikkerhet**
-  - Rate limiting på API
+- [x] **Sikkerhet**
+  - Rate limiting på API (✅ Implementert - se /supabase/RATE_LIMITING.md)
   - CAPTCHA på registrering (hvis spam blir problem)
   - 2FA (Two-Factor Authentication)
   - Session management (force logout all devices)
