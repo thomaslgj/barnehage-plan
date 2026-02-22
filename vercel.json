@@ -2,5 +2,5 @@
   "buildCommand": "next build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "ignoreCommand": "bash -c 'git diff HEAD^ HEAD --quiet . \":(exclude)apps/mobile\"'"
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh"
 }
