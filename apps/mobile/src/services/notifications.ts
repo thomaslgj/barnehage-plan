@@ -176,16 +176,27 @@ export async function scheduleEquipmentNotification(
       console.log(`Scheduling for today: ${scheduledDate.toLocaleString()}`);
     }
 
+    // Skip weekends - if the scheduled date is Saturday (6) or Sunday (0), move to next Monday
+    let dayOfWeek = scheduledDate.getDay();
+    if (dayOfWeek === 0) {
+      // Sunday - move to Monday
+      scheduledDate.setDate(scheduledDate.getDate() + 1);
+      console.log(`Sunday detected, moving to Monday: ${scheduledDate.toLocaleString()}`);
+    } else if (dayOfWeek === 6) {
+      // Saturday - move to Monday
+      scheduledDate.setDate(scheduledDate.getDate() + 2);
+      console.log(`Saturday detected, moving to Monday: ${scheduledDate.toLocaleString()}`);
+    }
+
     // Create trigger based on platform
     let trigger: any;
+    let notificationIds: string[] = [];
 
     if (Platform.OS === 'android') {
-      // Android: use date-based trigger with daily repeating
-      // Calculate time until first trigger
+      // Android: use time interval trigger for next weekday
       const timeUntilTrigger = Math.floor((scheduledDate.getTime() - now.getTime()) / 1000);
       console.log(`Seconds until trigger: ${timeUntilTrigger} (${Math.floor(timeUntilTrigger / 60)} minutes)`);
 
-      // Use time interval trigger that repeats every 24 hours
       trigger = {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds: timeUntilTrigger,
@@ -193,17 +204,9 @@ export async function scheduleEquipmentNotification(
       };
       console.log('Using TIME_INTERVAL trigger (Android)');
     } else {
-      // iOS: use calendar trigger with automatic daily repeats
-      // NOTE: Calendar trigger repeats automatically every day at the specified time
-      // The notification message is set at scheduling time and won't update automatically.
-      // To update the message, we reschedule when equipment status changes (see rescheduleNotificationIfNeeded)
-      trigger = {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-        hour: hours,
-        minute: minutes,
-        repeats: true,
-      };
-      console.log('Using CALENDAR trigger (iOS)');
+      // iOS: schedule 5 separate notifications, one for each weekday (Monday-Friday)
+      // This ensures notifications only fire on weekdays
+      console.log('Using CALENDAR trigger (iOS) - scheduling for weekdays only');
     }
 
     console.log('Trigger config:', JSON.stringify(trigger, null, 2));
@@ -212,9 +215,7 @@ export async function scheduleEquipmentNotification(
     const hasMissing = await hasMissingCriticalEquipment(householdId);
     console.log(`Has missing critical equipment: ${hasMissing}`);
 
-    // Schedule notification
-    console.log('Calling scheduleNotificationAsync...');
-
+    // Prepare notification content
     const content: any = {
       title: 'Utstyr til barnehagen 🎒',
       body: hasMissing
@@ -230,14 +231,46 @@ export async function scheduleEquipmentNotification(
       console.log('Added Android channelId: equipment-reminders');
     }
 
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content,
-      trigger,
-    });
+    // Schedule notification(s)
+    console.log('Calling scheduleNotificationAsync...');
 
-    console.log(`✅ SUCCESS: Notification scheduled for ${scheduledDate.toLocaleString()}, ID: ${notificationId}`);
-    console.log(`=== END SCHEDULING ===\n`);
-    return notificationId;
+    if (Platform.OS === 'ios') {
+      // iOS: Schedule 5 notifications, one for each weekday
+      // weekday: 1 = Sunday, 2 = Monday, 3 = Tuesday, 4 = Wednesday, 5 = Thursday, 6 = Friday, 7 = Saturday
+      const weekdays = [2, 3, 4, 5, 6]; // Monday through Friday
+
+      for (const weekday of weekdays) {
+        const weekdayTrigger = {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          hour: hours,
+          minute: minutes,
+          weekday: weekday,
+          repeats: true,
+        };
+
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content,
+          trigger: weekdayTrigger,
+        });
+
+        notificationIds.push(notificationId);
+        console.log(`✅ Scheduled for weekday ${weekday}, ID: ${notificationId}`);
+      }
+
+      console.log(`✅ SUCCESS: ${notificationIds.length} notifications scheduled for weekdays`);
+      console.log(`=== END SCHEDULING ===\n`);
+      return notificationIds[0]; // Return first ID for compatibility
+    } else {
+      // Android: Schedule single notification for next weekday
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content,
+        trigger,
+      });
+
+      console.log(`✅ SUCCESS: Notification scheduled for ${scheduledDate.toLocaleString()}, ID: ${notificationId}`);
+      console.log(`=== END SCHEDULING ===\n`);
+      return notificationId;
+    }
   } catch (error) {
     console.error('\n❌ ERROR SCHEDULING NOTIFICATION:');
     console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
@@ -413,10 +446,10 @@ export async function rescheduleNotificationIfNeeded(
     // Check if critical equipment is missing
     const hasMissing = await hasMissingCriticalEquipment(householdId);
 
-    // For Android: always reschedule to ensure it fires at the correct time tomorrow
+    // For Android: always reschedule to ensure it fires at the correct time on next weekday
     // (TIME_INTERVAL trigger doesn't repeat automatically)
     // For iOS: reschedule to update the notification message with current equipment status
-    // (CALENDAR trigger repeats automatically, but message is fixed at scheduling time)
+    // (5 CALENDAR triggers repeat automatically for Mon-Fri, but message is fixed at scheduling time)
     if (Platform.OS === 'android' || hasMissing) {
       await scheduleEquipmentNotification(householdId, settings.time);
       console.log('Notification rescheduled after equipment status change');
