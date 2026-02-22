@@ -98,6 +98,7 @@ jest.mock('expo-notifications', () => ({
   scheduleNotificationAsync: jest.fn(() => Promise.resolve('notification-id')),
   cancelAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve()),
   setNotificationChannelAsync: jest.fn(() => Promise.resolve()),
+  setNotificationHandler: jest.fn(),
   AndroidImportance: {
     MAX: 5,
     HIGH: 4,
@@ -105,8 +106,33 @@ jest.mock('expo-notifications', () => ({
   },
 }));
 
-// Mock React Native Platform
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'ios',
-  select: jest.fn((specifics) => specifics.ios),
+// Mock @expo/vector-icons
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+  MaterialIcons: 'MaterialIcons',
+  FontAwesome: 'FontAwesome',
+}));
+
+// Mock expo-font
+jest.mock('expo-font', () => ({
+  loadAsync: jest.fn(() => Promise.resolve()),
+  isLoaded: jest.fn(() => true),
+}));
+
+// Mock custom Text component
+jest.mock('./src/components/Text', () => ({
+  Text: 'Text',
+}));
+
+// Mock React Navigation
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(() => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+  })),
+  NavigationContainer: ({ children }) => children,
+}));
+
+jest.mock('@react-navigation/native-stack', () => ({
+  createNativeStackNavigator: jest.fn(),
 }));

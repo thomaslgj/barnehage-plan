@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Pressable, Text, ActivityIndicator, View, Platform } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Avatar from './Avatar';
 
@@ -11,6 +11,7 @@ interface ScheduleSlotProps {
   onPress: () => void;
   loading?: boolean;
   isInHero?: boolean;
+  textOpacity?: Animated.Value;
 }
 
 const ScheduleSlot = memo(function ScheduleSlot({
@@ -20,7 +21,8 @@ const ScheduleSlot = memo(function ScheduleSlot({
   members = [],
   onPress,
   loading,
-  isInHero = false
+  isInHero = false,
+  textOpacity
 }: ScheduleSlotProps) {
   // Determine which person this is and get avatar - single lookup instead of two
   const member = userId && members.length > 0
@@ -42,7 +44,7 @@ const ScheduleSlot = memo(function ScheduleSlot({
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    onPress();
+    onPress?.();
   };
 
   const contentStyle = {
@@ -73,21 +75,28 @@ const ScheduleSlot = memo(function ScheduleSlot({
   };
 
   return (
-    <Pressable onPress={handlePress} disabled={loading} style={containerStyle}>
+    <Pressable
+      onPress={handlePress}
+      disabled={loading}
+      style={containerStyle}
+      testID={`schedule-slot-${slotType}`}
+    >
       {({ pressed }) => (
         <View style={contentStyle}>
           {loading ? (
-            <ActivityIndicator size="small" color={hasAssignment ? "#f5f1ed" : "#a89985"} />
+            <ActivityIndicator
+              size="small"
+              color={hasAssignment ? "#f5f1ed" : "#a89985"}
+              testID="loading-indicator"
+            />
           ) : (
             <>
               <View style={{ transform: [{ scale: pressed ? 0.9 : 1 }] }}>
                 <Avatar avatarId={avatarId} size={isInHero ? 56 : 48} borderColor={borderColor} />
               </View>
-              {displayName && (
-                <Text style={textStyle} numberOfLines={1} ellipsizeMode="tail">
-                  {displayName}
-                </Text>
-              )}
+              <Text style={textStyle} numberOfLines={1} ellipsizeMode="tail">
+                {displayName || 'Hvem?'}
+              </Text>
             </>
           )}
         </View>
