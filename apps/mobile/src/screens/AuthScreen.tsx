@@ -114,7 +114,10 @@ export default function AuthScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Feil', error instanceof Error ? error.message : 'Innlogging feilet');
+      console.error('Auth error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Innlogging feilet';
+      console.error('Error message:', errorMessage);
+      Alert.alert('Feil', errorMessage);
     } finally {
       setLoading(false);
     }

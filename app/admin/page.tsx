@@ -15,6 +15,9 @@ interface HouseholdMember {
   user_id: string | null;
   display_name: string;
   role: string;
+  joined_at: string;
+  last_active_at?: string | null;
+  is_premium?: boolean;
   household: {
     name: string;
   };
@@ -24,6 +27,16 @@ interface UserStatus {
   hasAccount: boolean;
   hasCompletedOnboarding: boolean;
   childCount: number;
+  lastActiveAt?: string;
+  isPremium: boolean;
+}
+
+interface ActivityMetrics {
+  dailyActiveUsers: number;
+  weeklyActiveUsers: number;
+  monthlyActiveUsers: number;
+  newUsersThisWeek: number;
+  newUsersThisMonth: number;
 }
 
 interface Child {
@@ -64,6 +77,47 @@ async function getAdminData() {
   const uniqueHouseholds = new Set(membersData?.map(m => m.household_id) || []);
   const uniqueUsers = new Set(membersData?.map(m => m.user_id).filter(Boolean) || []);
 
+  // Calculate activity metrics
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const membersWithAccounts = membersData?.filter(m => m.user_id) || [];
+
+  // New users based on joined_at
+  const newUsersThisWeek = membersWithAccounts.filter(m =>
+    new Date(m.joined_at) >= oneWeekAgo
+  ).length;
+
+  const newUsersThisMonth = membersWithAccounts.filter(m =>
+    new Date(m.joined_at) >= oneMonthAgo
+  ).length;
+
+  // Premium users
+  const premiumUsers = membersWithAccounts.filter(m => m.is_premium).length;
+
+  // Active users based on last_active_at
+  const dailyActiveUsers = membersWithAccounts.filter(m =>
+    m.last_active_at && new Date(m.last_active_at) >= oneDayAgo
+  ).length;
+
+  const weeklyActiveUsers = membersWithAccounts.filter(m =>
+    m.last_active_at && new Date(m.last_active_at) >= oneWeekAgo
+  ).length;
+
+  const monthlyActiveUsers = membersWithAccounts.filter(m =>
+    m.last_active_at && new Date(m.last_active_at) >= oneMonthAgo
+  ).length;
+
+  const activityMetrics: ActivityMetrics = {
+    dailyActiveUsers,
+    weeklyActiveUsers,
+    monthlyActiveUsers,
+    newUsersThisWeek,
+    newUsersThisMonth,
+  };
+
   // Calculate user status for each member
   const userStatuses: Record<string, UserStatus> = {};
   membersData?.forEach(member => {
@@ -78,6 +132,8 @@ async function getAdminData() {
       hasAccount: !!member.user_id,
       hasCompletedOnboarding: !!member.user_id && isAdmin && householdSetup,
       childCount: childrenInHousehold.length,
+      lastActiveAt: member.last_active_at || undefined,
+      isPremium: member.is_premium || false,
     };
   });
 
@@ -85,16 +141,18 @@ async function getAdminData() {
     members: membersData || [],
     children: childrenData || [],
     userStatuses,
+    activityMetrics,
     stats: {
       totalUsers: uniqueUsers.size,
       totalHouseholds: uniqueHouseholds.size,
       totalChildren: childrenData?.length || 0,
+      premiumUsers,
     }
   };
 }
 
 export default async function AdminDashboard() {
-  const { members, children, userStatuses, stats } = await getAdminData();
+  const { members, children, userStatuses, activityMetrics, stats } = await getAdminData();
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -153,12 +211,90 @@ export default async function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Premium brukere</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">0</p>
-                <p className="text-xs text-gray-500 mt-1">Kommer snart</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.premiumUsers}</p>
+                <p className="text-xs text-gray-500 mt-1">{((stats.premiumUsers / stats.totalUsers) * 100).toFixed(0)}% av totalt</p>
               </div>
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Daglige aktive (DAU)</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{activityMetrics.dailyActiveUsers}</p>
+                <p className="text-xs text-gray-500 mt-1">Siste 24 timer</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Ukentlige aktive (WAU)</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{activityMetrics.weeklyActiveUsers}</p>
+                <p className="text-xs text-gray-500 mt-1">Siste 7 dager</p>
+              </div>
+              <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Nye brukere (7 dager)</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{activityMetrics.newUsersThisWeek}</p>
+                <p className="text-xs text-gray-500 mt-1">Siste uke</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Nye brukere (30 dager)</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{activityMetrics.newUsersThisMonth}</p>
+                <p className="text-xs text-gray-500 mt-1">Siste måned</p>
+              </div>
+              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Månedlige aktive brukere</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{activityMetrics.monthlyActiveUsers}</p>
+                <p className="text-xs text-gray-500 mt-1">Siste 30 dager</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
             </div>
@@ -189,6 +325,9 @@ export default async function AdminDashboard() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Onboarding
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Sist aktiv
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Barn
@@ -300,13 +439,55 @@ export default async function AdminDashboard() {
                           </span>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {status?.lastActiveAt ? (
+                          <div className="text-sm text-gray-900">
+                            {dayjs(status.lastActiveAt).format('DD.MM.YY HH:mm')}
+                          </div>
+                        ) : (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            display: 'inline-flex',
+                            fontSize: '0.75rem',
+                            lineHeight: '1.25rem',
+                            fontWeight: '500',
+                            color: '#9ca3af'
+                          }}>
+                            -
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap" style={{ fontSize: '0.875rem', color: '#111827', fontWeight: '500' }}>
                         {status ? status.childCount : 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                          Free
-                        </span>
+                        {status?.isPremium ? (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            display: 'inline-flex',
+                            fontSize: '0.75rem',
+                            lineHeight: '1.25rem',
+                            fontWeight: '600',
+                            borderRadius: '9999px',
+                            backgroundColor: '#fef3c7',
+                            color: '#92400e'
+                          }}>
+                            ⭐ Premium
+                          </span>
+                        ) : (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            display: 'inline-flex',
+                            fontSize: '0.75rem',
+                            lineHeight: '1.25rem',
+                            fontWeight: '500',
+                            borderRadius: '9999px',
+                            backgroundColor: '#f3f4f6',
+                            color: '#6b7280'
+                          }}>
+                            Free
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {status ? (
@@ -315,6 +496,7 @@ export default async function AdminDashboard() {
                             userId={member.user_id}
                             hasAccount={status.hasAccount}
                             displayName={member.display_name}
+                            isPremium={status.isPremium}
                           />
                         ) : (
                           <span className="text-xs text-gray-400">N/A</span>

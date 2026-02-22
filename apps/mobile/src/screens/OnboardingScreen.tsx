@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Modal,
   Switch,
+  Linking,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
@@ -56,6 +57,7 @@ export default function OnboardingScreen() {
   // Step 1: My name
   const [myName, setMyName] = useState('');
   const [myAvatarId, setMyAvatarId] = useState<string | null>(null);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   // Step 2: Partner name
   const [partnerName, setPartnerName] = useState('');
@@ -762,10 +764,36 @@ export default function OnboardingScreen() {
               />
             </View>
 
+            {/* Privacy & Terms Consent */}
+            <View style={tw`flex-row items-start gap-3 mb-6 px-2`}>
+              <Switch
+                value={acceptedPrivacy}
+                onValueChange={setAcceptedPrivacy}
+                trackColor={{ false: '#475569', true: '#7fa884' }}
+                thumbColor={acceptedPrivacy ? '#f5f1ed' : '#cbd5e1'}
+              />
+              <Text style={tw`flex-1 text-sm text-slate-300 leading-5`}>
+                Jeg aksepterer{' '}
+                <Text
+                  onPress={() => Linking.openURL('https://flyt.no/privacy')}
+                  style={tw`text-secondary underline`}
+                >
+                  personvernerklæringen
+                </Text>
+                {' '}og{' '}
+                <Text
+                  onPress={() => Linking.openURL('https://flyt.no/terms')}
+                  style={tw`text-secondary underline`}
+                >
+                  vilkårene for bruk
+                </Text>
+              </Text>
+            </View>
+
             <TouchableOpacity
-              style={tw.style('bg-primary rounded py-3.5 items-center', !myName.trim() && 'opacity-50')}
-              onPress={() => myName.trim() && setStep(2)}
-              disabled={!myName.trim()}
+              style={tw.style('bg-primary rounded py-3.5 items-center', (!myName.trim() || !acceptedPrivacy) && 'opacity-50')}
+              onPress={() => myName.trim() && acceptedPrivacy && setStep(2)}
+              disabled={!myName.trim() || !acceptedPrivacy}
             >
               <Text style={tw`text-white text-base font-semibold`}>Neste</Text>
             </TouchableOpacity>

@@ -28,6 +28,32 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const forcedOnboardingRef = useRef(false);
 
+  // Update last_active_at timestamp for activity tracking
+  const updateLastActive = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('household_members')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .select();
+
+      if (error) {
+        // Silently fail - this is not critical for app functionality
+        console.log('Could not update last_active_at (non-critical):', error.message);
+        return;
+      }
+
+      // If no rows were updated, user might not have a household_member record yet
+      if (!data || data.length === 0) {
+        console.log('No household_member found for user, skipping last_active_at update');
+        return;
+      }
+    } catch (err) {
+      // Silently fail - this is not critical for app functionality
+      console.log('Could not update last_active_at (non-critical)');
+    }
+  };
+
   const loadHouseholdData = async (currentUser: User) => {
     // Skip if in forced onboarding mode
     if (forcedOnboardingRef.current) {
@@ -53,6 +79,12 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         setMembers([]);
         return;
       }
+
+      // Update last active timestamp (only if user has a household)
+      // Run in background - don't await or block on errors
+      updateLastActive(currentUser.id).catch(() => {
+        // Silently ignore - not critical
+      });
 
       // Pick first household
       const activeHouseholdId = memberships[0].household_id;
@@ -91,12 +123,17 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = async () => {
     setLoading(true);
-    forcedOnboardingRef.current = false; // Reset forced onboarding flag
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser) {
-      await loadHouseholdData(currentUser);
+    try {
+      forcedOnboardingRef.current = false; // Reset forced onboarding flag
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        await loadHouseholdData(currentUser);
+      }
+    } catch (err) {
+      console.error('Error in refresh:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const forceOnboarding = () => {
@@ -106,6 +143,19 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     setChildId(null);
     setMembers([]);
   };
+
+  // Periodic activity tracking - update every 5 minutes while app is active
+  useEffect(() => {
+    if (!user || needsOnboarding || !householdId) return;
+
+    const activityInterval = setInterval(() => {
+      updateLastActive(user.id).catch(() => {
+        // Silently ignore - not critical
+      });
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(activityInterval);
+  }, [user, needsOnboarding, householdId]);
 
   useEffect(() => {
     // Check initial session
@@ -164,11 +214,26 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
 
+      // Skip refetch on token refresh or initial session (these happen on app resume)
+      // Only reload data on actual sign in/out events
+      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        // Just update the user object, don't reload household data
+        if (session?.user) {
+          setUser(session.user);
+        }
+        return;
+      }
+
       if (session?.user) {
         setUser(session.user);
         setLoading(true);
-        await loadHouseholdData(session.user);
-        setLoading(false);
+        try {
+          await loadHouseholdData(session.user);
+        } catch (err) {
+          console.error('Error in auth state change handler:', err);
+        } finally {
+          setLoading(false);
+        }
       } else {
         setUser(null);
         setHouseholdId(null);

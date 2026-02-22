@@ -82,6 +82,12 @@ export default function ProfileScreen({ navigation }: any) {
       route: 'BiometricSettings',
     },
     {
+      id: 'privacy',
+      title: 'Personvern & GDPR',
+      icon: 'shield-checkmark-outline',
+      route: 'PrivacySettings',
+    },
+    {
       id: 'notifications',
       title: 'Varslinger',
       icon: 'notifications-outline',

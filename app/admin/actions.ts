@@ -35,6 +35,26 @@ export async function resendInvite(memberId: string) {
   }
 }
 
+export async function togglePremium(memberId: string, isPremium: boolean) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('household_members')
+      .update({ is_premium: isPremium })
+      .eq('id', memberId);
+
+    if (error) {
+      console.error('Error toggling premium:', error);
+      return { success: false, error: 'Kunne ikke oppdatere premium status' };
+    }
+
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error('Error toggling premium:', error);
+    return { success: false, error: 'Ukjent feil' };
+  }
+}
+
 export async function deleteUser(memberId: string, userId: string | null) {
   try {
     // Get household info before deleting

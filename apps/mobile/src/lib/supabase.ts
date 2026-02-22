@@ -7,6 +7,15 @@ import { Platform } from 'react-native';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
+// Debug logging
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Missing Supabase credentials!');
+  console.error('URL:', supabaseUrl ? 'Set' : 'Missing');
+  console.error('Key:', supabaseAnonKey ? 'Set' : 'Missing');
+} else {
+  console.log('✅ Supabase configured:', supabaseUrl);
+}
+
 // Platform-specific storage adapter
 // Use SecureStore for native (iOS/Android) and AsyncStorage for web
 const ExpoStorageAdapter = {
