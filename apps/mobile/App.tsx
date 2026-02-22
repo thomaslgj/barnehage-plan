@@ -10,6 +10,7 @@ import OnboardingScreen from './src/screens/OnboardingScreen';
 import MainScreen from './src/screens/MainScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import PersonalInfoScreen from './src/screens/PersonalInfoScreen';
+import BiometricSettingsScreen from './src/screens/BiometricSettingsScreen';
 import NotificationsSettingsScreen from './src/screens/NotificationsSettingsScreen';
 import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
@@ -200,6 +201,14 @@ function AppNavigator() {
             <Stack.Screen
               name="PersonalInfo"
               component={PersonalInfoScreen}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="BiometricSettings"
+              component={BiometricSettingsScreen}
               options={{
                 headerShown: false,
                 animation: 'slide_from_right',

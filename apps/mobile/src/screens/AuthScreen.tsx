@@ -10,15 +10,30 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import tw from '../lib/tw';
 import { Text } from '../components/Text';
+import {
+  checkBiometricAvailability,
+  isBiometricEnabled,
+  enableBiometricLogin,
+  authenticateWithBiometrics,
+  getBiometricTypeName,
+  type BiometricCapability,
+} from '../lib/biometric';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [biometricCapability, setBiometricCapability] = useState<BiometricCapability>({
+    isAvailable: false,
+    biometricType: 'none'
+  });
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [attemptingBiometric, setAttemptingBiometric] = useState(false);
 
   // Animation refs
   const titleFade = useRef(new Animated.Value(0)).current;
@@ -56,7 +71,20 @@ export default function AuthScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Check biometric availability
+    checkBiometricSetup();
   }, []);
+
+  const checkBiometricSetup = async () => {
+    const capability = await checkBiometricAvailability();
+    setBiometricCapability(capability);
+
+    if (capability.isAvailable) {
+      const enabled = await isBiometricEnabled();
+      setBiometricEnabled(enabled);
+    }
+  };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -79,11 +107,61 @@ export default function AuthScreen() {
           password,
         });
         if (error) throw error;
+
+        // After successful login, offer to enable biometric if available and not already enabled
+        if (biometricCapability.isAvailable && !biometricEnabled) {
+          offerBiometricEnrollment();
+        }
       }
     } catch (error) {
       Alert.alert('Feil', error instanceof Error ? error.message : 'Innlogging feilet');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const offerBiometricEnrollment = () => {
+    const biometricName = getBiometricTypeName(biometricCapability.biometricType);
+    Alert.alert(
+      'Aktiver biometrisk innlogging?',
+      `Vil du bruke ${biometricName} for raskere innlogging neste gang?`,
+      [
+        {
+          text: 'Ikke nå',
+          style: 'cancel',
+        },
+        {
+          text: 'Aktiver',
+          onPress: async () => {
+            const success = await enableBiometricLogin(email, password);
+            if (success) {
+              setBiometricEnabled(true);
+              Alert.alert('Aktivert', `${biometricName} er nå aktivert for innlogging`);
+            } else {
+              Alert.alert('Feil', 'Kunne ikke aktivere biometrisk innlogging');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleBiometricAuth = async () => {
+    setAttemptingBiometric(true);
+    try {
+      const credentials = await authenticateWithBiometrics();
+      if (credentials) {
+        // Sign in with stored credentials
+        const { error } = await supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password,
+        });
+        if (error) throw error;
+      }
+    } catch (error) {
+      Alert.alert('Feil', error instanceof Error ? error.message : 'Biometrisk autentisering feilet');
+    } finally {
+      setAttemptingBiometric(false);
     }
   };
 
@@ -136,6 +214,31 @@ export default function AuthScreen() {
             editable={!loading}
           />
         </Animated.View>
+
+        {/* Biometric Login Button - Only show if enabled and in login mode */}
+        {biometricEnabled && !isSignUp && (
+          <Animated.View style={{ opacity: buttonFade }}>
+            <TouchableOpacity
+              style={tw.style(
+                `bg-slate-800/50 border-2 border-secondary rounded py-3.5 items-center mt-2 mb-3 flex-row justify-center gap-2`,
+                attemptingBiometric && 'opacity-50'
+              )}
+              onPress={handleBiometricAuth}
+              disabled={attemptingBiometric || loading}
+            >
+              {attemptingBiometric ? (
+                <ActivityIndicator color="#e8c96f" />
+              ) : (
+                <>
+                  <Ionicons name="finger-print" size={24} color="#e8c96f" />
+                  <Text style={[tw`text-secondary text-base font-semibold`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
+                    Logg inn med {getBiometricTypeName(biometricCapability.biometricType)}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Login Button */}
         <Animated.View style={{ opacity: buttonFade }}>

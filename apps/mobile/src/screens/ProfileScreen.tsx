@@ -76,6 +76,12 @@ export default function ProfileScreen({ navigation }: any) {
       route: 'PersonalInfo',
     },
     {
+      id: 'biometric',
+      title: 'Biometrisk innlogging',
+      icon: 'finger-print',
+      route: 'BiometricSettings',
+    },
+    {
       id: 'notifications',
       title: 'Varslinger',
       icon: 'notifications-outline',

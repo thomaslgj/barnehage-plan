@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "backgroundColor": "#2d2520"
+      "backgroundColor": "#2d2520",
+      "bundleIdentifier": "com.thomaslg.flyt"
     },
     "android": {
       "adaptiveIcon": {
