@@ -12,16 +12,17 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const cookie = req.cookies.get("app_auth");
-
-  // hvis cookie finnes og stemmer → ok
-  if (cookie && cookie.value === process.env.APP_SHARED_PASSWORD) {
-    return NextResponse.next();
+  // Old API routes: still require cookie auth (backward compat)
+  if (pathname.startsWith("/api/")) {
+    const cookie = req.cookies.get("app_auth");
+    if (cookie && cookie.value === process.env.APP_SHARED_PASSWORD) {
+      return NextResponse.next();
+    }
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ellers: redirect til /login
-  const loginUrl = new URL("/login", req.url);
-  return NextResponse.redirect(loginUrl);
+  // All page routes: pass through – Supabase client-side auth handles gating
+  return NextResponse.next();
 }
 
 // hvilke paths som skal gå via middleware

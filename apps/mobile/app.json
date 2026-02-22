@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Flyt",
+    "slug": "flyt",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#2d2520",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2d2520"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "backgroundColor": "#2d2520",
+      "bundleIdentifier": "com.thomaslg.flyt"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2d2520"
+      },
+      "backgroundColor": "#2d2520",
+      "package": "com.thomaslg.flyt"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b1d1e57b-636d-450c-96ef-513d626e1a07"
+      }
+    }
+  }
+}

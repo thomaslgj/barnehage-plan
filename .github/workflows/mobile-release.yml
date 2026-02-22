@@ -1,0 +1,67 @@
+name: Mobile Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+      submit:
+        description: 'Submit to App Store/Play Store after build'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    name: EAS Build Production
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run tests
+        run: npm test -- --ci --maxWorkers=2
+
+      - name: 🚀 Build iOS
+        if: inputs.platform == 'ios' || inputs.platform == 'all'
+        run: |
+          if [ "${{ inputs.submit }}" == "true" ]; then
+            eas build --platform ios --profile production --auto-submit --non-interactive
+          else
+            eas build --platform ios --profile production --non-interactive
+          fi
+
+      - name: 🚀 Build Android
+        if: inputs.platform == 'android' || inputs.platform == 'all'
+        run: |
+          if [ "${{ inputs.submit }}" == "true" ]; then
+            eas build --platform android --profile production --auto-submit --non-interactive
+          else
+            eas build --platform android --profile production --non-interactive
+          fi

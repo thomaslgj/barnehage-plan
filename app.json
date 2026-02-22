@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.thomaslg.barnehageplan"
+  },
+  "ios": {
+    "bundleIdentifier": "com.thomaslg.barnehageplan"
+  }
+}

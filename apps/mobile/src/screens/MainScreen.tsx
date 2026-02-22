@@ -1,0 +1,935 @@
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
+  Animated,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import 'dayjs/locale/nb';
+import { supabase } from '../lib/supabase';
+import { useHousehold } from '../contexts/HouseholdProvider';
+import { Text } from '../components/Text';
+import TodayCard from '../components/TodayCard';
+import TodayCardSkeleton from '../components/TodayCardSkeleton';
+import ScheduleSlot from '../components/ScheduleSlot';
+import ScheduleSkeleton from '../components/ScheduleSkeleton';
+import NoteIcon from '../components/NoteIcon';
+import NotesBottomSheet from '../components/NotesBottomSheet';
+import { fetchNotesForDateRange, addNote, deleteNote } from '../lib/notes';
+import type { ScheduleAssignment, DayNote } from '../types/db';
+import tw from '../lib/tw';
+
+dayjs.extend(isoWeek);
+dayjs.locale('nb');
+
+interface AssignmentData {
+  [key: string]: string | null; // key: "YYYY-MM-DD-dropoff" or "YYYY-MM-DD-pickup", value: user_id
+}
+
+export default function MainScreen({ navigation }: any) {
+  const { user, householdId, childId, members } = useHousehold();
+  // "Current week" is next week on weekends, this week on weekdays
+  const isWeekend = dayjs().day() === 0 || dayjs().day() === 6;
+  const currentWeekOffset = isWeekend ? 1 : 0;
+  const [weekOffset, setWeekOffset] = useState(currentWeekOffset);
+  const [assignments, setAssignments] = useState<AssignmentData>({});
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [savingSlot, setSavingSlot] = useState<string | null>(null);
+  const [templateWasSuccessful, setTemplateWasSuccessful] = useState(false);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [childName, setChildName] = useState<string>('');
+  const [myName, setMyName] = useState<string>('');
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
+  const [inviteMessageDismissed, setInviteMessageDismissed] = useState(false);
+  const [weekWasFullyFilled, setWeekWasFullyFilled] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [weekChanging, setWeekChanging] = useState(false);
+  const [notes, setNotes] = useState<Map<string, DayNote[]>>(new Map());
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesBottomSheetVisible, setNotesBottomSheetVisible] = useState(false);
+  const [selectedNoteDate, setSelectedNoteDate] = useState<string | null>(null);
+  const [todayCardCollapsed, setTodayCardCollapsed] = useState(true); // Start collapsed by default
+  const initialFetchDone = useRef(false);
+  const animationsTriggered = useRef(false);
+  const prevWeekChanging = useRef(false);
+
+  // Animation refs
+  const celebrationConfettiRef = useRef<any>(null);
+  const todayCardFade = useRef(new Animated.Value(1)).current;
+  const messagesFade = useRef(new Animated.Value(1)).current;
+  const navigationFade = useRef(new Animated.Value(1)).current;
+  const scheduleFade = useRef(new Animated.Value(1)).current;
+  const prevButtonScale = useRef(new Animated.Value(1)).current;
+  const nextButtonScale = useRef(new Animated.Value(1)).current;
+  const profileButtonScale = useRef(new Animated.Value(1)).current;
+
+  // Calculate current week dates
+  const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
+  const endOfWeek = startOfWeek.add(6, 'day');
+  const weekNumber = startOfWeek.isoWeek();
+  const year = startOfWeek.year();
+  const weekRange = `${startOfWeek.format('D. MMM')} - ${endOfWeek.format('D. MMM')}`;
+
+  // Generate 7 days (1 week), Mon-Fri only - memoized to avoid recalculation
+  const daysToShow = useMemo(() => {
+    const days: dayjs.Dayjs[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = startOfWeek.add(i, 'day');
+      const dayOfWeek = day.day();
+      // Only Monday (1) to Friday (5)
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        days.push(day);
+      }
+    }
+    return days;
+  }, [weekOffset]);
+
+  const today = dayjs().format('YYYY-MM-DD');
+  const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
+  const currentHour = dayjs().hour();
+
+  // Check if all slots in current week are empty - memoized
+  const allSlotsEmpty = useMemo(() => {
+    return daysToShow.every(day => {
+      const dateStr = day.format('YYYY-MM-DD');
+      const dropoffKey = `${dateStr}-dropoff`;
+      const pickupKey = `${dateStr}-pickup`;
+      return !assignments[dropoffKey] && !assignments[pickupKey];
+    });
+  }, [daysToShow, assignments]);
+
+  // On weekends, show next Monday instead of today/tomorrow - memoized
+  // After 16:00 on weekdays, show tomorrow instead of today
+  const todayOrTomorrow = useMemo(() => {
+    // Weekend (Saturday or Sunday) - show next Monday
+    if (currentDayOfWeek === 0 || currentDayOfWeek === 6) {
+      return daysToShow[0];
+    }
+
+    // Friday after 16:00 - show next Monday (not Saturday)
+    if (currentDayOfWeek === 5 && currentHour >= 16) {
+      return daysToShow[0];
+    }
+
+    // Weekday - show tomorrow if after 16:00, otherwise show today
+    const targetDate = currentHour >= 16
+      ? dayjs().add(1, 'day').format('YYYY-MM-DD')
+      : today;
+
+    return daysToShow.find(
+      (d) => d.format('YYYY-MM-DD') === targetDate || d.format('YYYY-MM-DD') === dayjs().add(1, 'day').format('YYYY-MM-DD')
+    );
+  }, [daysToShow, currentDayOfWeek, today, currentHour]);
+
+  const fetchAssignments = useCallback(async (isInitialLoad = false, targetWeekOffset?: number) => {
+    if (!childId || !householdId) return;
+
+    // Use provided offset or fall back to current weekOffset
+    const effectiveOffset = targetWeekOffset !== undefined ? targetWeekOffset : weekOffset;
+
+    // Recalculate days based on effective weekOffset
+    const currentStartOfWeek = dayjs().add(effectiveOffset, 'week').startOf('isoWeek');
+    const currentDays: dayjs.Dayjs[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = currentStartOfWeek.add(i, 'day');
+      const dayOfWeek = day.day();
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        currentDays.push(day);
+      }
+    }
+
+    const fromDate = currentDays[0].format('YYYY-MM-DD');
+    const toDate = currentDays[currentDays.length - 1].format('YYYY-MM-DD');
+    const cacheKey = `schedule_${childId}_${fromDate}_${toDate}`;
+
+    // Try to load from cache first on initial load
+    if (isInitialLoad) {
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          setAssignments(cachedData);
+          setLoading(false);
+          setInitialLoadComplete(true);
+          // Continue to fetch fresh data in background
+        } else {
+          setLoading(true);
+        }
+      } catch (error) {
+        console.error('Error loading cache:', error);
+        setLoading(true);
+      }
+    } else if (!refreshing && targetWeekOffset === undefined) {
+      setWeekChanging(true);
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('schedule_assignments')
+        .select('date, slot, assigned_member_id, assigned_user_id')
+        .eq('child_id', childId)
+        .gte('date', fromDate)
+        .lte('date', toDate);
+
+      if (error) throw error;
+
+      // Convert to map - use member_id (works for both real users and placeholders)
+      const assignmentMap: AssignmentData = {};
+      data?.forEach((assignment: Pick<ScheduleAssignment, 'date' | 'slot' | 'assigned_member_id' | 'assigned_user_id'>) => {
+        const key = `${assignment.date}-${assignment.slot}`;
+        // Use member_id if available, fallback to user_id for backwards compatibility
+        // If both are null, explicitly set to null (not undefined)
+        const memberId = assignment.assigned_member_id || assignment.assigned_user_id || null;
+        assignmentMap[key] = memberId;
+      });
+
+      // Save to cache
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(assignmentMap));
+
+      // Update with fresh data from database
+      setAssignments(assignmentMap);
+
+      // Also fetch notes for this date range
+      const notesMap = await fetchNotesForDateRange(householdId, childId, fromDate, toDate);
+      setNotes(notesMap);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+        setInitialLoadComplete(true);
+      }
+      setWeekChanging(false);
+      setRefreshing(false);
+
+      // Fade in animation after week change
+      if (!isInitialLoad && targetWeekOffset !== undefined) {
+        Animated.timing(scheduleFade, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+  }, [childId, householdId, weekOffset, refreshing, scheduleFade]);
+
+  // Initial fetch - start immediately, cache will make it fast
+  useEffect(() => {
+    if (childId && householdId && !initialFetchDone.current) {
+      initialFetchDone.current = true;
+      // Fetch immediately - cached data will show instantly if available
+      fetchAssignments(true);
+    }
+  }, [childId, householdId, fetchAssignments]);
+
+  // Set content to visible immediately when loading completes (no fade-in animation)
+  useEffect(() => {
+    if (!loading && !animationsTriggered.current) {
+      animationsTriggered.current = true;
+
+      // Set all animations to fully visible immediately (no fade-in)
+      todayCardFade.setValue(1);
+      messagesFade.setValue(1);
+      navigationFade.setValue(1);
+      scheduleFade.setValue(1);
+    }
+  }, [loading]);
+
+  // Note: Fade animation is now handled directly in changeWeek and fetchAssignments
+  // to avoid double-animation issues from effect re-running
+
+  // Fetch child name
+  useEffect(() => {
+    if (!childId) return;
+
+    const fetchChildName = async () => {
+      // console.log('Fetching child name for childId:', childId);
+      const { data, error } = await supabase
+        .from('children')
+        .select('name')
+        .eq('id', childId)
+        .single();
+
+      // console.log('Child data fetched:', data, 'error:', error);
+
+      if (data) {
+        setChildName(data.name);
+      }
+    };
+
+    fetchChildName();
+  }, [childId]);
+
+  // Get current user's display name
+  useEffect(() => {
+    if (!user || members.length === 0) return;
+
+    const currentUserMember = members.find(m => m.user_id === user.id);
+    if (currentUserMember) {
+      setMyName(currentUserMember.display_name);
+    }
+  }, [user, members]);
+
+  // Fetch invite code and check for placeholder members
+  useEffect(() => {
+    if (!householdId) return;
+
+    const fetchInviteCodeAndPlaceholder = async () => {
+      // Fetch household invite code
+      const { data: householdData } = await supabase
+        .from('households')
+        .select('invite_code')
+        .eq('id', householdId)
+        .single();
+
+      if (householdData?.invite_code) {
+        setInviteCode(householdData.invite_code);
+      }
+
+      // Check if there are placeholder members (user_id IS NULL)
+      const { data: placeholderMembers } = await supabase
+        .from('household_members')
+        .select('id')
+        .eq('household_id', householdId)
+        .is('user_id', null)
+        .limit(1);
+
+      setHasPlaceholderMember(placeholderMembers && placeholderMembers.length > 0);
+    };
+
+    fetchInviteCodeAndPlaceholder();
+  }, [householdId, members]); // Re-check when members change
+
+  // Reset template success message when week changes (but keep templateAutoApplied to prevent re-triggering)
+  useEffect(() => {
+    setTemplateWasSuccessful(false);
+    setWeekWasFullyFilled(false);
+  }, [weekOffset]);
+
+  // Check if week is fully filled and trigger celebration
+  useEffect(() => {
+    if (loading || weekWasFullyFilled) return;
+
+    const allSlotsFilled = daysToShow.every(day => {
+      const dateStr = day.format('YYYY-MM-DD');
+      const dropoffKey = `${dateStr}-dropoff`;
+      const pickupKey = `${dateStr}-pickup`;
+      return assignments[dropoffKey] && assignments[pickupKey];
+    });
+
+    if (allSlotsFilled && daysToShow.length > 0) {
+      setWeekWasFullyFilled(true);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      celebrationConfettiRef.current?.start();
+    }
+  }, [assignments, daysToShow.length, loading]);
+
+  // Manual template application
+  const handleApplyTemplate = async () => {
+    setApplyingTemplate(true);
+    try {
+      const wasApplied = await applyTemplateToWeek();
+      setTemplateWasSuccessful(wasApplied);
+    } catch (error) {
+      console.error('Error applying template:', error);
+      setTemplateWasSuccessful(false);
+    } finally {
+      setApplyingTemplate(false);
+    }
+  };
+
+  // Note: Automatic template application is disabled
+  // Use the debug button below to manually apply template when needed
+
+  // Apply template to empty weeks
+  // Returns true if templates were actually applied, false otherwise
+  const applyTemplateToWeek = async (): Promise<boolean> => {
+    if (!childId || !householdId || !user) return false;
+
+    try {
+      // Fetch template
+      const { data: templates, error: templateError } = await supabase
+        .from('schedule_templates')
+        .select('weekday, slot, assigned_member_id, assigned_user_id')
+        .eq('household_id', householdId)
+        .eq('child_id', childId);
+
+      if (templateError) {
+        console.error('Template error:', templateError);
+        return false;
+      }
+
+      if (!templates || templates.length === 0) {
+        console.log('No template found - skipping auto-apply');
+        return false; // No template to apply
+      }
+
+      console.log('Found templates:', templates);
+
+      // Check which days in current view need assignments
+      const newAssignments: Array<{
+        household_id: string;
+        child_id: string;
+        date: string;
+        slot: 'dropoff' | 'pickup';
+        assigned_user_id: string | null;
+        updated_by: string;
+      }> = [];
+
+      for (const day of daysToShow) {
+        const dateStr = day.format('YYYY-MM-DD');
+        const weekday = day.isoWeekday(); // 1-7, Monday=1
+
+        // Check dropoff
+        const dropoffKey = `${dateStr}-dropoff`;
+        if (!assignments[dropoffKey]) {
+          const template = templates.find(t => t.weekday === weekday && t.slot === 'dropoff');
+          if (template?.assigned_member_id) {
+            newAssignments.push({
+              household_id: householdId,
+              child_id: childId,
+              date: dateStr,
+              slot: 'dropoff',
+              assigned_member_id: template.assigned_member_id,
+              assigned_user_id: template.assigned_user_id,
+              updated_by: user.id,
+            });
+          }
+        }
+
+        // Check pickup
+        const pickupKey = `${dateStr}-pickup`;
+        if (!assignments[pickupKey]) {
+          const template = templates.find(t => t.weekday === weekday && t.slot === 'pickup');
+          if (template?.assigned_member_id) {
+            newAssignments.push({
+              household_id: householdId,
+              child_id: childId,
+              date: dateStr,
+              slot: 'pickup',
+              assigned_member_id: template.assigned_member_id,
+              assigned_user_id: template.assigned_user_id,
+              updated_by: user.id,
+            });
+          }
+        }
+      }
+
+      // Insert/update new assignments from template (use upsert to handle duplicates)
+      if (newAssignments.length > 0) {
+        // console.log('Upserting assignments:', newAssignments.length);
+        // console.log('Assignments to upsert:', JSON.stringify(newAssignments, null, 2));
+        const { error: upsertError } = await supabase
+          .from('schedule_assignments')
+          .upsert(newAssignments, { onConflict: 'child_id,date,slot' });
+
+        if (upsertError) {
+          console.error('Upsert error:', upsertError);
+          return false;
+        } else {
+          console.log('Successfully upserted, refreshing...');
+          // Refresh assignments
+          await fetchAssignments();
+          return true; // Successfully applied template
+        }
+      } else {
+        console.log('No new assignments to upsert');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error applying template:', error);
+      return false;
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAssignments();
+  };
+
+  const handleSlotPress = useCallback((date: string, slot: 'dropoff' | 'pickup') => {
+    if (!childId || !householdId || !user) return;
+
+    const key = `${date}-${slot}`;
+
+    // Build cycle order: null -> person1 -> person2 -> null
+    const order: (string | null)[] = [
+      null,
+      ...members.slice(0, 2).map(m => m.id)
+    ];
+
+    // Use functional update to get current value without depending on assignments
+    setAssignments((prev) => {
+      const currentUserId = prev[key] || null;
+
+      // Find current index and get next
+      const currentIndex = order.indexOf(currentUserId);
+      const nextIndex = (currentIndex + 1) % order.length;
+      const nextUserId = order[nextIndex];
+
+      // Fire off database save without awaiting (non-blocking)
+      if (nextUserId === null) {
+        supabase
+          .from('schedule_assignments')
+          .delete()
+          .eq('child_id', childId)
+          .eq('date', date)
+          .eq('slot', slot)
+          .then(({ error }) => {
+            if (error) console.error('Error deleting assignment:', error);
+          });
+      } else {
+        supabase
+          .from('schedule_assignments')
+          .upsert({
+            household_id: householdId,
+            child_id: childId,
+            date: date,
+            slot: slot,
+            assigned_member_id: nextUserId,
+            assigned_user_id: nextUserId,
+            updated_by: user.id,
+          }, { onConflict: 'child_id,date,slot' })
+          .then(({ error }) => {
+            if (error) console.error('Error saving assignment:', error);
+          });
+      }
+
+      return {
+        ...prev,
+        [key]: nextUserId,
+      };
+    });
+  }, [childId, householdId, user, members]);
+
+  const getDisplayName = useCallback((memberId: string | null): string | undefined => {
+    if (!memberId) {
+      return undefined;
+    }
+
+    // Find member by id (works for both real users and placeholders)
+    // Also check user_id for backwards compatibility
+    const member = members.find((m) => m.id === memberId || m.user_id === memberId);
+    return member?.display_name;
+  }, [members]);
+
+  const handleNotePress = (date: string) => {
+    setSelectedNoteDate(date);
+    setNotesBottomSheetVisible(true);
+  };
+
+  const handleAddNote = async (content: string) => {
+    if (!householdId || !childId || !user || !selectedNoteDate) return;
+
+    setNotesLoading(true);
+    try {
+      const newNote = await addNote(householdId, childId, selectedNoteDate, content, user.id);
+
+      if (newNote) {
+        // Update local state - add to existing notes array for this date
+        setNotes(prev => {
+          const newNotes = new Map(prev);
+          const existingNotes = newNotes.get(selectedNoteDate) || [];
+          newNotes.set(selectedNoteDate, [...existingNotes, newNote]);
+          return newNotes;
+        });
+      }
+    } catch (error) {
+      console.error('Error adding note:', error);
+      throw error;
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!childId || !selectedNoteDate) return;
+
+    setNotesLoading(true);
+    try {
+      await deleteNote(noteId, childId);
+
+      // Update local state - remove note from array
+      setNotes(prev => {
+        const newNotes = new Map(prev);
+        const existingNotes = newNotes.get(selectedNoteDate) || [];
+        const filteredNotes = existingNotes.filter(note => note.id !== noteId);
+
+        if (filteredNotes.length === 0) {
+          newNotes.delete(selectedNoteDate);
+        } else {
+          newNotes.set(selectedNoteDate, filteredNotes);
+        }
+
+        return newNotes;
+      });
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      throw error;
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleNoteClose = () => {
+    setNotesBottomSheetVisible(false);
+    setSelectedNoteDate(null);
+  };
+
+  // Button animation helpers
+  const animateButtonPress = (animValue: Animated.Value, callback: () => void) => {
+    Animated.sequence([
+      Animated.spring(animValue, {
+        toValue: 0.9,
+        useNativeDriver: true,
+      }),
+      Animated.spring(animValue, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    callback();
+  };
+
+  // Week navigation helper - sets loading state and fetches immediately
+  const changeWeek = useCallback((offset: number) => {
+    if (!initialLoadComplete) return;
+
+    setWeekChanging(true);
+    setWeekOffset(offset);
+
+    // Fade out animation
+    Animated.timing(scheduleFade, {
+      toValue: 0.3,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      // Fetch data after fade out completes
+      fetchAssignments(false, offset);
+    });
+  }, [initialLoadComplete, fetchAssignments, scheduleFade]);
+
+  // Swipe gesture removed - use arrow buttons for week navigation to avoid blocking slot taps
+
+  return (
+    <>
+      {/* Celebration Confetti - positioned absolutely off-screen until triggered */}
+      {Platform.OS !== 'web' && (
+        <View style={{ position: 'absolute', top: -1000, left: -1000, zIndex: 9999 }}>
+          <ConfettiCannon
+            ref={celebrationConfettiRef}
+            count={200}
+            origin={{ x: 200, y: 200 }}
+            autoStart={false}
+            fadeOut={true}
+          />
+        </View>
+      )}
+
+      <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
+        <ScrollView
+          style={tw`flex-1`}
+          contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7fa884']} />
+          }
+        >
+        {/* Profile Header */}
+        {childName && myName && (
+          <View style={tw`flex-row items-center justify-between mb-6`}>
+            {/* Child info (non-clickable) */}
+            <View style={tw`flex-row items-center gap-2 bg-slate-800/30 rounded-full py-2 px-4`}>
+              <MaterialCommunityIcons name="baby-face-outline" size={22} color="#a89985" />
+              <Text style={tw`text-base text-text-muted font-medium`}>{childName}</Text>
+            </View>
+
+            {/* User info (clickable) */}
+            <Animated.View style={{ transform: [{ scale: profileButtonScale }] }}>
+              <TouchableOpacity
+                style={tw`flex-row items-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
+                onPress={() => animateButtonPress(profileButtonScale, () => navigation.navigate('Profile'))}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="person-circle-outline" size={22} color="#f5f1ed" />
+                <Text style={tw`text-base text-white font-medium`}>{myName}</Text>
+                <Text style={tw`text-text-light text-xl`}>›</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        )}
+
+        {/* Today/Tomorrow Card */}
+        {weekOffset === currentWeekOffset && (
+          <Animated.View style={{ opacity: todayCardFade }}>
+            {(loading || weekChanging) ? (
+              <TodayCardSkeleton />
+            ) : todayOrTomorrow ? (
+              <TodayCard
+                date={todayOrTomorrow.format('YYYY-MM-DD')}
+                dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
+                pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
+                dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
+                pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
+                members={members}
+                onDropoffPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'dropoff')}
+                onPickupPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'pickup')}
+                notes={notes.get(todayOrTomorrow.format('YYYY-MM-DD')) || []}
+                onNotePress={() => handleNotePress(todayOrTomorrow.format('YYYY-MM-DD'))}
+                collapsed={todayCardCollapsed}
+                onToggleCollapse={() => setTodayCardCollapsed(!todayCardCollapsed)}
+              />
+            ) : null}
+          </Animated.View>
+        )}
+
+        {/* Messages Section - Invite, Template, Empty State */}
+        <Animated.View style={{ opacity: messagesFade }}>
+          {/* Invite Partner Message */}
+          {hasPlaceholderMember && inviteCode && weekOffset === currentWeekOffset && !inviteMessageDismissed && (
+            <View style={tw`mb-3 bg-info/10 rounded-lg border border-info/30`}>
+              {/* Header with close button */}
+              <View style={tw`flex-row items-start justify-between p-4 pb-2`}>
+                <Text style={tw`text-sm text-slate-200 flex-1 pr-2`}>
+                  💡 Din partner har ikke blitt med enda
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setInviteMessageDismissed(true)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={tw`ml-2`}
+                >
+                  <Text style={tw`text-text-light text-xl leading-none`}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Content */}
+              <View style={tw`px-4 pb-4`}>
+                <Text style={tw`text-xs text-slate-400 mb-2`}>
+                  Del denne invitasjonskoden så de kan bli med:
+                </Text>
+                <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
+                  <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
+                    {inviteCode}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+        {/* Template Loading Animation */}
+        {applyingTemplate && (
+          <View style={tw`mb-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}>
+            <View style={tw`flex-row items-center justify-center gap-2`}>
+              <ActivityIndicator size="small" color="#7fa884" />
+              <Text style={tw`text-sm text-text-muted`}>
+                Setter opp flyt...
+              </Text>
+            </View>
+          </View>
+        )}
+
+          {/* Apply Template Button - show when week is empty */}
+          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && daysToShow.length > 0 && (
+            <View style={tw`mb-3 p-4 bg-primary/20 rounded-lg border border-primary/50`}>
+              <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
+                Fyll inn fra standard-uke ✨
+              </Text>
+              <Text style={tw`text-sm text-text-light text-center mb-3`}>
+                Få flyt i hverdagen ved å bruke ditt vanlige oppsett
+              </Text>
+              <TouchableOpacity
+                style={tw`bg-primary py-2.5 px-4 rounded-lg`}
+                onPress={handleApplyTemplate}
+                activeOpacity={0.7}
+              >
+                <Text style={tw`text-center text-base font-semibold text-white`}>
+                  Fyll inn uken
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Animated.View>
+
+        {/* Week Navigation Header */}
+        <Animated.View style={[tw`mt-8`, { opacity: navigationFade }]}>
+          <View style={tw`flex-row items-center justify-between mb-3`}>
+          <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
+            <TouchableOpacity
+              style={tw`p-2 bg-slate-700/50 rounded-lg flex items-center justify-center`}
+              onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
+              activeOpacity={0.7}
+            >
+              <Text style={tw`text-2xl text-text leading-none`}>‹</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <View style={tw`flex-1 items-center px-3`}>
+            <View style={tw`flex-row items-center gap-2`}>
+              {weekChanging && (
+                <ActivityIndicator size="small" color="#7fa884" />
+              )}
+              <Text style={tw`text-base font-semibold text-text`}>
+                {weekRange}
+              </Text>
+            </View>
+          </View>
+
+          <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
+            <TouchableOpacity
+              style={tw`p-2 bg-slate-700/50 rounded-lg flex items-center justify-center`}
+              onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
+              activeOpacity={0.7}
+            >
+              <Text style={tw`text-2xl text-text leading-none`}>›</Text>
+            </TouchableOpacity>
+          </Animated.View>
+          </View>
+
+          {/* Go to Current Week Button */}
+          {weekOffset !== currentWeekOffset && (
+            <TouchableOpacity
+              style={tw`mb-3 flex-row items-center justify-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
+              onPress={() => changeWeek(currentWeekOffset)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="today-outline" size={20} color="#f5f1ed" />
+              <Text style={tw`text-base text-white font-medium`}>Gå til nåværende uke</Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+
+        {/* Schedule List */}
+        <View>
+            {loading ? (
+              <ScheduleSkeleton />
+            ) : (
+              <View>
+                {/* Header */}
+                <View style={tw`flex-row gap-6 mb-3 px-1`}>
+                  <View style={tw`flex-1 items-end`}>
+                    <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
+                  </View>
+                  <View style={tw`flex-1 items-start`}>
+                    <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
+                  </View>
+                </View>
+
+                {/* Template Auto-Applied Message */}
+                {templateWasSuccessful && !applyingTemplate && (
+                  <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
+                    <Text style={tw`text-sm text-primary-light text-center`}>
+                      Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
+                    </Text>
+                  </View>
+                )}
+
+                {daysToShow.map((day, index) => {
+            const dateStr = day.format('YYYY-MM-DD');
+            const dropoffKey = `${dateStr}-dropoff`;
+            const pickupKey = `${dateStr}-pickup`;
+            const isToday = day.isSame(dayjs(), 'day');
+            const isLastDay = index === daysToShow.length - 1;
+
+            return (
+              <View key={dateStr}>
+                <View style={tw`pb-1`}>
+                  {/* Divider line */}
+                  <View style={tw`h-px bg-slate-600/40 mt-3`} />
+
+                  {/* Day name with note icon */}
+                  <View style={tw`flex-row items-center justify-between mt-1.5`}>
+                    <View style={tw`flex-row items-center gap-1.5`}>
+                      {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
+                      <Text style={tw.style(
+                        'text-[11px] font-semibold capitalize',
+                        isToday ? 'text-secondary-light' : 'text-slate-400'
+                      )}>
+                        {day.format('dddd')}
+                      </Text>
+                    </View>
+                    <NoteIcon
+                      hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
+                      onPress={() => handleNotePress(dateStr)}
+                    />
+                  </View>
+
+                  <View style={{ position: 'relative' }}>
+                    <View style={tw`flex-row gap-6`}>
+                      <View style={tw`flex-1`}>
+                        <ScheduleSlot
+                          key={dropoffKey}
+                          slotType="dropoff"
+                          displayName={getDisplayName(assignments[dropoffKey])}
+                          userId={assignments[dropoffKey]}
+                          members={members}
+                          onPress={() => handleSlotPress(dateStr, 'dropoff')}
+                          loading={savingSlot === dropoffKey}
+                        />
+                      </View>
+                      <View style={tw`flex-1`}>
+                        <ScheduleSlot
+                          key={pickupKey}
+                          slotType="pickup"
+                          displayName={getDisplayName(assignments[pickupKey])}
+                          userId={assignments[pickupKey]}
+                          members={members}
+                          onPress={() => handleSlotPress(dateStr, 'pickup')}
+                          loading={savingSlot === pickupKey}
+                        />
+                      </View>
+                    </View>
+                    {/* Connecting line between avatars */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: 32, // gap-8 = 32px
+                        height: 2,
+                        backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle
+                        transform: [{ translateX: -16 }, { translateY: -1 }],
+                        zIndex: -1,
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+              </View>
+            )}
+          </View>
+      </ScrollView>
+    </SafeAreaView>
+
+    <NotesBottomSheet
+      visible={notesBottomSheetVisible}
+      date={selectedNoteDate || ''}
+      notes={selectedNoteDate ? (notes.get(selectedNoteDate) || []) : []}
+      loading={notesLoading}
+      onAddNote={handleAddNote}
+      onDeleteNote={handleDeleteNote}
+      onClose={handleNoteClose}
+    />
+    </>
+  );
+}
