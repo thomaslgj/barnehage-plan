@@ -70,7 +70,8 @@ export default function TodayCard({
   const [autoCollapseSet, setAutoCollapseSet] = useState(false);
   const confettiRef = useRef<any>(null);
   const prevDate = useRef<string>(date);
-  const collapseAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current;
+  const opacityAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current; // For opacity/transform (native)
+  const heightAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current;  // For height (JS)
 
   // No animation - everything visible immediately
   const leftAvatarX = useRef(new Animated.Value(0)).current;
@@ -85,7 +86,7 @@ export default function TodayCard({
   const isToday = dateObj.isSame(dayjs(), 'day');
   const isTomorrow = dateObj.isSame(dayjs().add(1, 'day'), 'day');
 
-  const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd D. MMM').toUpperCase();
+  const title = isToday ? 'I DAG' : isTomorrow ? 'I MORGEN' : dateObj.format('dddd').toUpperCase();
   const dayName = dateObj.format('dddd D. MMM');
   const equipmentStatus = useMemo(() => calculateEquipmentStatus(equipmentItems), [equipmentItems]);
 
@@ -201,12 +202,22 @@ export default function TodayCard({
 
   // Animate when collapsed state changes
   useEffect(() => {
-    Animated.timing(collapseAnim, {
-      toValue: collapsed ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [collapsed, collapseAnim]);
+    Animated.parallel([
+      // Opacity/transform animation (native - smooth)
+      Animated.timing(opacityAnim, {
+        toValue: collapsed ? 0 : 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      // Height animation (JS - needed for layout)
+      Animated.spring(heightAnim, {
+        toValue: collapsed ? 0 : 1,
+        friction: 10,
+        tension: 50,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [collapsed, opacityAnim, heightAnim]);
 
   const handleToggleCollapse = () => {
     if (!onToggleCollapse) return;
@@ -272,28 +283,30 @@ export default function TodayCard({
       ]}>
         {/* Main content section with padding */}
         <View style={tw`px-5 pt-5 pb-4`}>
-          {/* Collapsed view - single row with title and icons */}
-          <Animated.View
-            style={[
-              tw`flex-row items-center gap-3`,
-              {
-                opacity: collapseAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0],
-                }),
-                maxHeight: collapseAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [60, 0],
-                }),
-                marginBottom: collapseAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 0],
-                }),
-                overflow: 'hidden',
-              }
-            ]}
-            pointerEvents={collapsed ? 'auto' : 'none'}
-          >
+          <View style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Collapsed view - single row with title and icons */}
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  opacity: opacityAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0],
+                  }),
+                  transform: [{
+                    scale: opacityAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.95],
+                    })
+                  }],
+                }
+              ]}
+              pointerEvents={collapsed ? 'auto' : 'none'}
+            >
+              <View style={tw`flex-row items-center gap-3`}>
               <Text style={[tw.style(
                 isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
               ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
@@ -327,54 +340,32 @@ export default function TodayCard({
               {equipmentStatus === 'not_ready' && (
                 <Ionicons name="time" size={22} color="#e8c96f" />
               )}
+              </View>
+            </Animated.View>
 
-              {/* Collapse icon */}
-              {onToggleCollapse && (
-                <TouchableOpacity
-                  onPress={handleToggleCollapse}
-                  style={tw`ml-auto p-1`}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={collapsed ? 'chevron-down' : 'chevron-up'}
-                    size={20}
-                    color="#a89985"
-                  />
-                </TouchableOpacity>
-              )}
-          </Animated.View>
-
-          {/* Expanded view */}
-          <Animated.View
-            style={{
-              opacity: collapseAnim,
-              maxHeight: collapseAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 1000],
-              }),
-              overflow: 'hidden',
-            }}
-            pointerEvents={collapsed ? 'none' : 'auto'}
-          >
+            {/* Expanded view */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                opacity: opacityAnim,
+                transform: [{
+                  scale: opacityAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.95, 1],
+                  })
+                }],
+              }}
+              pointerEvents={collapsed ? 'none' : 'auto'}
+            >
             <View style={tw`mb-4 flex-row items-baseline gap-2`}>
                 <Text style={[tw.style(
                   isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
                 ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
-                <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
-                {onToggleCollapse && (
-                  <TouchableOpacity
-                    onPress={handleToggleCollapse}
-                    style={tw`ml-auto p-1`}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={collapsed ? 'chevron-down' : 'chevron-up'}
-                      size={20}
-                      color="#a89985"
-                    />
-                  </TouchableOpacity>
+                {(isToday || isTomorrow) && (
+                  <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
                 )}
               </View>
 
@@ -439,7 +430,40 @@ export default function TodayCard({
                 }}
               />
             </View>
-          </Animated.View>
+            </Animated.View>
+
+            {/* Spacer to maintain height during animation */}
+            <Animated.View
+              style={{
+                height: heightAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [37, 110],
+                }),
+              }}
+            />
+          </View>
+
+          {/* Collapse icon - always clickable, positioned in top-right */}
+          {onToggleCollapse && (
+            <TouchableOpacity
+              onPress={handleToggleCollapse}
+              style={{
+                position: 'absolute',
+                top: 20,
+                right: 20,
+                padding: 4,
+                zIndex: 10,
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={collapsed ? 'chevron-down' : 'chevron-up'}
+                size={20}
+                color="#a89985"
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Notes Section - between avatars and equipment (only show when expanded) */}

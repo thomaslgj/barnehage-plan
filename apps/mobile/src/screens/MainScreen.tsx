@@ -39,7 +39,10 @@ interface AssignmentData {
 
 export default function MainScreen({ navigation }: any) {
   const { user, householdId, childId, members } = useHousehold();
-  const [weekOffset, setWeekOffset] = useState(0);
+  // "Current week" is next week on weekends, this week on weekdays
+  const isWeekend = dayjs().day() === 0 || dayjs().day() === 6;
+  const currentWeekOffset = isWeekend ? 1 : 0;
+  const [weekOffset, setWeekOffset] = useState(currentWeekOffset);
   const [assignments, setAssignments] = useState<AssignmentData>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -111,11 +114,17 @@ export default function MainScreen({ navigation }: any) {
   // On weekends, show next Monday instead of today/tomorrow - memoized
   // After 16:00 on weekdays, show tomorrow instead of today
   const todayOrTomorrow = useMemo(() => {
+    // Weekend (Saturday or Sunday) - show next Monday
     if (currentDayOfWeek === 0 || currentDayOfWeek === 6) {
-      // It's weekend - find next Monday (first day in daysToShow)
       return daysToShow[0];
     }
-    // Weekday - show tomorrow if after 16:00, otherwise show today or tomorrow
+
+    // Friday after 16:00 - show next Monday (not Saturday)
+    if (currentDayOfWeek === 5 && currentHour >= 16) {
+      return daysToShow[0];
+    }
+
+    // Weekday - show tomorrow if after 16:00, otherwise show today
     const targetDate = currentHour >= 16
       ? dayjs().add(1, 'day').format('YYYY-MM-DD')
       : today;
@@ -670,7 +679,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
         {/* Today/Tomorrow Card */}
-        {weekOffset === 0 && (
+        {weekOffset === currentWeekOffset && (
           <Animated.View style={{ opacity: todayCardFade }}>
             {(loading || weekChanging) ? (
               <TodayCardSkeleton />
@@ -696,7 +705,7 @@ export default function MainScreen({ navigation }: any) {
         {/* Messages Section - Invite, Template, Empty State */}
         <Animated.View style={{ opacity: messagesFade }}>
           {/* Invite Partner Message */}
-          {hasPlaceholderMember && inviteCode && weekOffset === 0 && !inviteMessageDismissed && (
+          {hasPlaceholderMember && inviteCode && weekOffset === currentWeekOffset && !inviteMessageDismissed && (
             <View style={tw`mb-3 bg-info/10 rounded-lg border border-info/30`}>
               {/* Header with close button */}
               <View style={tw`flex-row items-start justify-between p-4 pb-2`}>
@@ -796,10 +805,10 @@ export default function MainScreen({ navigation }: any) {
           </View>
 
           {/* Go to Current Week Button */}
-          {weekOffset !== 0 && (
+          {weekOffset !== currentWeekOffset && (
             <TouchableOpacity
               style={tw`mb-3 flex-row items-center justify-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
-              onPress={() => changeWeek(0)}
+              onPress={() => changeWeek(currentWeekOffset)}
               activeOpacity={0.7}
             >
               <Ionicons name="today-outline" size={20} color="#f5f1ed" />
@@ -847,7 +856,7 @@ export default function MainScreen({ navigation }: any) {
                   <View style={tw`h-px bg-slate-600/40 mt-3`} />
 
                   {/* Day name with note icon */}
-                  <View style={tw`flex-row items-center justify-between mb-0.5 mt-1.5`}>
+                  <View style={tw`flex-row items-center justify-between mt-1.5`}>
                     <View style={tw`flex-row items-center gap-1.5`}>
                       {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
                       <Text style={tw.style(
