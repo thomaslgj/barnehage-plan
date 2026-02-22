@@ -139,6 +139,10 @@ export function shouldShowEquipmentModal(
   const now = new Date();
   const currentHour = now.getHours();
 
+  // Don't show on weekends at all (Saturday = 6, Sunday = 0)
+  const todayDayOfWeek = now.getDay();
+  if (todayDayOfWeek === 0 || todayDayOfWeek === 6) return false;
+
   // Only show at or after 4 PM (16:00)
   if (currentHour < 16) return false;
 
@@ -148,6 +152,10 @@ export function shouldShowEquipmentModal(
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
   if (date !== tomorrowStr) return false;
+
+  // Don't show if tomorrow is a weekend (Saturday = 6, Sunday = 0)
+  const tomorrowDayOfWeek = tomorrow.getDay();
+  if (tomorrowDayOfWeek === 0 || tomorrowDayOfWeek === 6) return false;
 
   // Check if already shown today
   const today = now.toISOString().split('T')[0];
