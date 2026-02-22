@@ -83,11 +83,11 @@ export default function LandingPage() {
             </h1>
 
             <h2 ref={heroTitleRef} className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-[#f5f1ed] mb-10 leading-snug max-w-3xl mx-auto" style={{ opacity: 0, transform: 'translateY(20px)' }}>
-              Slipp å holde alt i hodet.
+              Slipp å huske alt.
             </h2>
 
             <p ref={heroSubtextRef} className="text-lg sm:text-xl text-[#d4c5b9] max-w-3xl mx-auto mb-16 leading-relaxed" style={{ opacity: 0, transform: 'translateY(20px)' }}>
-              Flyt samler henting, levering og det som mangler – så dere alltid vet hvem som gjør hva.
+              Flyt samler henting, levering og det som mangler – så dere vet hvem som gjør hva.
             </p>
 
             <div ref={heroButtonsRef} className="flex flex-col sm:flex-row gap-4 justify-center items-center" style={{ opacity: 0, transform: 'translateY(20px)' }}>
