@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#2d2520",
+    "scheme": "flyt",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +16,8 @@
     "ios": {
       "supportsTablet": true,
       "backgroundColor": "#2d2520",
-      "bundleIdentifier": "com.thomaslg.flyt"
+      "bundleIdentifier": "com.thomaslg.flyt",
+      "associatedDomains": ["applinks:flytfamilie.no"]
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +25,21 @@
         "backgroundColor": "#2d2520"
       },
       "backgroundColor": "#2d2520",
-      "package": "com.thomaslg.flyt"
+      "package": "com.thomaslg.flyt",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "flytfamilie.no",
+              "pathPrefix": "/auth"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

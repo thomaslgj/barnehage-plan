@@ -212,14 +212,31 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('🔐 Auth state changed:', event, 'User:', session?.user?.email);
 
-      // Skip refetch on token refresh or initial session (these happen on app resume)
-      // Only reload data on actual sign in/out events
-      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      // Skip refetch on token refresh (but NOT initial session from deep link)
+      // TOKEN_REFRESHED happens frequently and we don't want to reload data each time
+      if (event === 'TOKEN_REFRESHED') {
         // Just update the user object, don't reload household data
         if (session?.user) {
           setUser(session.user);
+        }
+        return;
+      }
+
+      // Handle INITIAL_SESSION separately - this can come from deep links
+      if (event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          console.log('📱 Initial session detected, loading user data...');
+          setUser(session.user);
+          setLoading(true);
+          try {
+            await loadHouseholdData(session.user);
+          } catch (err) {
+            console.error('Error loading data from initial session:', err);
+          } finally {
+            setLoading(false);
+          }
         }
         return;
       }

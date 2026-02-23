@@ -457,6 +457,12 @@ export default function OnboardingScreen() {
 
       // Save equipment items (delete old ones first if re-onboarding)
       if (equipmentItems.length > 0) {
+        // Delete existing equipment status for child (to avoid orphan records)
+        await supabase
+          .from('equipment_status')
+          .delete()
+          .eq('child_id', child_id);
+
         // Delete existing equipment items
         await supabase
           .from('equipment_items')
@@ -478,6 +484,20 @@ export default function OnboardingScreen() {
           .insert(equipmentRows);
 
         if (equipmentError) console.error('Error saving equipment:', equipmentError);
+
+        // Seed equipment status for all selected items (initial status: 'ok')
+        const statusRows = equipmentItems.map((item) => ({
+          child_id,
+          item_key: item.key,
+          status: 'ok',
+          updated_by: user.id,
+        }));
+
+        const { error: statusError } = await supabase
+          .from('equipment_status')
+          .insert(statusRows);
+
+        if (statusError) console.error('Error seeding equipment status:', statusError);
       }
 
       // Save schedule template if setup (delete old ones first if re-onboarding)
@@ -775,14 +795,14 @@ export default function OnboardingScreen() {
               <Text style={tw`flex-1 text-sm text-slate-300 leading-5`}>
                 Jeg aksepterer{' '}
                 <Text
-                  onPress={() => Linking.openURL('https://flyt.no/privacy')}
+                  onPress={() => Linking.openURL('https://flytfamilie.no/privacy')}
                   style={tw`text-secondary underline`}
                 >
                   personvernerklæringen
                 </Text>
                 {' '}og{' '}
                 <Text
-                  onPress={() => Linking.openURL('https://flyt.no/terms')}
+                  onPress={() => Linking.openURL('https://flytfamilie.no/terms')}
                   style={tw`text-secondary underline`}
                 >
                   vilkårene for bruk

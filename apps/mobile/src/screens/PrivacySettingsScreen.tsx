@@ -168,12 +168,12 @@ export default function PrivacySettingsScreen({ navigation }: any) {
 
   const openPrivacyPolicy = () => {
     // TODO: Replace with your actual privacy policy URL
-    Linking.openURL('https://flyt.no/privacy');
+    Linking.openURL('https://flytfamilie.no/privacy');
   };
 
   const openTerms = () => {
     // TODO: Replace with your actual terms URL
-    Linking.openURL('https://flyt.no/terms');
+    Linking.openURL('https://flytfamilie.no/terms');
   };
 
   const MenuItem = ({
@@ -324,9 +324,9 @@ export default function PrivacySettingsScreen({ navigation }: any) {
             <Text style={tw`text-sm text-text-muted text-center mb-2`}>
               Spørsmål om personvern?
             </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('mailto:privacy@flyt.no')}>
+            <TouchableOpacity onPress={() => Linking.openURL('mailto:privacy@flytfamilie.no')}>
               <Text style={tw`text-sm text-secondary underline`}>
-                privacy@flyt.no
+                privacy@flytfamilie.no
               </Text>
             </TouchableOpacity>
           </View>

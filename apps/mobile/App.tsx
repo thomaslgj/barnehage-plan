@@ -15,7 +15,7 @@ import PrivacySettingsScreen from './src/screens/PrivacySettingsScreen';
 import NotificationsSettingsScreen from './src/screens/NotificationsSettingsScreen';
 import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
-import { View, ActivityIndicator, Animated } from 'react-native';
+import { View, ActivityIndicator, Animated, Linking, Alert } from 'react-native';
 import tw from './src/lib/tw';
 import { useFonts, PlusJakartaSans_300Light, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import * as Notifications from 'expo-notifications';
@@ -24,6 +24,7 @@ import {
   getNotificationSettings,
   scheduleEquipmentNotification,
 } from './src/services/notifications';
+import { supabase } from './src/lib/supabase';
 
 // Custom warm theme to prevent white flash
 const WarmNavigationTheme = {
@@ -51,6 +52,94 @@ function AppNavigator() {
   const notificationInitializedRef = useRef(false);
   const splashCompletedRef = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Handle deep links for auth callbacks
+  useEffect(() => {
+    // Handle initial URL (app opened via link)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Handle subsequent URLs (app already open)
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleDeepLink = async (url: string) => {
+    console.log('Deep link received:', url);
+
+    // Check for errors in the deep link (e.g., expired confirmation link)
+    if (url.includes('#error=') || url.includes('?error=')) {
+      try {
+        const urlObj = new URL(url);
+        const params = new URLSearchParams(urlObj.hash.substring(1) || urlObj.search);
+
+        const error = params.get('error');
+        const errorCode = params.get('error_code');
+        const errorDescription = params.get('error_description');
+
+        console.log('Deep link error:', error, errorCode, errorDescription);
+
+        if (errorCode === 'otp_expired') {
+          Alert.alert(
+            'Lenken har utløpt',
+            'Bekreftelses-lenken er for gammel. Registrer deg på nytt for å få en ny lenke.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert(
+            'Feil',
+            errorDescription || 'Noe gikk galt med lenken.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error('Error parsing deep link error:', error);
+      }
+      return;
+    }
+
+    // Check if it's an auth callback with tokens
+    if (url.includes('#access_token') || url.includes('?access_token')) {
+      try {
+        // Extract the URL params
+        const urlObj = new URL(url);
+        const params = new URLSearchParams(urlObj.hash.substring(1) || urlObj.search);
+
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const type = params.get('type');
+
+        if (accessToken && refreshToken) {
+          console.log('Setting session from deep link, type:', type);
+
+          // Set the session with Supabase
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            console.error('Error setting session:', error);
+            Alert.alert('Feil', 'Kunne ikke bekrefte e-posten din. Prøv igjen.');
+          } else {
+            console.log('✅ Session set successfully! User:', data.user?.email);
+            console.log('Auth state change will trigger, HouseholdProvider will handle navigation');
+            // HouseholdProvider's onAuthStateChange will detect this and load household data
+          }
+        }
+      } catch (error) {
+        console.error('Error handling deep link:', error);
+      }
+    }
+  };
 
   // Initialize notifications when user is logged in
   // NOTE: When running in Expo Go, you'll see warnings about remote push notifications
@@ -170,6 +259,18 @@ function AppNavigator() {
 
   const shouldShowSplash = !splashCompletedRef.current && (loading || !minSplashTimeElapsed || !fadeComplete);
 
+  // Linking configuration for deep links
+  const linking = {
+    prefixes: ['flyt://', 'https://flytfamilie.no'],
+    config: {
+      screens: {
+        Auth: 'auth',
+        Main: '',
+        Onboarding: 'onboarding',
+      },
+    },
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Stack.Navigator
@@ -274,6 +375,18 @@ export default function App() {
     PlusJakartaSans_700Bold,
   });
 
+  // Linking configuration for deep links
+  const linking = {
+    prefixes: ['flyt://', 'https://flytfamilie.no'],
+    config: {
+      screens: {
+        Auth: 'auth',
+        Main: '',
+        Onboarding: 'onboarding',
+      },
+    },
+  };
+
   if (!fontsLoaded) {
     return null; // or return a loading screen
   }
@@ -282,7 +395,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <HouseholdProvider>
-          <NavigationContainer theme={WarmNavigationTheme}>
+          <NavigationContainer theme={WarmNavigationTheme} linking={linking}>
             <AppNavigator />
           </NavigationContainer>
           <StatusBar style="light" />

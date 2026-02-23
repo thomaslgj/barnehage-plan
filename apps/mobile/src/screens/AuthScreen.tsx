@@ -136,7 +136,8 @@ export default function AuthScreen() {
           return;
         }
 
-        Alert.alert('Suksess', 'Sjekk e-posten din for bekreftelseslenke');
+        // Email confirmation is disabled - user is now logged in automatically
+        // No need to show a message, the app will navigate to onboarding/main screen
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
