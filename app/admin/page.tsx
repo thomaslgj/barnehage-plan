@@ -49,6 +49,13 @@ interface Child {
 }
 
 async function getAdminData() {
+  // Fetch all auth users
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+
+  if (authError) {
+    console.error('Error fetching auth users:', authError);
+  }
+
   // Fetch all household members
   const { data: membersData, error: membersError } = await supabaseAdmin
     .from('household_members')
@@ -73,9 +80,48 @@ async function getAdminData() {
     console.error('Error fetching children:', childrenError);
   }
 
+  // Create a map of user_id -> household_member
+  const membersByUserId = new Map<string, HouseholdMember>();
+  membersData?.forEach(member => {
+    if (member.user_id) {
+      membersByUserId.set(member.user_id, member);
+    }
+  });
+
+  // Create combined user list: auth users + their household data (if any)
+  const allUsers: Array<HouseholdMember & { email?: string; created_at?: string }> = [];
+
+  // Add all auth users
+  authData?.users.forEach(authUser => {
+    const member = membersByUserId.get(authUser.id);
+    if (member) {
+      // User has a household - add their member record with email
+      allUsers.push({
+        ...member,
+        email: authUser.email,
+        created_at: authUser.created_at,
+      });
+    } else {
+      // User has no household yet - create a temporary record
+      allUsers.push({
+        id: authUser.id, // Use auth user id as temporary member id
+        household_id: '',
+        user_id: authUser.id,
+        display_name: authUser.email || 'Ukjent',
+        role: 'none', // Special role for users without household
+        joined_at: authUser.created_at,
+        last_active_at: authUser.last_sign_in_at || null,
+        is_premium: false,
+        household: { name: 'Ingen husstand' },
+        email: authUser.email,
+        created_at: authUser.created_at,
+      });
+    }
+  });
+
   // Calculate statistics
   const uniqueHouseholds = new Set(membersData?.map(m => m.household_id) || []);
-  const uniqueUsers = new Set(membersData?.map(m => m.user_id).filter(Boolean) || []);
+  const totalAuthUsers = authData?.users.length || 0;
 
   // Calculate activity metrics
   const now = new Date();
@@ -85,14 +131,14 @@ async function getAdminData() {
 
   const membersWithAccounts = membersData?.filter(m => m.user_id) || [];
 
-  // New users based on joined_at
-  const newUsersThisWeek = membersWithAccounts.filter(m =>
-    new Date(m.joined_at) >= oneWeekAgo
-  ).length;
+  // New users based on joined_at from auth
+  const newUsersThisWeek = authData?.users.filter(u =>
+    new Date(u.created_at) >= oneWeekAgo
+  ).length || 0;
 
-  const newUsersThisMonth = membersWithAccounts.filter(m =>
-    new Date(m.joined_at) >= oneMonthAgo
-  ).length;
+  const newUsersThisMonth = authData?.users.filter(u =>
+    new Date(u.created_at) >= oneMonthAgo
+  ).length || 0;
 
   // Premium users
   const premiumUsers = membersWithAccounts.filter(m => m.is_premium).length;
@@ -118,32 +164,31 @@ async function getAdminData() {
     newUsersThisMonth,
   };
 
-  // Calculate user status for each member
+  // Calculate user status for each user
   const userStatuses: Record<string, UserStatus> = {};
-  membersData?.forEach(member => {
-    const childrenInHousehold = childrenData?.filter(c => c.household_id === member.household_id) || [];
+  allUsers.forEach(user => {
+    const childrenInHousehold = childrenData?.filter(c => c.household_id === user.household_id) || [];
 
     // Only admin/owner has completed onboarding (they created the household)
-    // Other members are just invited
-    const isAdmin = member.role === 'admin' || member.role === 'owner';
-    const householdSetup = !!member.household?.name && childrenInHousehold.length > 0;
+    const isAdmin = user.role === 'admin' || user.role === 'owner';
+    const householdSetup = !!user.household?.name && user.household.name !== 'Ingen husstand' && childrenInHousehold.length > 0;
 
-    userStatuses[member.id] = {
-      hasAccount: !!member.user_id,
-      hasCompletedOnboarding: !!member.user_id && isAdmin && householdSetup,
+    userStatuses[user.id] = {
+      hasAccount: !!user.user_id,
+      hasCompletedOnboarding: !!user.user_id && isAdmin && householdSetup,
       childCount: childrenInHousehold.length,
-      lastActiveAt: member.last_active_at || undefined,
-      isPremium: member.is_premium || false,
+      lastActiveAt: user.last_active_at || undefined,
+      isPremium: user.is_premium || false,
     };
   });
 
   return {
-    members: membersData || [],
+    members: allUsers,
     children: childrenData || [],
     userStatuses,
     activityMetrics,
     stats: {
-      totalUsers: uniqueUsers.size,
+      totalUsers: totalAuthUsers,
       totalHouseholds: uniqueHouseholds.size,
       totalChildren: childrenData?.length || 0,
       premiumUsers,
@@ -344,13 +389,14 @@ export default async function AdminDashboard() {
                 {members.map((member) => {
                   const status = userStatuses[member.id];
                   const isAdmin = member.role === 'admin' || member.role === 'owner';
+                  const hasNoHousehold = member.role === 'none';
 
                   // Determine onboarding status display
                   let onboardingStatus: 'completed' | 'incomplete' | 'na' = 'na';
                   if (status?.hasCompletedOnboarding) {
                     onboardingStatus = 'completed';
-                  } else if (isAdmin && status?.hasAccount) {
-                    // Admin with account but no household setup = error
+                  } else if (hasNoHousehold || (isAdmin && status?.hasAccount)) {
+                    // User with no household OR admin with account but no household setup
                     onboardingStatus = 'incomplete';
                   }
 
@@ -358,14 +404,23 @@ export default async function AdminDashboard() {
                     <tr key={member.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{member.display_name || 'Ikke satt'}</div>
+                        {(member as any).email && (
+                          <div className="text-xs text-gray-500">{(member as any).email}</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{member.household?.name || 'Ukjent'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
-                          {member.role}
-                        </span>
+                        {hasNoHousehold ? (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Venter
+                          </span>
+                        ) : (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                            {member.role}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {status && status.hasAccount && (

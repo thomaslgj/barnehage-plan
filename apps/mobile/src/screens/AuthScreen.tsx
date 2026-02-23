@@ -112,11 +112,30 @@ export default function AuthScreen() {
       }
 
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
+
         if (error) throw error;
+
+        // Check if user already exists - Supabase returns a user but with specific identities
+        if (data?.user && data.user.identities && data.user.identities.length === 0) {
+          // Email already registered
+          Alert.alert(
+            'E-post allerede i bruk',
+            'Denne e-posten har allerede en konto. Vil du logge inn i stedet?',
+            [
+              { text: 'Avbryt', style: 'cancel' },
+              {
+                text: 'Logg inn',
+                onPress: () => setIsSignUp(false)
+              }
+            ]
+          );
+          return;
+        }
+
         Alert.alert('Suksess', 'Sjekk e-posten din for bekreftelseslenke');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -135,7 +154,29 @@ export default function AuthScreen() {
       // Supabase errors are plain objects with a message property, not Error instances
       const errorMessage = (error as any)?.message || (error instanceof Error ? error.message : 'Innlogging feilet');
       console.error('Error message:', errorMessage);
-      Alert.alert('Feil', errorMessage);
+
+      // Provide better error messages
+      let userFriendlyMessage = errorMessage;
+
+      if (isSignUp) {
+        if (errorMessage.toLowerCase().includes('already registered') ||
+            errorMessage.toLowerCase().includes('already exists') ||
+            errorMessage.toLowerCase().includes('user already exists')) {
+          userFriendlyMessage = 'Denne e-posten er allerede registrert. Prøv å logge inn i stedet.';
+        } else if (errorMessage.toLowerCase().includes('password')) {
+          userFriendlyMessage = 'Passordet må være minst 6 tegn langt.';
+        } else if (errorMessage.toLowerCase().includes('email')) {
+          userFriendlyMessage = 'Ugyldig e-postadresse.';
+        }
+      } else {
+        if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+          userFriendlyMessage = 'Feil e-post eller passord.';
+        } else if (errorMessage.toLowerCase().includes('email not confirmed')) {
+          userFriendlyMessage = 'E-posten din er ikke bekreftet ennå. Sjekk innboksen din.';
+        }
+      }
+
+      Alert.alert('Feil', userFriendlyMessage);
     } finally {
       setLoading(false);
     }
