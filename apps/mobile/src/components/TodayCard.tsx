@@ -283,7 +283,12 @@ export default function TodayCard({
       ]}>
         {/* Main content section with padding */}
         <View style={tw`px-5 pt-5 pb-4`}>
-          <View style={{ position: 'relative', overflow: 'hidden' }}>
+          <TouchableOpacity
+            onPress={handleToggleCollapse}
+            activeOpacity={0.95}
+            disabled={!onToggleCollapse}
+            style={{ position: 'relative', overflow: 'hidden' }}
+          >
             {/* Collapsed view - single row with title and icons */}
             <Animated.View
               style={[
@@ -441,28 +446,26 @@ export default function TodayCard({
                 }),
               }}
             />
-          </View>
+          </TouchableOpacity>
 
-          {/* Collapse icon - always clickable, positioned in top-right */}
+          {/* Collapse icon - visual indicator only */}
           {onToggleCollapse && (
-            <TouchableOpacity
-              onPress={handleToggleCollapse}
+            <View
               style={{
                 position: 'absolute',
                 top: 20,
                 right: 20,
                 padding: 4,
                 zIndex: 10,
+                pointerEvents: 'none',
               }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
             >
               <Ionicons
                 name={collapsed ? 'chevron-down' : 'chevron-up'}
                 size={20}
                 color="#a89985"
               />
-            </TouchableOpacity>
+            </View>
           )}
         </View>
 
