@@ -22,6 +22,7 @@ import { useHousehold } from '../contexts/HouseholdProvider';
 import { Text } from '../components/Text';
 import TodayCard from '../components/TodayCard';
 import TodayCardSkeleton from '../components/TodayCardSkeleton';
+import HeaderSkeleton from '../components/HeaderSkeleton';
 import ScheduleSlot from '../components/ScheduleSlot';
 import ScheduleSkeleton from '../components/ScheduleSkeleton';
 import NoteIcon from '../components/NoteIcon';
@@ -655,7 +656,9 @@ export default function MainScreen({ navigation }: any) {
           }
         >
         {/* Profile Header */}
-        {childName && myName && (
+        {loading || !childName || !myName ? (
+          <HeaderSkeleton />
+        ) : (
           <View style={tw`flex-row items-center justify-between mb-6`}>
             {/* Child info (non-clickable) */}
             <View style={tw`flex-row items-center gap-2 bg-slate-800/30 rounded-full py-2 px-4`}>
