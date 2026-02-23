@@ -197,8 +197,8 @@ export default function TermsOfService() {
             </p>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="font-medium">Flyt</p>
-              <p>E-post: support@flyt.no</p>
-              <p>Web: <a href="https://flyt.no" className="text-blue-600 hover:underline">www.flyt.no</a></p>
+              <p>E-post: support@flytfamilie.no</p>
+              <p>Web: <a href="https://flytfamilie.no" className="text-blue-600 hover:underline">www.flytfamilie.no</a></p>
             </div>
           </section>
 

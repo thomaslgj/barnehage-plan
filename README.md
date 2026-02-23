@@ -128,6 +128,44 @@ http://localhost:3000/admin
 ### Row Level Security (RLS)
 Alle tabeller bruker RLS for multi-tenancy med helper-funksjon `get_my_household_ids()`.
 
+### Invite-kode System
+
+**Hvordan det fungerer:**
+- Hver household får en unik 2-ords invite-kode (f.eks. "eple-hund")
+- Koder genereres fra en liste med 95 norske ord
+- `generate_invite_code()` sjekker automatisk for duplikater
+- `invite_code` kolonnen har UNIQUE constraint → umulig å få duplikater
+
+**Skalerbarhet:**
+- **Mulige kombinasjoner:** 95 × 95 = 9,025 unike koder
+- **Kapasitet:**
+  - 1,000 households = 11% belegg ✅
+  - 5,000 households = 55% belegg ⚠️
+  - 9,000+ households = Kritisk belegg ❌
+
+**Når må du utvide?**
+Systemet håndterer enkelt tusenvis av households. Ved behov for mer kapasitet:
+
+1. **Legg til flere ord** (enklest):
+   ```sql
+   INSERT INTO invite_words (word) VALUES
+     ('nye'), ('ord'), ('her'), ...;
+   ```
+   200 ord → 40,000 kombinasjoner
+
+2. **Gå til 3-ords format** (best):
+   Endre `generate_invite_code()` til word1-word2-word3
+   - 95³ = 857,375 kombinasjoner
+   - Støtter millioner av households
+
+3. **Legg til tall**: word-1234 format
+   - 95 × 10,000 = 950,000 kombinasjoner
+
+**Performance:**
+- Ordliste-størrelse påvirker nesten IKKE performance
+- Performance avhenger av antall BRUKTE koder
+- Ved høy belegg (>50%) øker antall forsøk på ny kode
+
 ## Deployment
 
 ### Landing Page (Vercel)

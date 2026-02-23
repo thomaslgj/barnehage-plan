@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="font-medium">Flyt</p>
               {/* TODO: Legg til faktisk kontaktinformasjon */}
-              <p>E-post: privacy@flyt.no</p>
+              <p>E-post: privacy@flytfamilie.no</p>
             </div>
           </section>
 
@@ -164,7 +164,7 @@ export default function PrivacyPolicy() {
               <h3 className="font-semibold text-blue-900 mb-2">Hvordan utøve dine rettigheter:</h3>
               <ul className="list-disc list-inside ml-4 space-y-1 text-blue-800">
                 <li><strong>I appen:</strong> Gå til Innstillinger → Personvern</li>
-                <li><strong>Via e-post:</strong> Kontakt privacy@flyt.no</li>
+                <li><strong>Via e-post:</strong> Kontakt privacy@flytfamilie.no</li>
               </ul>
             </div>
           </section>
@@ -202,7 +202,7 @@ export default function PrivacyPolicy() {
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Kontakt oss:</h3>
-                <p>E-post: privacy@flyt.no</p>
+                <p>E-post: privacy@flytfamilie.no</p>
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg">

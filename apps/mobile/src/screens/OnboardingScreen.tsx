@@ -483,7 +483,10 @@ export default function OnboardingScreen() {
           .from('equipment_items')
           .insert(equipmentRows);
 
-        if (equipmentError) console.error('Error saving equipment:', equipmentError);
+        if (equipmentError) {
+          console.error('Error saving equipment:', equipmentError);
+          throw new Error(`Equipment lagring feilet: ${equipmentError.message}`);
+        }
 
         // Seed equipment status for all selected items (initial status: 'ok')
         const statusRows = equipmentItems.map((item) => ({
@@ -497,7 +500,10 @@ export default function OnboardingScreen() {
           .from('equipment_status')
           .insert(statusRows);
 
-        if (statusError) console.error('Error seeding equipment status:', statusError);
+        if (statusError) {
+          console.error('Error seeding equipment status:', statusError);
+          throw new Error(`Equipment status seeding feilet: ${statusError.message}`);
+        }
       }
 
       // Save schedule template if setup (delete old ones first if re-onboarding)
@@ -540,8 +546,11 @@ export default function OnboardingScreen() {
             .from('schedule_templates')
             .insert(templateRows);
 
-          if (templateError) console.error('Error saving template:', templateError);
-          else console.log('Template saved successfully');
+          if (templateError) {
+            console.error('Error saving template:', templateError);
+            throw new Error(`Standard-uke lagring feilet: ${templateError.message}`);
+          }
+          console.log('Template saved successfully');
         }
       }
 
@@ -557,7 +566,16 @@ export default function OnboardingScreen() {
       }
     } catch (error) {
       console.error('Create household error:', error);
-      Alert.alert('Feil', error instanceof Error ? error.message : 'Kunne ikke opprette husholdning');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+
+      // Show detailed error message
+      const errorMessage = error instanceof Error
+        ? error.message
+        : (error as any)?.message
+        || JSON.stringify(error)
+        || 'Kunne ikke opprette husholdning';
+
+      Alert.alert('Feil', errorMessage);
     } finally {
       setLoading(false);
     }

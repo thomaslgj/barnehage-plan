@@ -6,10 +6,10 @@ Denne filen inneholder forslag til forbedringer og nye features for Flyt-prosjek
 
 ### Kritiske oppgaver
 - [ ] Oppdater placeholder-URLer til faktiske domener:
-  - `https://flyt.no/privacy` → faktisk URL
-  - `https://flyt.no/terms` → faktisk URL
-  - `privacy@flyt.no` → faktisk e-post
-  - `support@flyt.no` → faktisk e-post
+  - `https://flytfamilie.no/privacy` → faktisk URL
+  - `https://flytfamilie.no/terms` → faktisk URL
+  - `privacy@flytfamilie.no` → faktisk e-post
+  - `support@flytfamilie.no` → faktisk e-post
 
 ### GDPR & Compliance
 - [x] Privacy policy side
