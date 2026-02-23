@@ -313,20 +313,20 @@ export default function TodayCard({
             >
               <View style={tw`flex-row items-center gap-3`}>
               <Text style={[tw.style(
-                isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
+                isToday ? 'text-xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
               ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
 
               {/* Dropoff avatar */}
               <Avatar
                 avatarId={getAvatarId(dropoffUserId)}
-                size={36}
+                size={30}
                 borderColor={getBorderColor(dropoffUserId)}
               />
 
               {/* Pickup avatar */}
               <Avatar
                 avatarId={getAvatarId(pickupUserId)}
-                size={36}
+                size={30}
                 borderColor={getBorderColor(pickupUserId)}
               />
 
@@ -453,7 +453,7 @@ export default function TodayCard({
             <View
               style={{
                 position: 'absolute',
-                top: 20,
+                top: 23,
                 right: 20,
                 padding: 4,
                 zIndex: 10,
