@@ -448,24 +448,28 @@ export default function TodayCard({
             />
           </TouchableOpacity>
 
-          {/* Collapse icon - visual indicator only */}
+          {/* Collapse icon with visual feedback */}
           {onToggleCollapse && (
-            <View
+            <TouchableOpacity
+              onPress={handleToggleCollapse}
+              activeOpacity={0.5}
               style={{
                 position: 'absolute',
-                top: 23,
+                top: 19,
                 right: 20,
-                padding: 4,
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: 'rgba(168, 153, 133, 0.15)',
                 zIndex: 10,
-                pointerEvents: 'none',
               }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons
                 name={collapsed ? 'chevron-down' : 'chevron-up'}
                 size={20}
                 color="#a89985"
               />
-            </View>
+            </TouchableOpacity>
           )}
         </View>
 

@@ -777,11 +777,18 @@ export default function MainScreen({ navigation }: any) {
           <View style={tw`flex-row items-center justify-between mb-3`}>
           <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
             <TouchableOpacity
-              style={tw`p-2 bg-slate-700/50 rounded-lg flex items-center justify-center`}
+              style={{
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: 'rgba(168, 153, 133, 0.15)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
               onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
-              activeOpacity={0.7}
+              activeOpacity={0.5}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={tw`text-2xl text-text leading-none`}>‹</Text>
+              <Ionicons name="chevron-back" size={20} color="#a89985" />
             </TouchableOpacity>
           </Animated.View>
 
@@ -798,11 +805,18 @@ export default function MainScreen({ navigation }: any) {
 
           <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
             <TouchableOpacity
-              style={tw`p-2 bg-slate-700/50 rounded-lg flex items-center justify-center`}
+              style={{
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: 'rgba(168, 153, 133, 0.15)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
               onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
-              activeOpacity={0.7}
+              activeOpacity={0.5}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={tw`text-2xl text-text leading-none`}>›</Text>
+              <Ionicons name="chevron-forward" size={20} color="#a89985" />
             </TouchableOpacity>
           </Animated.View>
           </View>
