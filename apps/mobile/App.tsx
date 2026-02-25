@@ -281,6 +281,12 @@ function AppNavigator() {
       >
         {!user ? (
           <Stack.Screen name="Auth" component={AuthScreen} />
+        ) : loading ? (
+          // Keep showing a blank screen while determining onboarding status
+          <Stack.Screen
+            name="Loading"
+            component={() => <View style={{ flex: 1, backgroundColor: '#2d2520' }} />}
+          />
         ) : needsOnboarding ? (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         ) : (
