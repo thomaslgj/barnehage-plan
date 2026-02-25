@@ -87,6 +87,19 @@ export default function MainScreen({ navigation }: any) {
   } | null>(null);
   const dropoffAvatarRef = useRef<any>(null);
   const noteIconRefs = useRef<Map<string, any>>(new Map());
+  const [equipmentModalDismissed, setEquipmentModalDismissed] = useState(false);
+
+  // Set equipment modal as dismissed after a short delay if it hasn't been set by user interaction
+  // This handles cases where the modal doesn't show at all (wrong time, already shown, etc.)
+  // Short delay allows avatar tip to show quickly after onboarding
+  useEffect(() => {
+    if (initialLoadComplete && !equipmentModalDismissed) {
+      const timer = setTimeout(() => {
+        setEquipmentModalDismissed(true);
+      }, 800); // Short delay - if modal shows it will override this, otherwise tip shows quickly
+      return () => clearTimeout(timer);
+    }
+  }, [initialLoadComplete, equipmentModalDismissed]);
 
   // Animation refs
   const celebrationConfettiRef = useRef<any>(null);
@@ -273,10 +286,10 @@ export default function MainScreen({ navigation }: any) {
   // Note: Fade animation is now handled directly in changeWeek and fetchAssignments
   // to avoid double-animation issues from effect re-running
 
-  // Show avatar switch tip after initial load
+  // Show avatar switch tip after initial load and equipment modal is dismissed
   useEffect(() => {
-    if (initialLoadComplete && shouldShowTip('avatar_switch') && !activeTip && daysToShow.length > 0) {
-      // Wait a bit for the UI to settle, then measure avatar position and show tip
+    if (initialLoadComplete && shouldShowTip('avatar_switch') && !activeTip && daysToShow.length > 0 && equipmentModalDismissed) {
+      // Wait a bit for UI to settle after equipment modal dismissal
       const timer = setTimeout(() => {
         if (dropoffAvatarRef.current) {
           // Get first day's dropoff assignment to determine avatar details
@@ -311,10 +324,10 @@ export default function MainScreen({ navigation }: any) {
             });
           });
         }
-      }, 800);
+      }, 500); // Short delay after modal dismissal
       return () => clearTimeout(timer);
     }
-  }, [initialLoadComplete, shouldShowTip, activeTip, daysToShow, assignments, members]);
+  }, [initialLoadComplete, shouldShowTip, activeTip, daysToShow, assignments, members, equipmentModalDismissed]);
 
   // Fetch child name
   useEffect(() => {
@@ -800,6 +813,7 @@ export default function MainScreen({ navigation }: any) {
                 onNotePress={() => handleNotePress(todayOrTomorrow.format('YYYY-MM-DD'))}
                 collapsed={todayCardCollapsed}
                 onToggleCollapse={() => setTodayCardCollapsed(!todayCardCollapsed)}
+                onEquipmentModalDismiss={() => setEquipmentModalDismissed(true)}
               />
             ) : null}
           </Animated.View>

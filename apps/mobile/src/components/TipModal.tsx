@@ -106,27 +106,63 @@ export default function TipModal({
     const { x, y, width, height } = targetPosition;
     const centerX = x + width / 2;
 
-    // Position tooltip directly below target (centered)
+    // Estimate tooltip height (adjust based on content)
+    const estimatedTooltipHeight = 180;
     const tooltipWidth = 260;
     const tooltipLeft = Math.max(20, Math.min(centerX - tooltipWidth / 2, SCREEN_WIDTH - tooltipWidth - 20));
 
+    // Check if there's enough space below the target
+    const spaceBelow = SCREEN_HEIGHT - (y + height + 20);
+    const spaceAbove = y - 20;
+
+    // Position above if not enough space below
+    if (spaceBelow < estimatedTooltipHeight && spaceAbove > spaceBelow) {
+      return {
+        bottom: SCREEN_HEIGHT - y + 20, // 20px above the target
+        left: tooltipLeft,
+        width: tooltipWidth,
+        positionedAbove: true,
+      };
+    }
+
+    // Default: position below
     return {
       top: y + height + 20, // 20px below the target
       left: tooltipLeft,
       width: tooltipWidth,
+      positionedAbove: false,
     };
   };
 
   const tooltipPosition = calculateTooltipPosition();
 
-  // Calculate arrow position - always points up to target
+  // Calculate arrow position - points to target (up or down depending on position)
   const getArrowStyle = () => {
     if (!targetPosition) return {};
 
     const { x, width } = targetPosition;
     const centerX = x + width / 2;
     const tooltipLeft = tooltipPosition.left || 0;
+    const positionedAbove = (tooltipPosition as any).positionedAbove;
 
+    if (positionedAbove) {
+      // Arrow points down when tooltip is above
+      return {
+        position: 'absolute' as const,
+        bottom: -8,
+        left: centerX - tooltipLeft - 8,
+        width: 0,
+        height: 0,
+        borderLeftWidth: 8,
+        borderRightWidth: 8,
+        borderTopWidth: 8,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#7fa884',
+      };
+    }
+
+    // Arrow points up when tooltip is below
     return {
       position: 'absolute' as const,
       top: -8,

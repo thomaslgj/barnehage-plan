@@ -12,6 +12,8 @@ import {
   Switch,
   Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import dayjs from 'dayjs';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
@@ -259,6 +261,9 @@ export default function OnboardingScreen() {
       // Check if user already has a household (e.g., testing onboarding)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
+      if (!user.id) throw new Error('User ID is undefined');
+
+      console.log('User ID from auth:', user.id);
 
       const { data: existingMemberships } = await supabase
         .from('household_members')
@@ -332,7 +337,8 @@ export default function OnboardingScreen() {
           const updateData: { display_name: string; avatar_id?: string } = {
             display_name: myName.trim()
           };
-          if (myAvatarId) {
+          // Validate avatar ID is a proper string (not "undefined" or null)
+          if (myAvatarId && myAvatarId !== 'undefined' && myAvatarId.length > 0) {
             updateData.avatar_id = myAvatarId;
           }
 
@@ -370,7 +376,8 @@ export default function OnboardingScreen() {
               const updateData: { display_name: string; avatar_id?: string } = {
                 display_name: partnerName.trim()
               };
-              if (partnerAvatarId) {
+              // Validate avatar ID is a proper string (not "undefined" or null)
+              if (partnerAvatarId && partnerAvatarId !== 'undefined' && partnerAvatarId.length > 0) {
                 updateData.avatar_id = partnerAvatarId;
               }
 
@@ -407,36 +414,63 @@ export default function OnboardingScreen() {
 
         if (householdError) throw householdError;
 
-        const result = householdData as { household_id: string; child_id: string; invite_code: string };
+        // bootstrap_household returns an array with one element
+        const result = (householdData as Array<{ household_id: string; child_id: string; invite_code: string }>)[0];
         household_id = result.household_id;
         child_id = result.child_id;
+
+        console.log('Extracted IDs - household_id:', household_id, 'child_id:', child_id);
 
         // Save invite code to show later
         setGeneratedInviteCode(result.invite_code);
 
         // Update avatar IDs for newly created members
-        if (myAvatarId) {
-          await supabase
+        // Validate avatar ID is a proper string (not "undefined" or null)
+        console.log('Avatar IDs - My:', myAvatarId, 'Partner:', partnerAvatarId);
+        if (myAvatarId && myAvatarId !== 'undefined' && myAvatarId.length > 0) {
+          console.log('Updating my avatar to:', myAvatarId);
+          const { error: myAvatarError } = await supabase
             .from('household_members')
             .update({ avatar_id: myAvatarId })
             .eq('household_id', household_id)
             .eq('user_id', user.id);
+
+          if (myAvatarError) {
+            console.error('Error updating my avatar:', myAvatarError);
+            throw myAvatarError;
+          }
+          console.log('My avatar updated successfully');
         }
 
-        if (partnerAvatarId && partnerName.trim()) {
+        if (partnerAvatarId && partnerAvatarId !== 'undefined' && partnerAvatarId.length > 0 && partnerName.trim()) {
+          console.log('Updating partner avatar to:', partnerAvatarId);
           // Find partner member (not current user)
-          const { data: partnerMembers } = await supabase
+          console.log('Searching for partner with household_id:', household_id, 'excluding user_id:', user.id);
+          const { data: partnerMembers, error: partnerSearchError } = await supabase
             .from('household_members')
-            .select('id')
+            .select('id, user_id')
             .eq('household_id', household_id)
             .neq('user_id', user.id)
             .limit(1);
 
+          if (partnerSearchError) {
+            console.error('Error searching for partner member:', partnerSearchError);
+            throw partnerSearchError;
+          }
+
+          console.log('Partner search result:', partnerMembers);
+
           if (partnerMembers && partnerMembers.length > 0) {
-            await supabase
+            const { error: partnerAvatarError } = await supabase
               .from('household_members')
               .update({ avatar_id: partnerAvatarId })
               .eq('id', partnerMembers[0].id);
+
+            if (partnerAvatarError) {
+              console.error('Error updating partner avatar:', partnerAvatarError);
+              throw partnerAvatarError;
+            }
+            console.log('Partner avatar updated successfully');
           }
         }
       }
@@ -480,6 +514,7 @@ export default function OnboardingScreen() {
           updated_by: user.id,
         }));
 
+        console.log('Inserting equipment_items with household_id:', household_id, 'user.id:', user.id);
         const { error: equipmentError } = await supabase
           .from('equipment_items')
           .insert(equipmentRows);
@@ -497,6 +532,7 @@ export default function OnboardingScreen() {
           updated_by: user.id,
         }));
 
+        console.log('Inserting equipment_status with child_id:', child_id, 'user.id:', user.id);
         const { error: statusError } = await supabase
           .from('equipment_status')
           .insert(statusRows);
@@ -547,6 +583,7 @@ export default function OnboardingScreen() {
           .filter(row => row.assigned_member_id !== null); // Only save rows with valid assignments
 
         console.log('Saving template rows:', templateRows);
+        console.log('Template insert IDs - household_id:', household_id, 'child_id:', child_id, 'user.id:', user.id);
 
         if (templateRows.length > 0) {
           const { error: templateError } = await supabase
@@ -560,6 +597,9 @@ export default function OnboardingScreen() {
           console.log('Template saved successfully');
         }
       }
+
+      // Mark equipment modal as already shown today to prevent it from appearing right after onboarding
+      await AsyncStorage.setItem('@equipment_modal_last_shown', dayjs().format('YYYY-MM-DD'));
 
       // If new household was created, show success screen with invite code
       if (isNewHousehold) {

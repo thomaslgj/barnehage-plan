@@ -41,6 +41,7 @@ interface TodayCardProps {
   onNotePress?: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  onEquipmentModalDismiss?: () => void;
 }
 
 const MODAL_SHOWN_KEY = 'equipment_modal_last_shown';
@@ -58,6 +59,7 @@ export default function TodayCard({
   onNotePress,
   collapsed = false,
   onToggleCollapse,
+  onEquipmentModalDismiss,
 }: TodayCardProps) {
   const { user, householdId } = useHousehold();
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
@@ -527,7 +529,10 @@ export default function TodayCard({
         items={equipmentItems}
         loading={equipmentLoading}
         onToggle={handleToggleItem}
-        onClose={() => setAutoModalVisible(false)}
+        onClose={() => {
+          setAutoModalVisible(false);
+          onEquipmentModalDismiss?.();
+        }}
       />
     </>
   );
