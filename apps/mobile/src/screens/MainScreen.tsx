@@ -278,7 +278,6 @@ export default function MainScreen({ navigation }: any) {
     if (initialLoadComplete && shouldShowTip('avatar_switch') && !activeTip && daysToShow.length > 0) {
       // Wait a bit for the UI to settle, then measure avatar position and show tip
       const timer = setTimeout(() => {
-        console.log('Trying to show avatar tip, ref:', dropoffAvatarRef.current);
         if (dropoffAvatarRef.current) {
           // Get first day's dropoff assignment to determine avatar details
           const firstDay = daysToShow[0];
@@ -297,7 +296,6 @@ export default function MainScreen({ navigation }: any) {
             : '#8b7a6a';
 
           dropoffAvatarRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-            console.log('Avatar measured:', { x, y, width, height, pageX, pageY });
             setActiveTip({
               id: 'avatar_switch',
               title: 'Bytt ansvar',
@@ -312,8 +310,6 @@ export default function MainScreen({ navigation }: any) {
               },
             });
           });
-        } else {
-          console.log('dropoffAvatarRef.current is null');
         }
       }, 800);
       return () => clearTimeout(timer);
@@ -627,12 +623,9 @@ export default function MainScreen({ navigation }: any) {
 
           // Wait for bottom sheet to close and note icon to update, then show tip
           setTimeout(() => {
-            console.log('Trying to show note tip for date:', noteDate);
             const noteIconRef = noteIconRefs.current.get(noteDate);
-            console.log('Note icon ref:', noteIconRef);
             if (noteIconRef) {
               noteIconRef.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-                console.log('Note icon measured:', { x, y, width, height, pageX, pageY });
                 setActiveTip({
                   id: 'note_added',
                   title: 'Notater lagt til!',
@@ -646,8 +639,6 @@ export default function MainScreen({ navigation }: any) {
                   },
                 });
               });
-            } else {
-              console.log('Note icon ref is null for date:', noteDate);
             }
           }, 500);
         }
@@ -1049,100 +1040,6 @@ export default function MainScreen({ navigation }: any) {
           })}
               </View>
             )}
-          </View>
-
-          {/* Test Buttons for Tips - Development Only */}
-          <View style={tw`mt-8 mb-6 gap-3`}>
-            <Text style={tw`text-xs text-slate-500 text-center mb-1`}>Test Kontekstuelle Tips</Text>
-            <View style={tw`flex-row gap-3`}>
-              <TouchableOpacity
-                style={tw`flex-1 bg-primary/20 border border-primary rounded-lg py-3 px-4`}
-                onPress={() => {
-                  if (Platform.OS !== 'web') {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
-                  console.log('Test button: Trying to measure avatar, ref:', dropoffAvatarRef.current);
-                  if (dropoffAvatarRef.current && daysToShow.length > 0) {
-                    // Get first day's dropoff assignment to determine avatar details
-                    const firstDay = daysToShow[0];
-                    const firstDateStr = firstDay.format('YYYY-MM-DD');
-                    const firstDropoffUserId = assignments[`${firstDateStr}-dropoff`];
-
-                    // Find member and get avatar info
-                    const member = firstDropoffUserId && members.length > 0
-                      ? members.find(m => m.user_id === firstDropoffUserId || m.id === firstDropoffUserId)
-                      : null;
-                    const avatarId = member?.avatar_id || null;
-                    const personIndex = member ? members.indexOf(member) : null;
-                    const borderColor = !firstDropoffUserId ? '#4a3f38'
-                      : personIndex === 0 ? '#6b8e6f'
-                      : personIndex === 1 ? '#e8c96f'
-                      : '#8b7a6a';
-
-                    dropoffAvatarRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-                      console.log('Test button: Avatar measured:', { x, y, width, height, pageX, pageY });
-                      setActiveTip({
-                        id: 'avatar_switch',
-                        title: 'Bytt ansvar',
-                        message: 'Trykk på avataren for å endre hvem som har levering eller henting',
-                        targetPosition: { x: pageX, y: pageY, width, height },
-                        arrowDirection: 'down',
-                        targetElement: {
-                          type: 'avatar',
-                          avatarId: avatarId,
-                          size: 48,
-                          borderColor: borderColor,
-                        },
-                      });
-                    });
-                  } else {
-                    console.log('Test button: dropoffAvatarRef.current is null');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={tw`text-sm text-primary-light text-center font-medium`}>Avatar Tip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={tw`flex-1 bg-secondary/20 border border-secondary rounded-lg py-3 px-4`}
-                onPress={() => {
-                  if (Platform.OS !== 'web') {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
-                  // Find first note icon with notes
-                  const firstDateWithNotes = Array.from(notes.keys())[0];
-                  console.log('Test button: First date with notes:', firstDateWithNotes);
-                  if (firstDateWithNotes) {
-                    const noteIconRef = noteIconRefs.current.get(firstDateWithNotes);
-                    console.log('Test button: Note icon ref:', noteIconRef);
-                    if (noteIconRef) {
-                      noteIconRef.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-                        console.log('Test button: Note icon measured:', { x, y, width, height, pageX, pageY });
-                        setActiveTip({
-                          id: 'note_added',
-                          title: 'Notater lagt til!',
-                          message: 'Se det gule ikonet? Det viser at det er notater for denne dagen',
-                          targetPosition: { x: pageX, y: pageY, width, height },
-                          arrowDirection: 'down',
-                          targetElement: {
-                            type: 'noteIcon',
-                            hasNotes: true,
-                            size: 18,
-                          },
-                        });
-                      });
-                    } else {
-                      console.log('Test button: noteIconRef is null');
-                    }
-                  } else {
-                    console.log('Test button: No dates with notes found');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={tw`text-sm text-secondary-light text-center font-medium`}>Notat Tip</Text>
-              </TouchableOpacity>
-            </View>
           </View>
       </ScrollView>
     </SafeAreaView>
