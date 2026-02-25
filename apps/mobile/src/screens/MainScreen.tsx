@@ -27,7 +27,9 @@ import ScheduleSlot from '../components/ScheduleSlot';
 import ScheduleSkeleton from '../components/ScheduleSkeleton';
 import NoteIcon from '../components/NoteIcon';
 import NotesBottomSheet from '../components/NotesBottomSheet';
+import TipModal from '../components/TipModal';
 import { fetchNotesForDateRange, addNote, deleteNote } from '../lib/notes';
+import { useTips } from '../hooks/useTips';
 import type { ScheduleAssignment, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
@@ -66,6 +68,25 @@ export default function MainScreen({ navigation }: any) {
   const initialFetchDone = useRef(false);
   const animationsTriggered = useRef(false);
   const prevWeekChanging = useRef(false);
+
+  // Contextual tips
+  const { shouldShowTip, markTipAsShown } = useTips();
+  const [activeTip, setActiveTip] = useState<{
+    id: 'avatar_switch' | 'note_added' | 'equipment_button';
+    title: string;
+    message: string;
+    targetPosition?: { x: number; y: number; width: number; height: number };
+    arrowDirection?: 'up' | 'down' | 'left' | 'right';
+    targetElement?: {
+      type: 'avatar' | 'noteIcon';
+      avatarId?: string | null;
+      size?: number;
+      borderColor?: string;
+      hasNotes?: boolean;
+    };
+  } | null>(null);
+  const dropoffAvatarRef = useRef<any>(null);
+  const noteIconRefs = useRef<Map<string, any>>(new Map());
 
   // Animation refs
   const celebrationConfettiRef = useRef<any>(null);
@@ -251,6 +272,53 @@ export default function MainScreen({ navigation }: any) {
 
   // Note: Fade animation is now handled directly in changeWeek and fetchAssignments
   // to avoid double-animation issues from effect re-running
+
+  // Show avatar switch tip after initial load
+  useEffect(() => {
+    if (initialLoadComplete && shouldShowTip('avatar_switch') && !activeTip && daysToShow.length > 0) {
+      // Wait a bit for the UI to settle, then measure avatar position and show tip
+      const timer = setTimeout(() => {
+        console.log('Trying to show avatar tip, ref:', dropoffAvatarRef.current);
+        if (dropoffAvatarRef.current) {
+          // Get first day's dropoff assignment to determine avatar details
+          const firstDay = daysToShow[0];
+          const firstDateStr = firstDay.format('YYYY-MM-DD');
+          const firstDropoffUserId = assignments[`${firstDateStr}-dropoff`];
+
+          // Find member and get avatar info
+          const member = firstDropoffUserId && members.length > 0
+            ? members.find(m => m.user_id === firstDropoffUserId || m.id === firstDropoffUserId)
+            : null;
+          const avatarId = member?.avatar_id || null;
+          const personIndex = member ? members.indexOf(member) : null;
+          const borderColor = !firstDropoffUserId ? '#4a3f38'
+            : personIndex === 0 ? '#6b8e6f'
+            : personIndex === 1 ? '#e8c96f'
+            : '#8b7a6a';
+
+          dropoffAvatarRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+            console.log('Avatar measured:', { x, y, width, height, pageX, pageY });
+            setActiveTip({
+              id: 'avatar_switch',
+              title: 'Bytt ansvar',
+              message: 'Trykk på avataren for å endre hvem som har levering eller henting',
+              targetPosition: { x: pageX, y: pageY, width, height },
+              arrowDirection: 'down',
+              targetElement: {
+                type: 'avatar',
+                avatarId: avatarId,
+                size: 48,
+                borderColor: borderColor,
+              },
+            });
+          });
+        } else {
+          console.log('dropoffAvatarRef.current is null');
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [initialLoadComplete, shouldShowTip, activeTip, daysToShow, assignments, members]);
 
   // Fetch child name
   useEffect(() => {
@@ -549,6 +617,40 @@ export default function MainScreen({ navigation }: any) {
           newNotes.set(selectedNoteDate, [...existingNotes, newNote]);
           return newNotes;
         });
+
+        // Show tip about note indicator (first time only)
+        if (shouldShowTip('note_added')) {
+          // Close the notes bottom sheet first
+          setNotesBottomSheetVisible(false);
+          const noteDate = selectedNoteDate;
+          setSelectedNoteDate(null);
+
+          // Wait for bottom sheet to close and note icon to update, then show tip
+          setTimeout(() => {
+            console.log('Trying to show note tip for date:', noteDate);
+            const noteIconRef = noteIconRefs.current.get(noteDate);
+            console.log('Note icon ref:', noteIconRef);
+            if (noteIconRef) {
+              noteIconRef.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                console.log('Note icon measured:', { x, y, width, height, pageX, pageY });
+                setActiveTip({
+                  id: 'note_added',
+                  title: 'Notater lagt til!',
+                  message: 'Se det gule ikonet? Det viser at det er notater for denne dagen',
+                  targetPosition: { x: pageX, y: pageY, width, height },
+                  arrowDirection: 'down',
+                  targetElement: {
+                    type: 'noteIcon',
+                    hasNotes: true,
+                    size: 18,
+                  },
+                });
+              });
+            } else {
+              console.log('Note icon ref is null for date:', noteDate);
+            }
+          }, 500);
+        }
       }
     } catch (error) {
       console.error('Error adding note:', error);
@@ -590,6 +692,13 @@ export default function MainScreen({ navigation }: any) {
   const handleNoteClose = () => {
     setNotesBottomSheetVisible(false);
     setSelectedNoteDate(null);
+  };
+
+  const handleTipDismiss = () => {
+    if (activeTip) {
+      markTipAsShown(activeTip.id);
+      setActiveTip(null);
+    }
   };
 
   // Button animation helpers
@@ -884,6 +993,11 @@ export default function MainScreen({ navigation }: any) {
                       </Text>
                     </View>
                     <NoteIcon
+                      ref={(ref) => {
+                        if (ref) {
+                          noteIconRefs.current.set(dateStr, ref);
+                        }
+                      }}
                       hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
                       onPress={() => handleNotePress(dateStr)}
                     />
@@ -900,6 +1014,7 @@ export default function MainScreen({ navigation }: any) {
                           members={members}
                           onPress={() => handleSlotPress(dateStr, 'dropoff')}
                           loading={savingSlot === dropoffKey}
+                          avatarRef={index === 0 ? dropoffAvatarRef : undefined}
                         />
                       </View>
                       <View style={tw`flex-1`}>
@@ -935,6 +1050,100 @@ export default function MainScreen({ navigation }: any) {
               </View>
             )}
           </View>
+
+          {/* Test Buttons for Tips - Development Only */}
+          <View style={tw`mt-8 mb-6 gap-3`}>
+            <Text style={tw`text-xs text-slate-500 text-center mb-1`}>Test Kontekstuelle Tips</Text>
+            <View style={tw`flex-row gap-3`}>
+              <TouchableOpacity
+                style={tw`flex-1 bg-primary/20 border border-primary rounded-lg py-3 px-4`}
+                onPress={() => {
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                  console.log('Test button: Trying to measure avatar, ref:', dropoffAvatarRef.current);
+                  if (dropoffAvatarRef.current && daysToShow.length > 0) {
+                    // Get first day's dropoff assignment to determine avatar details
+                    const firstDay = daysToShow[0];
+                    const firstDateStr = firstDay.format('YYYY-MM-DD');
+                    const firstDropoffUserId = assignments[`${firstDateStr}-dropoff`];
+
+                    // Find member and get avatar info
+                    const member = firstDropoffUserId && members.length > 0
+                      ? members.find(m => m.user_id === firstDropoffUserId || m.id === firstDropoffUserId)
+                      : null;
+                    const avatarId = member?.avatar_id || null;
+                    const personIndex = member ? members.indexOf(member) : null;
+                    const borderColor = !firstDropoffUserId ? '#4a3f38'
+                      : personIndex === 0 ? '#6b8e6f'
+                      : personIndex === 1 ? '#e8c96f'
+                      : '#8b7a6a';
+
+                    dropoffAvatarRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                      console.log('Test button: Avatar measured:', { x, y, width, height, pageX, pageY });
+                      setActiveTip({
+                        id: 'avatar_switch',
+                        title: 'Bytt ansvar',
+                        message: 'Trykk på avataren for å endre hvem som har levering eller henting',
+                        targetPosition: { x: pageX, y: pageY, width, height },
+                        arrowDirection: 'down',
+                        targetElement: {
+                          type: 'avatar',
+                          avatarId: avatarId,
+                          size: 48,
+                          borderColor: borderColor,
+                        },
+                      });
+                    });
+                  } else {
+                    console.log('Test button: dropoffAvatarRef.current is null');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={tw`text-sm text-primary-light text-center font-medium`}>Avatar Tip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={tw`flex-1 bg-secondary/20 border border-secondary rounded-lg py-3 px-4`}
+                onPress={() => {
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                  // Find first note icon with notes
+                  const firstDateWithNotes = Array.from(notes.keys())[0];
+                  console.log('Test button: First date with notes:', firstDateWithNotes);
+                  if (firstDateWithNotes) {
+                    const noteIconRef = noteIconRefs.current.get(firstDateWithNotes);
+                    console.log('Test button: Note icon ref:', noteIconRef);
+                    if (noteIconRef) {
+                      noteIconRef.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                        console.log('Test button: Note icon measured:', { x, y, width, height, pageX, pageY });
+                        setActiveTip({
+                          id: 'note_added',
+                          title: 'Notater lagt til!',
+                          message: 'Se det gule ikonet? Det viser at det er notater for denne dagen',
+                          targetPosition: { x: pageX, y: pageY, width, height },
+                          arrowDirection: 'down',
+                          targetElement: {
+                            type: 'noteIcon',
+                            hasNotes: true,
+                            size: 18,
+                          },
+                        });
+                      });
+                    } else {
+                      console.log('Test button: noteIconRef is null');
+                    }
+                  } else {
+                    console.log('Test button: No dates with notes found');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={tw`text-sm text-secondary-light text-center font-medium`}>Notat Tip</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
       </ScrollView>
     </SafeAreaView>
 
@@ -946,6 +1155,17 @@ export default function MainScreen({ navigation }: any) {
       onAddNote={handleAddNote}
       onDeleteNote={handleDeleteNote}
       onClose={handleNoteClose}
+    />
+
+    {/* Contextual Tips */}
+    <TipModal
+      visible={!!activeTip}
+      title={activeTip?.title || ''}
+      message={activeTip?.message || ''}
+      targetPosition={activeTip?.targetPosition}
+      arrowDirection={activeTip?.arrowDirection}
+      targetElement={activeTip?.targetElement}
+      onDismiss={handleTipDismiss}
     />
     </>
   );

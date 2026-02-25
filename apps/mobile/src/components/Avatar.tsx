@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, forwardRef } from 'react';
 import { View, Image } from 'react-native';
 import { AVATAR_IMAGES, AVAILABLE_AVATARS } from '../lib/avatar-images';
 
@@ -9,7 +9,7 @@ interface AvatarProps {
   style?: any;
 }
 
-const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor = '#6b8e6f', style }: AvatarProps) {
+const Avatar = memo(forwardRef<View, AvatarProps>(function Avatar({ avatarId, size = 24, borderColor = '#6b8e6f', style }, ref) {
   const borderWidth = 4;
   const innerSize = size - 8;
   const imageSource = avatarId && AVATAR_IMAGES[avatarId];
@@ -17,6 +17,8 @@ const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor = '#6b8e6
   if (!avatarId || !imageSource) {
     return (
       <View
+        ref={ref}
+        collapsable={false}
         style={{
           width: size,
           height: size,
@@ -32,6 +34,8 @@ const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor = '#6b8e6
 
   return (
     <View
+      ref={ref}
+      collapsable={false}
       style={{
         width: size,
         height: size,
@@ -54,7 +58,7 @@ const Avatar = memo(function Avatar({ avatarId, size = 24, borderColor = '#6b8e6
       />
     </View>
   );
-}, (prev, next) => {
+}), (prev, next) => {
   return prev.avatarId === next.avatarId &&
          prev.size === next.size &&
          prev.borderColor === next.borderColor;

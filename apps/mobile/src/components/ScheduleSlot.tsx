@@ -12,6 +12,7 @@ interface ScheduleSlotProps {
   loading?: boolean;
   isInHero?: boolean;
   textOpacity?: Animated.Value;
+  avatarRef?: React.Ref<View>;
 }
 
 const ScheduleSlot = memo(function ScheduleSlot({
@@ -22,7 +23,8 @@ const ScheduleSlot = memo(function ScheduleSlot({
   onPress,
   loading,
   isInHero = false,
-  textOpacity
+  textOpacity,
+  avatarRef
 }: ScheduleSlotProps) {
   // Determine which person this is and get avatar - single lookup instead of two
   const member = userId && members.length > 0
@@ -92,7 +94,7 @@ const ScheduleSlot = memo(function ScheduleSlot({
           ) : (
             <>
               <View style={{ transform: [{ scale: pressed ? 0.9 : 1 }] }}>
-                <Avatar avatarId={avatarId} size={isInHero ? 56 : 48} borderColor={borderColor} />
+                <Avatar ref={avatarRef} avatarId={avatarId} size={isInHero ? 56 : 48} borderColor={borderColor} />
               </View>
               <Text style={textStyle} numberOfLines={1} ellipsizeMode="tail">
                 {displayName || 'Hvem?'}
