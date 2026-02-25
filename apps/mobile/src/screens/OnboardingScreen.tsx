@@ -271,7 +271,8 @@ export default function OnboardingScreen() {
       let isNewHousehold = false;
 
       if (existingMemberships && existingMemberships.length > 0) {
-        // User already has a household - use existing
+        // User already has a household - updating existing (re-onboarding for testing)
+        console.log('⚠️ Re-onboarding: User already has a household');
         household_id = existingMemberships[0].household_id;
 
         // Get child_id and household invite code
@@ -282,7 +283,7 @@ export default function OnboardingScreen() {
           .limit(1);
 
         if (!children || children.length === 0) {
-          throw new Error('No child found for existing household');
+          throw new Error('Fant ingen barn i eksisterende husholdning');
         }
         child_id = children[0].id;
 
@@ -303,13 +304,13 @@ export default function OnboardingScreen() {
           }
         }
 
-        // Always show success screen for re-onboarding
+        // Show success screen for re-onboarding
         isNewHousehold = true;
 
-        console.log('Re-onboarding: Updating existing household');
-        console.log('Child name to update:', childName.trim() || '(empty)');
-        console.log('My name to update:', myName.trim() || '(empty)');
-        console.log('Partner name to update:', partnerName.trim() || '(empty)');
+        console.log('Re-onboarding: Oppdaterer eksisterende husholdning');
+        console.log('Barnenavn å oppdatere:', childName.trim() || '(tomt)');
+        console.log('Mitt navn å oppdatere:', myName.trim() || '(tomt)');
+        console.log('Partnernavn å oppdatere:', partnerName.trim() || '(tomt)');
 
         // Update child name if provided
         if (childName.trim()) {
@@ -528,16 +529,22 @@ export default function OnboardingScreen() {
             const [dayOfWeek, slot] = key.split('-');
             const member = members[personIndex as number];
             console.log(`Template mapping: ${key} -> personIndex ${personIndex} -> member:`, member);
+
+            // Ensure we never pass undefined - only valid UUIDs or null
+            const memberId = (member && member.id) ? member.id : null;
+            const userId = (member && member.user_id) ? member.user_id : null;
+
             return {
               household_id,
               child_id,
               weekday: parseInt(dayOfWeek),
               slot,
-              assigned_member_id: member?.id || null,
-              assigned_user_id: member?.user_id || null,
+              assigned_member_id: memberId,
+              assigned_user_id: userId,
               updated_by: user.id,
             };
-          });
+          })
+          .filter(row => row.assigned_member_id !== null); // Only save rows with valid assignments
 
         console.log('Saving template rows:', templateRows);
 
