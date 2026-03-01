@@ -554,7 +554,8 @@ export default function MainScreen({ navigation }: any) {
       }, 500); // Short delay after modal dismissal
       return () => clearTimeout(timer);
     }
-  }, [initialLoadComplete, shouldShowTip, activeTip, daysToShow, assignments, members, equipmentModalDismissed]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- assignments/members intentionally excluded: this tip only needs to fire once on initial load
+  }, [initialLoadComplete, shouldShowTip, activeTip, daysToShow, equipmentModalDismissed]);
 
   // Fetch child name
   useEffect(() => {
@@ -765,25 +766,25 @@ export default function MainScreen({ navigation }: any) {
     fetchAssignments();
   };
 
+  // Memoized cycle order: null -> person1 -> person2 -> null
+  const cycleOrder = useMemo<(string | null)[]>(() => [
+    null,
+    ...members.slice(0, 2).map(m => m.id)
+  ], [members]);
+
   const handleSlotPress = useCallback((date: string, slot: 'dropoff' | 'pickup') => {
     if (!childId || !householdId || !user) return;
 
     const key = `${date}-${slot}`;
-
-    // Build cycle order: null -> person1 -> person2 -> null
-    const order: (string | null)[] = [
-      null,
-      ...members.slice(0, 2).map(m => m.id)
-    ];
 
     // Use functional update to get current value without depending on assignments
     setAssignments((prev) => {
       const currentUserId = prev[key] || null;
 
       // Find current index and get next
-      const currentIndex = order.indexOf(currentUserId);
-      const nextIndex = (currentIndex + 1) % order.length;
-      const nextUserId = order[nextIndex];
+      const currentIndex = cycleOrder.indexOf(currentUserId);
+      const nextIndex = (currentIndex + 1) % cycleOrder.length;
+      const nextUserId = cycleOrder[nextIndex];
 
       // Fire off database save without awaiting (non-blocking)
       if (nextUserId === null) {
@@ -818,7 +819,7 @@ export default function MainScreen({ navigation }: any) {
         [key]: nextUserId,
       };
     });
-  }, [childId, householdId, user, members]);
+  }, [childId, householdId, user, cycleOrder]);
 
   const getDisplayName = useCallback((memberId: string | null): string | undefined => {
     if (!memberId) {

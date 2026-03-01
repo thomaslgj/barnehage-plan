@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, Platform, Animated, TouchableOpacity, LayoutAnimation, UIManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -83,21 +83,19 @@ export default function TodayCard({
   const dayName = dateObj.format('dddd D. MMM');
   const equipmentStatus = useMemo(() => calculateEquipmentStatus(equipmentItems), [equipmentItems]);
 
-  // Helper to get avatar ID for a user
-  const getAvatarId = (userId?: string | null): string | null => {
+  const getAvatarId = useCallback((userId?: string | null): string | null => {
     if (!userId || !members.length) return null;
     const member = members.find(m => m.user_id === userId || m.id === userId);
     return member?.avatar_id || null;
-  };
+  }, [members]);
 
-  // Helper to get border color based on person index
-  const getBorderColor = (userId?: string | null): string => {
+  const getBorderColor = useCallback((userId?: string | null): string => {
     if (!userId || !members.length) return '#4a3f38';
     const member = members.find(m => m.user_id === userId || m.id === userId);
     if (!member) return '#4a3f38';
     const personIndex = members.indexOf(member);
     return personIndex === 0 ? '#6b8e6f' : personIndex === 1 ? '#e8c96f' : '#8b7a6a';
-  };
+  }, [members]);
 
   // Trigger confetti when status changes to 'ready'
   useEffect(() => {
