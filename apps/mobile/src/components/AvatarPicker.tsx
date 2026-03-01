@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from './Text';
 import Avatar from './Avatar';
-import { AVAILABLE_AVATARS } from '../lib/avatars';
+import { AVAILABLE_AVATARS } from '../lib/avatar-images';
 import tw from '../lib/tw';
 
 interface AvatarPickerProps {

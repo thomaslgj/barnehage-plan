@@ -40,6 +40,224 @@ interface AssignmentData {
   [key: string]: string | null; // key: "YYYY-MM-DD-dropoff" or "YYYY-MM-DD-pickup", value: user_id
 }
 
+const EMPTY_NOTES: DayNote[] = [];
+
+// Memoized schedule list - prevents re-render when unrelated MainScreen state changes
+interface ScheduleListProps {
+  loading: boolean;
+  assignments: AssignmentData;
+  daysToShow: dayjs.Dayjs[];
+  members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
+  notes: Map<string, DayNote[]>;
+  savingSlot: string | null;
+  templateWasSuccessful: boolean;
+  applyingTemplate: boolean;
+  getDisplayName: (memberId: string | null) => string | undefined;
+  onSlotPress: (date: string, slot: 'dropoff' | 'pickup') => void;
+  onNotePress: (date: string) => void;
+  onDismissTemplate: () => void;
+  dropoffAvatarRef: React.MutableRefObject<any>;
+  noteIconRefs: React.MutableRefObject<Map<string, any>>;
+}
+
+const ScheduleList = React.memo(function ScheduleList({
+  loading,
+  assignments,
+  daysToShow,
+  members,
+  notes,
+  savingSlot,
+  templateWasSuccessful,
+  applyingTemplate,
+  getDisplayName,
+  onSlotPress,
+  onNotePress,
+  onDismissTemplate,
+  dropoffAvatarRef,
+  noteIconRefs,
+}: ScheduleListProps) {
+  if (loading) return <ScheduleSkeleton />;
+
+  return (
+    <View>
+      {/* Header */}
+      <View style={tw`flex-row gap-6 mb-3 px-1`}>
+        <View style={tw`flex-1 items-end`}>
+          <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
+        </View>
+        <View style={tw`flex-1 items-start`}>
+          <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
+        </View>
+      </View>
+
+      {/* Template Auto-Applied Message */}
+      {templateWasSuccessful && !applyingTemplate && (
+        <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50 flex-row items-center`}>
+          <Text style={tw`text-sm text-primary-light text-center flex-1`}>
+            Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
+          </Text>
+          <TouchableOpacity
+            onPress={onDismissTemplate}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={tw`ml-2`}
+          >
+            <Ionicons name="close" size={18} color="#7fa884" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {daysToShow.map((day, index) => {
+        const dateStr = day.format('YYYY-MM-DD');
+        const dropoffKey = `${dateStr}-dropoff`;
+        const pickupKey = `${dateStr}-pickup`;
+        const isToday = day.isSame(dayjs(), 'day');
+
+        return (
+          <View key={dateStr}>
+            <View style={tw`pb-1`}>
+              <View style={tw`h-px bg-slate-600/40 mt-3`} />
+              <View style={tw`flex-row items-center justify-between mt-1.5`}>
+                <View style={tw`flex-row items-center gap-1.5`}>
+                  {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
+                  <Text style={tw.style(
+                    'text-[11px] font-semibold capitalize',
+                    isToday ? 'text-secondary-light' : 'text-slate-400'
+                  )}>
+                    {day.format('dddd')}
+                  </Text>
+                </View>
+                <NoteIcon
+                  ref={(ref) => {
+                    if (ref) {
+                      noteIconRefs.current.set(dateStr, ref);
+                    }
+                  }}
+                  hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
+                  onPress={() => onNotePress(dateStr)}
+                />
+              </View>
+
+              <View style={{ position: 'relative' }}>
+                <View style={tw`flex-row gap-6`}>
+                  <View style={tw`flex-1`}>
+                    <ScheduleSlot
+                      key={dropoffKey}
+                      slotType="dropoff"
+                      displayName={getDisplayName(assignments[dropoffKey])}
+                      userId={assignments[dropoffKey]}
+                      members={members}
+                      onPress={() => onSlotPress(dateStr, 'dropoff')}
+                      loading={savingSlot === dropoffKey}
+                      avatarRef={index === 0 ? dropoffAvatarRef : undefined}
+                    />
+                  </View>
+                  <View style={tw`flex-1`}>
+                    <ScheduleSlot
+                      key={pickupKey}
+                      slotType="pickup"
+                      displayName={getDisplayName(assignments[pickupKey])}
+                      userId={assignments[pickupKey]}
+                      members={members}
+                      onPress={() => onSlotPress(dateStr, 'pickup')}
+                      loading={savingSlot === pickupKey}
+                    />
+                  </View>
+                </View>
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    width: 32,
+                    height: 2,
+                    backgroundColor: 'rgba(139, 122, 106, 0.4)',
+                    transform: [{ translateX: -16 }, { translateY: -1 }],
+                    zIndex: -1,
+                  }}
+                />
+              </View>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}, (prev, next) => {
+  return (
+    prev.loading === next.loading &&
+    prev.assignments === next.assignments &&
+    prev.daysToShow === next.daysToShow &&
+    prev.members === next.members &&
+    prev.notes === next.notes &&
+    prev.savingSlot === next.savingSlot &&
+    prev.templateWasSuccessful === next.templateWasSuccessful &&
+    prev.applyingTemplate === next.applyingTemplate
+  );
+});
+
+// Memoized TodayCard section - only re-renders when today's specific data changes
+interface TodayCardSectionProps {
+  loading: boolean;
+  weekChanging: boolean;
+  todayDate: string | undefined;
+  dropoffName: string | undefined;
+  pickupName: string | undefined;
+  dropoffUserId: string | null | undefined;
+  pickupUserId: string | null | undefined;
+  members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
+  todayNotes: DayNote[];
+  todayCardCollapsed: boolean;
+  todayCardFade: Animated.Value;
+  onDropoffPress: () => void;
+  onPickupPress: () => void;
+  onNotePress: () => void;
+  onToggleCollapse: () => void;
+  onEquipmentModalDismiss: () => void;
+}
+
+const TodayCardSection = React.memo(function TodayCardSection({
+  loading,
+  weekChanging,
+  todayDate,
+  dropoffName,
+  pickupName,
+  dropoffUserId,
+  pickupUserId,
+  members,
+  todayNotes,
+  todayCardCollapsed,
+  todayCardFade,
+  onDropoffPress,
+  onPickupPress,
+  onNotePress,
+  onToggleCollapse,
+  onEquipmentModalDismiss,
+}: TodayCardSectionProps) {
+  return (
+    <Animated.View style={{ opacity: todayCardFade }}>
+      {(loading || weekChanging) ? (
+        <TodayCardSkeleton />
+      ) : todayDate ? (
+        <TodayCard
+          date={todayDate}
+          dropoffName={dropoffName}
+          pickupName={pickupName}
+          dropoffUserId={dropoffUserId}
+          pickupUserId={pickupUserId}
+          members={members}
+          onDropoffPress={onDropoffPress}
+          onPickupPress={onPickupPress}
+          notes={todayNotes}
+          onNotePress={onNotePress}
+          collapsed={todayCardCollapsed}
+          onToggleCollapse={onToggleCollapse}
+          onEquipmentModalDismiss={onEquipmentModalDismiss}
+        />
+      ) : null}
+    </Animated.View>
+  );
+});
+
 export default function MainScreen({ navigation }: any) {
   const { user, householdId, childId, members } = useHousehold();
   // "Current week" is next week on weekends, this week on weekdays
@@ -616,10 +834,10 @@ export default function MainScreen({ navigation }: any) {
     return member?.display_name;
   }, [members]);
 
-  const handleNotePress = (date: string) => {
+  const handleNotePress = useCallback((date: string) => {
     setSelectedNoteDate(date);
     setNotesBottomSheetVisible(true);
-  };
+  }, []);
 
   const handleAddNote = async (content: string) => {
     if (!householdId || !childId || !user || !selectedNoteDate) return;
@@ -715,6 +933,38 @@ export default function MainScreen({ navigation }: any) {
     }
   };
 
+  // Stable callbacks for memoized components
+  const onDismissTemplate = useCallback(() => {
+    setTemplateWasSuccessful(false);
+  }, []);
+
+  const todayDate = todayOrTomorrow?.format('YYYY-MM-DD');
+  const todayDropoffId = todayDate ? assignments[`${todayDate}-dropoff`] : undefined;
+  const todayPickupId = todayDate ? assignments[`${todayDate}-pickup`] : undefined;
+  const todayDropoffName = getDisplayName(todayDropoffId ?? null);
+  const todayPickupName = getDisplayName(todayPickupId ?? null);
+  const todayNotes = todayDate ? notes.get(todayDate) || EMPTY_NOTES : EMPTY_NOTES;
+
+  const handleTodayDropoffPress = useCallback(() => {
+    if (todayDate) handleSlotPress(todayDate, 'dropoff');
+  }, [todayDate, handleSlotPress]);
+
+  const handleTodayPickupPress = useCallback(() => {
+    if (todayDate) handleSlotPress(todayDate, 'pickup');
+  }, [todayDate, handleSlotPress]);
+
+  const handleTodayNotePress = useCallback(() => {
+    if (todayDate) handleNotePress(todayDate);
+  }, [todayDate, handleNotePress]);
+
+  const handleToggleTodayCard = useCallback(() => {
+    setTodayCardCollapsed(prev => !prev);
+  }, []);
+
+  const handleEquipmentModalDismiss = useCallback(() => {
+    setEquipmentModalDismissed(true);
+  }, []);
+
   // Button animation helpers
   const animateButtonPress = (animValue: Animated.Value, callback: () => void) => {
     Animated.sequence([
@@ -806,27 +1056,24 @@ export default function MainScreen({ navigation }: any) {
 
         {/* Today/Tomorrow Card */}
         {weekOffset === currentWeekOffset && (
-          <Animated.View style={{ opacity: todayCardFade }}>
-            {(loading || weekChanging) ? (
-              <TodayCardSkeleton />
-            ) : todayOrTomorrow ? (
-              <TodayCard
-                date={todayOrTomorrow.format('YYYY-MM-DD')}
-                dropoffName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`])}
-                pickupName={getDisplayName(assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`])}
-                dropoffUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-dropoff`]}
-                pickupUserId={assignments[`${todayOrTomorrow.format('YYYY-MM-DD')}-pickup`]}
-                members={members}
-                onDropoffPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'dropoff')}
-                onPickupPress={() => handleSlotPress(todayOrTomorrow.format('YYYY-MM-DD'), 'pickup')}
-                notes={notes.get(todayOrTomorrow.format('YYYY-MM-DD')) || []}
-                onNotePress={() => handleNotePress(todayOrTomorrow.format('YYYY-MM-DD'))}
-                collapsed={todayCardCollapsed}
-                onToggleCollapse={() => setTodayCardCollapsed(!todayCardCollapsed)}
-                onEquipmentModalDismiss={() => setEquipmentModalDismissed(true)}
-              />
-            ) : null}
-          </Animated.View>
+          <TodayCardSection
+            loading={loading}
+            weekChanging={weekChanging}
+            todayDate={todayDate}
+            dropoffName={todayDropoffName}
+            pickupName={todayPickupName}
+            dropoffUserId={todayDropoffId}
+            pickupUserId={todayPickupId}
+            members={members}
+            todayNotes={todayNotes}
+            todayCardCollapsed={todayCardCollapsed}
+            todayCardFade={todayCardFade}
+            onDropoffPress={handleTodayDropoffPress}
+            onPickupPress={handleTodayPickupPress}
+            onNotePress={handleTodayNotePress}
+            onToggleCollapse={handleToggleTodayCard}
+            onEquipmentModalDismiss={handleEquipmentModalDismiss}
+          />
         )}
 
         {/* Messages Section - Invite, Template, Empty State */}
@@ -959,119 +1206,22 @@ export default function MainScreen({ navigation }: any) {
         </Animated.View>
 
         {/* Schedule List */}
-        <View>
-            {loading ? (
-              <ScheduleSkeleton />
-            ) : (
-              <View>
-                {/* Header */}
-                <View style={tw`flex-row gap-6 mb-3 px-1`}>
-                  <View style={tw`flex-1 items-end`}>
-                    <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
-                  </View>
-                  <View style={tw`flex-1 items-start`}>
-                    <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
-                  </View>
-                </View>
-
-                {/* Template Auto-Applied Message */}
-                {templateWasSuccessful && !applyingTemplate && (
-                  <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50 flex-row items-center`}>
-                    <Text style={tw`text-sm text-primary-light text-center flex-1`}>
-                      Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setTemplateWasSuccessful(false)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={tw`ml-2`}
-                    >
-                      <Ionicons name="close" size={18} color="#7fa884" />
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {daysToShow.map((day, index) => {
-            const dateStr = day.format('YYYY-MM-DD');
-            const dropoffKey = `${dateStr}-dropoff`;
-            const pickupKey = `${dateStr}-pickup`;
-            const isToday = day.isSame(dayjs(), 'day');
-            const isLastDay = index === daysToShow.length - 1;
-
-            return (
-              <View key={dateStr}>
-                <View style={tw`pb-1`}>
-                  {/* Divider line */}
-                  <View style={tw`h-px bg-slate-600/40 mt-3`} />
-
-                  {/* Day name with note icon */}
-                  <View style={tw`flex-row items-center justify-between mt-1.5`}>
-                    <View style={tw`flex-row items-center gap-1.5`}>
-                      {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
-                      <Text style={tw.style(
-                        'text-[11px] font-semibold capitalize',
-                        isToday ? 'text-secondary-light' : 'text-slate-400'
-                      )}>
-                        {day.format('dddd')}
-                      </Text>
-                    </View>
-                    <NoteIcon
-                      ref={(ref) => {
-                        if (ref) {
-                          noteIconRefs.current.set(dateStr, ref);
-                        }
-                      }}
-                      hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
-                      onPress={() => handleNotePress(dateStr)}
-                    />
-                  </View>
-
-                  <View style={{ position: 'relative' }}>
-                    <View style={tw`flex-row gap-6`}>
-                      <View style={tw`flex-1`}>
-                        <ScheduleSlot
-                          key={dropoffKey}
-                          slotType="dropoff"
-                          displayName={getDisplayName(assignments[dropoffKey])}
-                          userId={assignments[dropoffKey]}
-                          members={members}
-                          onPress={() => handleSlotPress(dateStr, 'dropoff')}
-                          loading={savingSlot === dropoffKey}
-                          avatarRef={index === 0 ? dropoffAvatarRef : undefined}
-                        />
-                      </View>
-                      <View style={tw`flex-1`}>
-                        <ScheduleSlot
-                          key={pickupKey}
-                          slotType="pickup"
-                          displayName={getDisplayName(assignments[pickupKey])}
-                          userId={assignments[pickupKey]}
-                          members={members}
-                          onPress={() => handleSlotPress(dateStr, 'pickup')}
-                          loading={savingSlot === pickupKey}
-                        />
-                      </View>
-                    </View>
-                    {/* Connecting line between avatars */}
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        width: 32, // gap-8 = 32px
-                        height: 2,
-                        backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle
-                        transform: [{ translateX: -16 }, { translateY: -1 }],
-                        zIndex: -1,
-                      }}
-                    />
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-              </View>
-            )}
-          </View>
+        <ScheduleList
+          loading={loading}
+          assignments={assignments}
+          daysToShow={daysToShow}
+          members={members}
+          notes={notes}
+          savingSlot={savingSlot}
+          templateWasSuccessful={templateWasSuccessful}
+          applyingTemplate={applyingTemplate}
+          getDisplayName={getDisplayName}
+          onSlotPress={handleSlotPress}
+          onNotePress={handleNotePress}
+          onDismissTemplate={onDismissTemplate}
+          dropoffAvatarRef={dropoffAvatarRef}
+          noteIconRefs={noteIconRefs}
+        />
       </ScrollView>
     </SafeAreaView>
 

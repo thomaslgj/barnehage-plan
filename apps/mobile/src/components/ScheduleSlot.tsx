@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Pressable, Text, ActivityIndicator, View, Platform, Animated } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Avatar from './Avatar';
 
@@ -11,7 +11,6 @@ interface ScheduleSlotProps {
   onPress: () => void;
   loading?: boolean;
   isInHero?: boolean;
-  textOpacity?: Animated.Value;
   avatarRef?: React.Ref<View>;
 }
 
@@ -23,7 +22,6 @@ const ScheduleSlot = memo(function ScheduleSlot({
   onPress,
   loading,
   isInHero = false,
-  textOpacity,
   avatarRef
 }: ScheduleSlotProps) {
   // Determine which person this is and get avatar - single lookup instead of two

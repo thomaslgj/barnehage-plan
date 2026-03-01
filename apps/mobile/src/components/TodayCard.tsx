@@ -75,15 +75,6 @@ export default function TodayCard({
   const opacityAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current; // For opacity/transform (native)
   const heightAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current;  // For height (JS)
 
-  // No animation - everything visible immediately
-  const leftAvatarX = useRef(new Animated.Value(0)).current;
-  const leftAvatarOpacity = useRef(new Animated.Value(1)).current;
-  const leftTextOpacity = useRef(new Animated.Value(1)).current;
-  const rightAvatarX = useRef(new Animated.Value(0)).current;
-  const rightAvatarOpacity = useRef(new Animated.Value(1)).current;
-  const rightTextOpacity = useRef(new Animated.Value(1)).current;
-  const lineOpacity = useRef(new Animated.Value(1)).current;
-
   const dateObj = dayjs(date);
   const isToday = dateObj.isSame(dayjs(), 'day');
   const isTomorrow = dateObj.isSame(dayjs().add(1, 'day'), 'day');
@@ -379,15 +370,7 @@ export default function TodayCard({
               {/* Expanded view - full schedule slots */}
               <View style={{ position: 'relative', marginBottom: 0 }}>
               <View style={tw`flex-row gap-4`}>
-                <Animated.View
-                  style={[
-                    tw`flex-1`,
-                    {
-                      opacity: leftAvatarOpacity,
-                      transform: [{ translateX: leftAvatarX }],
-                    }
-                  ]}
-                >
+                <View style={tw`flex-1`}>
                   <ScheduleSlot
                     key={`${date}-dropoff`}
                     slotType="dropoff"
@@ -397,18 +380,9 @@ export default function TodayCard({
                     onPress={onDropoffPress || (() => {})}
                     loading={false}
                     isInHero={true}
-                    textOpacity={leftTextOpacity}
                   />
-                </Animated.View>
-                <Animated.View
-                  style={[
-                    tw`flex-1`,
-                    {
-                      opacity: rightAvatarOpacity,
-                      transform: [{ translateX: rightAvatarX }],
-                    }
-                  ]}
-                >
+                </View>
+                <View style={tw`flex-1`}>
                   <ScheduleSlot
                     key={`${date}-pickup`}
                     slotType="pickup"
@@ -418,22 +392,20 @@ export default function TodayCard({
                     onPress={onPickupPress || (() => {})}
                     loading={false}
                     isInHero={true}
-                    textOpacity={rightTextOpacity}
                   />
-                </Animated.View>
+                </View>
               </View>
               {/* Connecting line between avatars */}
-              <Animated.View
+              <View
                 style={{
                   position: 'absolute',
                   top: '50%',
                   left: '50%',
-                  width: 96, // gap-4 (16px) + padding on both sides (~40px each)
+                  width: 96,
                   height: 2,
-                  backgroundColor: 'rgba(139, 122, 106, 0.4)', // Darker, more subtle - matches schedule
+                  backgroundColor: 'rgba(139, 122, 106, 0.4)',
                   transform: [{ translateX: -48 }, { translateY: -1 }],
                   zIndex: -1,
-                  opacity: lineOpacity,
                 }}
               />
             </View>

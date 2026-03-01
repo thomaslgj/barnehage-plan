@@ -308,23 +308,4 @@ describe('ScheduleSlot Component', () => {
     });
   });
 
-  describe('text opacity animation', () => {
-    it('should accept textOpacity prop', () => {
-      const mockAnimatedValue = { __getValue: () => 1 };
-
-      const { getByTestId } = render(
-        <ScheduleSlot
-          slotType="dropoff"
-          displayName="John Doe"
-          userId="user-1"
-          members={mockMembers}
-          onPress={mockOnPress}
-          loading={false}
-          textOpacity={mockAnimatedValue as any}
-        />
-      );
-
-      expect(getByTestId('schedule-slot-dropoff')).toBeTruthy();
-    });
-  });
 });
