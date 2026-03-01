@@ -20,6 +20,16 @@ export function useTips() {
 
   const loadTipsState = async () => {
     try {
+      // One-time migration: reset tips for existing users who had them marked during development
+      const migrationKey = '@tips_migration_v1';
+      const migrated = await AsyncStorage.getItem(migrationKey);
+      if (!migrated) {
+        await AsyncStorage.removeItem(TIP_STORAGE_KEY);
+        await AsyncStorage.setItem(migrationKey, '1');
+        setLoading(false);
+        return;
+      }
+
       const stored = await AsyncStorage.getItem(TIP_STORAGE_KEY);
       if (stored) {
         setShownTips(JSON.parse(stored));

@@ -453,11 +453,8 @@ export default function MainScreen({ navigation }: any) {
       }
 
       if (!templates || templates.length === 0) {
-        console.log('No template found - skipping auto-apply');
         return false; // No template to apply
       }
-
-      console.log('Found templates:', templates);
 
       // Check which days in current view need assignments
       const newAssignments: Array<{
@@ -520,13 +517,11 @@ export default function MainScreen({ navigation }: any) {
           console.error('Upsert error:', upsertError);
           return false;
         } else {
-          console.log('Successfully upserted, refreshing...');
           // Refresh assignments
           await fetchAssignments();
           return true; // Successfully applied template
         }
       } else {
-        console.log('No new assignments to upsert');
         return false;
       }
     } catch (error) {

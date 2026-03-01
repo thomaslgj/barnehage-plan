@@ -120,7 +120,6 @@ export default function OnboardingScreen() {
             .order('sort_order');
 
           if (existingEquipment && existingEquipment.length > 0) {
-            console.log('Loading existing equipment for re-onboarding:', existingEquipment);
             setEquipmentItems(existingEquipment.map(item => ({
               key: item.key,
               label: item.label,
@@ -263,8 +262,6 @@ export default function OnboardingScreen() {
       if (!user) throw new Error('No user found');
       if (!user.id) throw new Error('User ID is undefined');
 
-      console.log('User ID from auth:', user.id);
-
       const { data: existingMemberships } = await supabase
         .from('household_members')
         .select('household_id')
@@ -276,8 +273,7 @@ export default function OnboardingScreen() {
       let isNewHousehold = false;
 
       if (existingMemberships && existingMemberships.length > 0) {
-        // User already has a household - updating existing (re-onboarding for testing)
-        console.log('⚠️ Re-onboarding: User already has a household');
+        // User already has a household - re-onboarding
         household_id = existingMemberships[0].household_id;
 
         // Get child_id and household invite code
@@ -312,11 +308,6 @@ export default function OnboardingScreen() {
         // Show success screen for re-onboarding
         isNewHousehold = true;
 
-        console.log('Re-onboarding: Oppdaterer eksisterende husholdning');
-        console.log('Barnenavn å oppdatere:', childName.trim() || '(tomt)');
-        console.log('Mitt navn å oppdatere:', myName.trim() || '(tomt)');
-        console.log('Partnernavn å oppdatere:', partnerName.trim() || '(tomt)');
-
         // Update child name if provided
         if (childName.trim()) {
           const { error: childUpdateError } = await supabase
@@ -326,8 +317,6 @@ export default function OnboardingScreen() {
 
           if (childUpdateError) {
             console.error('Error updating child name:', childUpdateError);
-          } else {
-            console.log('Child name updated successfully to:', childName.trim());
           }
         }
 
@@ -350,8 +339,6 @@ export default function OnboardingScreen() {
 
           if (myNameError) {
             console.error('Error updating my name:', myNameError);
-          } else {
-            console.log('My name updated successfully to:', myName.trim());
           }
         }
 
@@ -369,9 +356,6 @@ export default function OnboardingScreen() {
             // Find partner (any member that's not the current user)
             const partnerMember = allMembers.find(m => m.user_id !== user.id);
 
-            console.log('All members:', allMembers);
-            console.log('Partner member found:', partnerMember);
-
             if (partnerMember) {
               const updateData: { display_name: string; avatar_id?: string } = {
                 display_name: partnerName.trim()
@@ -388,11 +372,7 @@ export default function OnboardingScreen() {
 
               if (partnerUpdateError) {
                 console.error('Error updating partner name:', partnerUpdateError);
-              } else {
-                console.log('Partner name updated successfully to:', partnerName.trim());
               }
-            } else {
-              console.log('No partner member found to update');
             }
           }
         }
@@ -401,7 +381,6 @@ export default function OnboardingScreen() {
         isNewHousehold = true;
 
         const childNameValue = childName.trim() || 'Barn';
-        console.log('Creating household with child name:', childNameValue);
 
         const { data: householdData, error: householdError } = await supabase.rpc('bootstrap_household', {
           p_name: `${myName.trim()}${partnerName.trim() ? ' & ' + partnerName.trim() : ''}`,
@@ -410,8 +389,6 @@ export default function OnboardingScreen() {
           p_child_name: childNameValue,
         });
 
-        console.log('Household created, result:', householdData);
-
         if (householdError) throw householdError;
 
         // bootstrap_household returns an array with one element
@@ -419,16 +396,12 @@ export default function OnboardingScreen() {
         household_id = result.household_id;
         child_id = result.child_id;
 
-        console.log('Extracted IDs - household_id:', household_id, 'child_id:', child_id);
-
         // Save invite code to show later
         setGeneratedInviteCode(result.invite_code);
 
         // Update avatar IDs for newly created members
         // Validate avatar ID is a proper string (not "undefined" or null)
-        console.log('Avatar IDs - My:', myAvatarId, 'Partner:', partnerAvatarId);
         if (myAvatarId && myAvatarId !== 'undefined' && myAvatarId.length > 0) {
-          console.log('Updating my avatar to:', myAvatarId);
           const { error: myAvatarError } = await supabase
             .from('household_members')
             .update({ avatar_id: myAvatarId })
@@ -439,13 +412,10 @@ export default function OnboardingScreen() {
             console.error('Error updating my avatar:', myAvatarError);
             throw myAvatarError;
           }
-          console.log('My avatar updated successfully');
         }
 
         if (partnerAvatarId && partnerAvatarId !== 'undefined' && partnerAvatarId.length > 0 && partnerName.trim()) {
-          console.log('Updating partner avatar to:', partnerAvatarId);
           // Find partner member (not current user)
-          console.log('Searching for partner with household_id:', household_id, 'excluding user_id:', user.id);
           const { data: partnerMembers, error: partnerSearchError } = await supabase
             .from('household_members')
             .select('id, user_id')
@@ -458,8 +428,6 @@ export default function OnboardingScreen() {
             throw partnerSearchError;
           }
 
-          console.log('Partner search result:', partnerMembers);
-
           if (partnerMembers && partnerMembers.length > 0) {
             const { error: partnerAvatarError } = await supabase
               .from('household_members')
@@ -470,7 +438,6 @@ export default function OnboardingScreen() {
               console.error('Error updating partner avatar:', partnerAvatarError);
               throw partnerAvatarError;
             }
-            console.log('Partner avatar updated successfully');
           }
         }
       }
@@ -514,7 +481,6 @@ export default function OnboardingScreen() {
           updated_by: user.id,
         }));
 
-        console.log('Inserting equipment_items with household_id:', household_id, 'user.id:', user.id);
         const { error: equipmentError } = await supabase
           .from('equipment_items')
           .insert(equipmentRows);
@@ -532,7 +498,6 @@ export default function OnboardingScreen() {
           updated_by: user.id,
         }));
 
-        console.log('Inserting equipment_status with child_id:', child_id, 'user.id:', user.id);
         const { error: statusError } = await supabase
           .from('equipment_status')
           .insert(statusRows);
@@ -564,8 +529,6 @@ export default function OnboardingScreen() {
           .map(([key, personIndex]) => {
             const [dayOfWeek, slot] = key.split('-');
             const member = members[personIndex as number];
-            console.log(`Template mapping: ${key} -> personIndex ${personIndex} -> member:`, member);
-
             // Ensure we never pass undefined - only valid UUIDs or null
             const memberId = (member && member.id) ? member.id : null;
             const userId = (member && member.user_id) ? member.user_id : null;
@@ -582,9 +545,6 @@ export default function OnboardingScreen() {
           })
           .filter(row => row.assigned_member_id !== null); // Only save rows with valid assignments
 
-        console.log('Saving template rows:', templateRows);
-        console.log('Template insert IDs - household_id:', household_id, 'child_id:', child_id, 'user.id:', user.id);
-
         if (templateRows.length > 0) {
           const { error: templateError } = await supabase
             .from('schedule_templates')
@@ -594,17 +554,17 @@ export default function OnboardingScreen() {
             console.error('Error saving template:', templateError);
             throw new Error(`Standard-uke lagring feilet: ${templateError.message}`);
           }
-          console.log('Template saved successfully');
         }
       }
 
       // Mark equipment modal as already shown today to prevent it from appearing right after onboarding
       await AsyncStorage.setItem('@equipment_modal_last_shown', dayjs().format('YYYY-MM-DD'));
 
+      // Reset contextual tips so they show for new/re-onboarded users
+      await AsyncStorage.removeItem('@contextual_tips_shown');
+
       // If new household was created, show success screen with invite code
       if (isNewHousehold) {
-        console.log('New household created, showing success screen');
-        console.log('generatedInviteCode:', generatedInviteCode);
         setStep(6); // Go to success screen
       } else {
         // Re-onboarding (testing), just refresh
