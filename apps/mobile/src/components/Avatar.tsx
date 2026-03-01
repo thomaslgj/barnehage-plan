@@ -45,6 +45,8 @@ const Avatar = memo(forwardRef<View, AvatarProps>(function Avatar({ avatarId, si
         borderStyle: 'solid',
         backgroundColor: '#2d2520',
         overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
       <Image

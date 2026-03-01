@@ -16,6 +16,10 @@ import NotificationsSettingsScreen from './src/screens/NotificationsSettingsScre
 import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator, Animated, Linking, Alert } from 'react-native';
+
+function LoadingScreen() {
+  return <View style={{ flex: 1, backgroundColor: '#2d2520' }} />;
+}
 import tw from './src/lib/tw';
 import { useFonts, PlusJakartaSans_300Light, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import * as Notifications from 'expo-notifications';
@@ -285,7 +289,7 @@ function AppNavigator() {
           // Keep showing a blank screen while determining onboarding status
           <Stack.Screen
             name="Loading"
-            component={() => <View style={{ flex: 1, backgroundColor: '#2d2520' }} />}
+            component={LoadingScreen}
           />
         ) : needsOnboarding ? (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />

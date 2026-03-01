@@ -20,7 +20,7 @@ export default function AvatarPicker({ selectedAvatarId, onSelect }: AvatarPicke
             <TouchableOpacity
               onPress={() => onSelect(avatarId)}
               style={[
-                tw`p-2 rounded-xl border-2`,
+                tw`p-2 rounded-xl border-2 items-center`,
                 selectedAvatarId === avatarId
                   ? tw`border-secondary bg-secondary/10`
                   : tw`border-slate-700 bg-slate-800/30`

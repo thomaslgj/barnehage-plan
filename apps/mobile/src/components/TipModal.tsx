@@ -34,7 +34,7 @@ interface TipModalProps {
   };
 }
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function TipModal({
   visible,
@@ -92,12 +92,14 @@ export default function TipModal({
     });
   };
 
+  // Estimate tooltip height
+  const estimatedTooltipHeight = 140;
+
   // Calculate tooltip position based on target - always position above
-  const calculateTooltipPosition = () => {
+  const getTooltipStyle = () => {
     if (!targetPosition) {
-      // Center of screen if no target
       return {
-        top: SCREEN_HEIGHT / 2 - 100,
+        top: '30%' as any,
         left: 20,
         right: 20,
       };
@@ -108,56 +110,36 @@ export default function TipModal({
     const tooltipWidth = 260;
     const tooltipLeft = Math.max(20, Math.min(centerX - tooltipWidth / 2, SCREEN_WIDTH - tooltipWidth - 20));
 
-    // Always position above the target
+    // Position above: tooltip bottom edge should be 12px above target top
     return {
-      bottom: SCREEN_HEIGHT - y + 12,
+      top: y - estimatedTooltipHeight - 12,
       left: tooltipLeft,
       width: tooltipWidth,
-      positionedAbove: true,
     };
   };
 
-  const tooltipPosition = calculateTooltipPosition();
+  const tooltipStyle = getTooltipStyle();
 
-  // Calculate arrow position - points to target (up or down depending on position)
+  // Arrow always points down (tooltip is always above target)
   const getArrowStyle = () => {
     if (!targetPosition) return {};
 
     const { x, width } = targetPosition;
     const centerX = x + width / 2;
-    const tooltipLeft = tooltipPosition.left || 0;
-    const positionedAbove = (tooltipPosition as any).positionedAbove;
+    const tooltipLeft = (tooltipStyle.left as number) || 0;
 
-    if (positionedAbove) {
-      // Arrow points down when tooltip is above
-      return {
-        position: 'absolute' as const,
-        bottom: -8,
-        left: centerX - tooltipLeft - 8,
-        width: 0,
-        height: 0,
-        borderLeftWidth: 8,
-        borderRightWidth: 8,
-        borderTopWidth: 8,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: '#7fa884',
-      };
-    }
-
-    // Arrow points up when tooltip is below
     return {
       position: 'absolute' as const,
-      top: -8,
+      bottom: -8,
       left: centerX - tooltipLeft - 8,
       width: 0,
       height: 0,
       borderLeftWidth: 8,
       borderRightWidth: 8,
-      borderBottomWidth: 8,
+      borderTopWidth: 8,
       borderLeftColor: 'transparent',
       borderRightColor: 'transparent',
-      borderBottomColor: '#7fa884',
+      borderTopColor: '#7fa884',
     };
   };
 
@@ -238,7 +220,7 @@ export default function TipModal({
         style={[
           {
             position: 'absolute',
-            ...tooltipPosition,
+            ...tooltipStyle,
             opacity: fadeAnim,
             transform: [{ scale: scaleAnim }],
             // iOS shadow
