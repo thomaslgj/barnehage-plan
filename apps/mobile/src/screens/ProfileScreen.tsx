@@ -3,7 +3,6 @@ import { View, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { useHousehold } from '../contexts/HouseholdProvider';
 import tw from '../lib/tw';
 import { BackButton } from '../components/BackButton';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -20,8 +19,6 @@ interface MenuItem {
 
 export default function ProfileScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
-  const { forceOnboarding } = useHousehold();
-
   const handleLogout = async () => {
     Alert.alert(
       'Logg ut',
@@ -45,23 +42,6 @@ export default function ProfileScreen({ navigation }: any) {
             } finally {
               setLoading(false);
             }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleOnboarding = () => {
-    Alert.alert(
-      'Kjør onboarding på nytt',
-      'Dette vil la deg gå gjennom onboardingen på nytt og oppdatere innstillingene dine.',
-      [
-        { text: 'Avbryt', style: 'cancel' },
-        {
-          text: 'Kjør på nytt',
-          onPress: () => {
-            forceOnboarding();
-            navigation.goBack();
           },
         },
       ]
@@ -102,13 +82,6 @@ export default function ProfileScreen({ navigation }: any) {
   ];
 
   const systemItems: MenuItem[] = [
-    {
-      id: 'onboarding',
-      title: 'Kjør onboarding på nytt',
-      icon: 'refresh-outline',
-      action: handleOnboarding,
-      color: 'text-secondary',
-    },
     {
       id: 'logout',
       title: 'Logg ut',
