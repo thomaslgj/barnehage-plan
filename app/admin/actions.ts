@@ -65,74 +65,102 @@ export async function deleteUser(memberId: string, userId: string | null) {
       .single();
 
     if (memberError || !member) {
+      // No household member found by member ID - user exists in auth but hasn't onboarded
+      if (userId) {
+        // Clean up any orphaned references to this user before deleting from auth
+        // First find any households created by this user
+        const { data: ownedHouseholds } = await supabaseAdmin
+          .from('households')
+          .select('id')
+          .eq('created_by', userId);
+
+        // Delete all data for owned households
+        if (ownedHouseholds && ownedHouseholds.length > 0) {
+          for (const h of ownedHouseholds) {
+            const { data: hChildren } = await supabaseAdmin.from('children').select('id').eq('household_id', h.id);
+            await supabaseAdmin.from('schedule_assignments').delete().eq('household_id', h.id);
+            await supabaseAdmin.from('schedule_templates').delete().eq('household_id', h.id);
+            await supabaseAdmin.from('day_notes').delete().eq('household_id', h.id).then(() => {}, () => {});
+            await supabaseAdmin.from('equipment_items').delete().eq('household_id', h.id).then(() => {}, () => {});
+            if (hChildren) {
+              for (const c of hChildren) {
+                await supabaseAdmin.from('equipment_status').delete().eq('child_id', c.id).then(() => {}, () => {});
+              }
+            }
+            await supabaseAdmin.from('children').delete().eq('household_id', h.id);
+            await supabaseAdmin.from('household_members').delete().eq('household_id', h.id);
+            await supabaseAdmin.from('households').delete().eq('id', h.id);
+          }
+        }
+
+        // Also clean up any remaining direct references
+        await supabaseAdmin.from('household_members').delete().eq('user_id', userId);
+        // Nullify assigned_user_id references instead of deleting assignments
+        await supabaseAdmin.from('schedule_assignments').update({ assigned_user_id: null }).eq('assigned_user_id', userId).then(() => {}, () => {});
+        await supabaseAdmin.from('schedule_templates').update({ assigned_user_id: null }).eq('assigned_user_id', userId).then(() => {}, () => {});
+
+        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (authDeleteError) {
+          console.error('Error deleting auth user:', authDeleteError);
+          return { success: false, error: `Kunne ikke slette auth-bruker: ${authDeleteError.message}` };
+        }
+        revalidatePath('/admin');
+        return { success: true };
+      }
       return { success: false, error: 'Kunne ikke finne bruker' };
     }
 
-    // Check if this is the household owner
-    if (member.role === 'owner') {
-      // Check if there are other members
-      const { data: otherMembers } = await supabaseAdmin
-        .from('household_members')
-        .select('id')
-        .eq('household_id', member.household_id)
-        .neq('id', memberId);
+    const householdId = member.household_id;
 
-      if (otherMembers && otherMembers.length > 0) {
-        return {
-          success: false,
-          error: 'Kan ikke slette eier av hushold som har andre medlemmer. Slett andre medlemmer først eller overfør eierskap.'
-        };
+    // Get all members with auth accounts in this household (for auth deletion)
+    const { data: allMembers } = await supabaseAdmin
+      .from('household_members')
+      .select('id, user_id')
+      .eq('household_id', householdId);
+
+    // Delete all household data
+    const deletions = [
+      supabaseAdmin.from('schedule_assignments').delete().eq('household_id', householdId),
+      supabaseAdmin.from('schedule_templates').delete().eq('household_id', householdId),
+      supabaseAdmin.from('day_notes').delete().eq('household_id', householdId).then(() => {}, () => {}),
+      supabaseAdmin.from('equipment_items').delete().eq('household_id', householdId).then(() => {}, () => {}),
+    ];
+
+    // Delete equipment_status by child_id (get children first)
+    const { data: children } = await supabaseAdmin
+      .from('children')
+      .select('id')
+      .eq('household_id', householdId);
+
+    if (children) {
+      for (const child of children) {
+        deletions.push(
+          supabaseAdmin.from('equipment_status').delete().eq('child_id', child.id).then(() => {}, () => {})
+        );
       }
-
-      // If owner and no other members, we can delete the whole household
-      // First delete children
-      await supabaseAdmin
-        .from('children')
-        .delete()
-        .eq('household_id', member.household_id);
-
-      // Delete schedule assignments
-      await supabaseAdmin
-        .from('schedule_assignments')
-        .delete()
-        .eq('household_id', member.household_id);
-
-      // Delete day notes if table exists
-      await supabaseAdmin
-        .from('day_notes')
-        .delete()
-        .eq('household_id', member.household_id)
-        .then(() => {}, () => {}); // Ignore errors if table doesn't exist
-
-      // Delete equipment status if table exists
-      await supabaseAdmin
-        .from('equipment_status')
-        .delete()
-        .eq('household_id', member.household_id)
-        .then(() => {}, () => {}); // Ignore errors if table doesn't exist
-
-      // Delete household member
-      await supabaseAdmin
-        .from('household_members')
-        .delete()
-        .eq('id', memberId);
-
-      // Delete household
-      await supabaseAdmin
-        .from('households')
-        .delete()
-        .eq('id', member.household_id);
-    } else {
-      // Just delete the member if not owner
-      await supabaseAdmin
-        .from('household_members')
-        .delete()
-        .eq('id', memberId);
     }
 
-    // Delete from auth.users if user_id exists
-    if (userId) {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
+    await Promise.all(deletions);
+
+    // Delete children
+    await supabaseAdmin.from('children').delete().eq('household_id', householdId);
+
+    // Delete all household members (including partner placeholders)
+    await supabaseAdmin.from('household_members').delete().eq('household_id', householdId);
+
+    // Delete household
+    await supabaseAdmin.from('households').delete().eq('id', householdId);
+
+    // Delete all auth users from this household
+    if (allMembers) {
+      for (const m of allMembers) {
+        if (m.user_id) {
+          const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(m.user_id);
+          if (authError) {
+            console.error(`Error deleting auth user ${m.user_id}:`, authError);
+          }
+        }
+      }
     }
 
     revalidatePath('/admin');
