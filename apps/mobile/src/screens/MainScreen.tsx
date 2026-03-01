@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as Haptics from 'expo-haptics';
@@ -41,6 +40,16 @@ interface AssignmentData {
 }
 
 const EMPTY_NOTES: DayNote[] = [];
+const REFRESH_COLORS = ['#7fa884'];
+const SCROLL_CONTENT_STYLE = { padding: 16, paddingBottom: 80 } as const;
+const OFFSCREEN_STYLE = { position: 'absolute', top: -1000, left: -1000, zIndex: 9999 } as const;
+const NAV_BUTTON_STYLE = {
+  padding: 8,
+  borderRadius: 20,
+  backgroundColor: 'rgba(168, 153, 133, 0.15)',
+  alignItems: 'center' as const,
+  justifyContent: 'center' as const,
+};
 
 // Memoized schedule list - prevents re-render when unrelated MainScreen state changes
 interface ScheduleListProps {
@@ -325,7 +334,6 @@ export default function MainScreen({ navigation }: any) {
   const todayCardFade = useRef(new Animated.Value(1)).current;
   const messagesFade = useRef(new Animated.Value(1)).current;
   const navigationFade = useRef(new Animated.Value(1)).current;
-  const scheduleFade = useRef(new Animated.Value(1)).current;
   const prevButtonScale = useRef(new Animated.Value(1)).current;
   const nextButtonScale = useRef(new Animated.Value(1)).current;
   const profileButtonScale = useRef(new Animated.Value(1)).current;
@@ -333,8 +341,6 @@ export default function MainScreen({ navigation }: any) {
   // Calculate current week dates
   const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
   const endOfWeek = startOfWeek.add(6, 'day');
-  const weekNumber = startOfWeek.isoWeek();
-  const year = startOfWeek.year();
   const weekRange = `${startOfWeek.format('D. MMM')} - ${endOfWeek.format('D. MMM')}`;
 
   // Generate 7 days (1 week), Mon-Fri only - memoized to avoid recalculation
@@ -469,16 +475,8 @@ export default function MainScreen({ navigation }: any) {
       setWeekChanging(false);
       setRefreshing(false);
 
-      // Fade in animation after week change
-      if (!isInitialLoad && targetWeekOffset !== undefined) {
-        Animated.timing(scheduleFade, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }).start();
-      }
     }
-  }, [childId, householdId, weekOffset, refreshing, scheduleFade]);
+  }, [childId, householdId, weekOffset, refreshing]);
 
   // Initial fetch - start immediately, cache will make it fast
   useEffect(() => {
@@ -509,7 +507,6 @@ export default function MainScreen({ navigation }: any) {
       todayCardFade.setValue(1);
       messagesFade.setValue(1);
       navigationFade.setValue(1);
-      scheduleFade.setValue(1);
     }
   }, [loading]);
 
@@ -991,17 +988,8 @@ export default function MainScreen({ navigation }: any) {
 
     setWeekChanging(true);
     setWeekOffset(offset);
-
-    // Fade out animation
-    Animated.timing(scheduleFade, {
-      toValue: 0.3,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      // Fetch data after fade out completes
-      fetchAssignments(false, offset);
-    });
-  }, [initialLoadComplete, fetchAssignments, scheduleFade]);
+    fetchAssignments(false, offset);
+  }, [initialLoadComplete, fetchAssignments]);
 
   // Swipe gesture removed - use arrow buttons for week navigation to avoid blocking slot taps
 
@@ -1009,7 +997,7 @@ export default function MainScreen({ navigation }: any) {
     <>
       {/* Celebration Confetti - positioned absolutely off-screen until triggered */}
       {Platform.OS !== 'web' && (
-        <View style={{ position: 'absolute', top: -1000, left: -1000, zIndex: 9999 }}>
+        <View style={OFFSCREEN_STYLE}>
           <ConfettiCannon
             ref={celebrationConfettiRef}
             count={200}
@@ -1023,9 +1011,9 @@ export default function MainScreen({ navigation }: any) {
       <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
         <ScrollView
           style={tw`flex-1`}
-          contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+          contentContainerStyle={SCROLL_CONTENT_STYLE}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7fa884']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={REFRESH_COLORS} />
           }
         >
         {/* Profile Header */}
@@ -1148,13 +1136,7 @@ export default function MainScreen({ navigation }: any) {
           <View style={tw`flex-row items-center justify-between mb-3`}>
           <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
             <TouchableOpacity
-              style={{
-                padding: 8,
-                borderRadius: 20,
-                backgroundColor: 'rgba(168, 153, 133, 0.15)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={NAV_BUTTON_STYLE}
               onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
               activeOpacity={0.5}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -1176,13 +1158,7 @@ export default function MainScreen({ navigation }: any) {
 
           <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
             <TouchableOpacity
-              style={{
-                padding: 8,
-                borderRadius: 20,
-                backgroundColor: 'rgba(168, 153, 133, 0.15)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={NAV_BUTTON_STYLE}
               onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
               activeOpacity={0.5}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
