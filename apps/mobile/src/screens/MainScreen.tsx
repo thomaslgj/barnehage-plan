@@ -52,6 +52,7 @@ export default function MainScreen({ navigation }: any) {
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [templateWasSuccessful, setTemplateWasSuccessful] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [hasTemplate, setHasTemplate] = useState(false);
   const [childName, setChildName] = useState<string>('');
   const [myName, setMyName] = useState<string>('');
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -267,6 +268,17 @@ export default function MainScreen({ navigation }: any) {
       initialFetchDone.current = true;
       // Fetch immediately - cached data will show instantly if available
       fetchAssignments(true);
+
+      // Check if a template exists
+      supabase
+        .from('schedule_templates')
+        .select('id')
+        .eq('household_id', householdId)
+        .eq('child_id', childId)
+        .limit(1)
+        .then(({ data }) => {
+          setHasTemplate(!!data && data.length > 0);
+        });
     }
   }, [childId, householdId, fetchAssignments]);
 
@@ -453,8 +465,11 @@ export default function MainScreen({ navigation }: any) {
       }
 
       if (!templates || templates.length === 0) {
+        setHasTemplate(false);
         return false; // No template to apply
       }
+
+      setHasTemplate(true);
 
       // Check which days in current view need assignments
       const newAssignments: Array<{
@@ -860,7 +875,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
           {/* Apply Template Button - show when week is empty */}
-          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && daysToShow.length > 0 && (
+          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && hasTemplate && daysToShow.length > 0 && (
             <View style={tw`mb-3 p-4 bg-primary/20 rounded-lg border border-primary/50`}>
               <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
                 Fyll inn fra standard-uke ✨
@@ -961,10 +976,17 @@ export default function MainScreen({ navigation }: any) {
 
                 {/* Template Auto-Applied Message */}
                 {templateWasSuccessful && !applyingTemplate && (
-                  <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50`}>
-                    <Text style={tw`text-sm text-primary-light text-center`}>
+                  <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50 flex-row items-center`}>
+                    <Text style={tw`text-sm text-primary-light text-center flex-1`}>
                       Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
                     </Text>
+                    <TouchableOpacity
+                      onPress={() => setTemplateWasSuccessful(false)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={tw`ml-2`}
+                    >
+                      <Ionicons name="close" size={18} color="#7fa884" />
+                    </TouchableOpacity>
                   </View>
                 )}
 

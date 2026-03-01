@@ -92,7 +92,7 @@ export default function TipModal({
     });
   };
 
-  // Calculate tooltip position based on target
+  // Calculate tooltip position based on target - always position above
   const calculateTooltipPosition = () => {
     if (!targetPosition) {
       // Center of screen if no target
@@ -103,34 +103,17 @@ export default function TipModal({
       };
     }
 
-    const { x, y, width, height } = targetPosition;
+    const { x, y, width } = targetPosition;
     const centerX = x + width / 2;
-
-    // Estimate tooltip height (adjust based on content)
-    const estimatedTooltipHeight = 180;
     const tooltipWidth = 260;
     const tooltipLeft = Math.max(20, Math.min(centerX - tooltipWidth / 2, SCREEN_WIDTH - tooltipWidth - 20));
 
-    // Check if there's enough space below the target
-    const spaceBelow = SCREEN_HEIGHT - (y + height + 20);
-    const spaceAbove = y - 20;
-
-    // Position above if not enough space below
-    if (spaceBelow < estimatedTooltipHeight && spaceAbove > spaceBelow) {
-      return {
-        bottom: SCREEN_HEIGHT - y + 20, // 20px above the target
-        left: tooltipLeft,
-        width: tooltipWidth,
-        positionedAbove: true,
-      };
-    }
-
-    // Default: position below
+    // Always position above the target
     return {
-      top: y + height + 20, // 20px below the target
+      bottom: SCREEN_HEIGHT - y + 12,
       left: tooltipLeft,
       width: tooltipWidth,
-      positionedAbove: false,
+      positionedAbove: true,
     };
   };
 

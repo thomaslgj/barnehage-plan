@@ -210,7 +210,7 @@ export default function EquipmentBottomSheet({
             </View>
           )}
 
-          <TouchableOpacity style={tw`p-5 pb-12 items-center border-t border-slate-700`} onPress={onClose}>
+          <TouchableOpacity style={tw`p-5 pb-20 items-center border-t border-slate-700`} onPress={onClose}>
             <Text style={[tw`text-base text-slate-300 font-semibold`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>Lukk</Text>
           </TouchableOpacity>
         </Animated.View>

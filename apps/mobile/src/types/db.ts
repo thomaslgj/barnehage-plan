@@ -13,6 +13,7 @@ export interface HouseholdMember {
   household_id: string;
   user_id: string | null; // Nullable for placeholder partners
   display_name: string;
+  avatar_id: string | null;
   role: 'admin' | 'member';
   created_at: string;
 }

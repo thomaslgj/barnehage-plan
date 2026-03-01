@@ -416,11 +416,13 @@ export default function OnboardingScreen() {
 
         if (partnerAvatarId && partnerAvatarId !== 'undefined' && partnerAvatarId.length > 0 && partnerName.trim()) {
           // Find partner member (not current user)
+          // Partner is a placeholder with user_id = NULL, so we use .is('user_id', null)
+          // (.neq doesn't match NULL values in PostgreSQL)
           const { data: partnerMembers, error: partnerSearchError } = await supabase
             .from('household_members')
             .select('id, user_id')
             .eq('household_id', household_id)
-            .neq('user_id', user.id)
+            .is('user_id', null)
             .limit(1);
 
           if (partnerSearchError) {
