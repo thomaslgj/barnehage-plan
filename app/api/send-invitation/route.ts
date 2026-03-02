@@ -7,28 +7,40 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, inviterName, householdName, inviteToken } = body;
+    const { email, inviterName, inviteCode, partnerName } = body;
 
     // Validate required fields
-    if (!email || !inviterName || !householdName || !inviteToken) {
+    if (!email || !inviterName || !inviteCode || !partnerName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Create the invitation link
-    const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://flytfamilie.no'}/invite/${inviteToken}`;
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Build links
+    const landingPageLink = 'https://flytfamilie.no';
+    const deepLink = `flyt://onboarding?code=${encodeURIComponent(inviteCode)}`;
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'noreply@flytfamilie.no',
       to: email,
-      subject: `Invitasjon til ${householdName} på Flyt`,
+      subject: `${inviterName} inviterer deg til Flyt`,
       react: HouseholdInvitationEmail({
         inviterName,
-        householdName,
-        inviteLink,
+        partnerName,
+        inviteCode,
+        landingPageLink,
+        deepLink,
       }),
     });
 

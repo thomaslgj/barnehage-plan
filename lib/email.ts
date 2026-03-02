@@ -4,13 +4,13 @@
 export async function sendHouseholdInvitation({
   email,
   inviterName,
-  householdName,
-  inviteToken,
+  inviteCode,
+  partnerName,
 }: {
   email: string;
   inviterName: string;
-  householdName: string;
-  inviteToken: string;
+  inviteCode: string;
+  partnerName: string;
 }) {
   try {
     const response = await fetch('/api/send-invitation', {
@@ -21,8 +21,8 @@ export async function sendHouseholdInvitation({
       body: JSON.stringify({
         email,
         inviterName,
-        householdName,
-        inviteToken,
+        inviteCode,
+        partnerName,
       }),
     });
 

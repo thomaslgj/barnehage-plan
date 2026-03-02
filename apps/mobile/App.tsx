@@ -16,6 +16,7 @@ import NotificationsSettingsScreen from './src/screens/NotificationsSettingsScre
 import EquipmentManagementScreen from './src/screens/EquipmentManagementScreen';
 import SplashScreen from './src/components/SplashScreen';
 import { View, ActivityIndicator, Animated, Linking, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function LoadingScreen() {
   return <View style={{ flex: 1, backgroundColor: '#2d2520' }} />;
@@ -107,6 +108,15 @@ function AppNavigator() {
       } catch (error) {
         console.error('Error parsing deep link error:', error);
       }
+      return;
+    }
+
+    // Check for invite code in deep link (flyt://onboarding?code=xxx)
+    const codeMatch = url.match(/[?&]code=([^&]+)/);
+    if (codeMatch) {
+      const code = decodeURIComponent(codeMatch[1]);
+      console.log('Invite code from deep link:', code);
+      await AsyncStorage.setItem('@pending_invite_code', code);
       return;
     }
 

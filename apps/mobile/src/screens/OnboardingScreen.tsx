@@ -64,12 +64,18 @@ export default function OnboardingScreen() {
   // Step 2: Partner name
   const [partnerName, setPartnerName] = useState('');
   const [partnerAvatarId, setPartnerAvatarId] = useState<string | null>(null);
+  const [partnerEmail, setPartnerEmail] = useState('');
 
   // Step 3: Child name
   const [childName, setChildName] = useState('');
 
   // Generated invite code (shown after creation)
   const [generatedInviteCode, setGeneratedInviteCode] = useState<string | null>(null);
+
+  // Step 6: Invitation sending states
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [showInviteCode, setShowInviteCode] = useState(false);
 
   // Android rename modal state
   const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -93,6 +99,25 @@ export default function OnboardingScreen() {
   const [displayName, setDisplayName] = useState('');
   const [placeholderNameFromInvite, setPlaceholderNameFromInvite] = useState<string | null>(null);
   const [fetchingPlaceholderName, setFetchingPlaceholderName] = useState(false);
+
+  // Check for pending invite code from deep link
+  useEffect(() => {
+    const checkPendingInviteCode = async () => {
+      try {
+        const pendingCode = await AsyncStorage.getItem('@pending_invite_code');
+        if (pendingCode) {
+          await AsyncStorage.removeItem('@pending_invite_code');
+          setInviteCode(pendingCode);
+          setMode('join');
+          fetchPlaceholderName(pendingCode);
+        }
+      } catch (error) {
+        console.error('Error checking pending invite code:', error);
+      }
+    };
+
+    checkPendingInviteCode();
+  }, []);
 
   // Load existing equipment items if re-onboarding
   useEffect(() => {
@@ -653,6 +678,42 @@ export default function OnboardingScreen() {
     }
   };
 
+  const sendInvitationEmail = async () => {
+    if (!partnerEmail.trim() || !generatedInviteCode) return;
+
+    setSendingInvite(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://flytfamilie.no';
+      const response = await fetch(`${apiUrl}/api/send-invitation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: partnerEmail.trim(),
+          inviterName: myName.trim(),
+          inviteCode: generatedInviteCode,
+          partnerName: partnerName.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Kunne ikke sende e-post');
+      }
+
+      setInviteSent(true);
+    } catch (error) {
+      console.error('Error sending invitation email:', error);
+      Alert.alert(
+        'Kunne ikke sende',
+        `E-posten ble ikke sendt. Du kan dele invitasjonskoden "${generatedInviteCode}" manuelt.`,
+        [{ text: 'OK' }]
+      );
+      setShowInviteCode(true);
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
   // Choice screen
   if (mode === 'choice') {
     return (
@@ -863,7 +924,7 @@ export default function OnboardingScreen() {
             </Text>
 
             <TextInput
-              style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-6 text-white`}
+              style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-4 text-white`}
               placeholder="Partner navn (valgfritt)"
               placeholderTextColor="#a89985"
               value={partnerName}
@@ -871,6 +932,24 @@ export default function OnboardingScreen() {
               editable={!loading}
               autoFocus
             />
+
+            <Text style={tw`text-sm font-semibold text-slate-300 mb-2`}>
+              E-post til partner (valgfritt)
+            </Text>
+            <TextInput
+              style={tw`bg-slate-800/50 border border-slate-700 rounded px-4 py-3 text-base mb-1 text-white`}
+              placeholder="partner@epost.no"
+              placeholderTextColor="#a89985"
+              value={partnerEmail}
+              onChangeText={setPartnerEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+            />
+            <Text style={tw`text-xs text-slate-400 mb-6`}>
+              Vi sender en invitasjon etter oppsettet
+            </Text>
 
             <View style={tw`mb-6`}>
               <AvatarPicker
@@ -1097,25 +1176,70 @@ export default function OnboardingScreen() {
               <View style={tw`mb-6`}>
                 <SuccessIllustration size={140} />
               </View>
-              <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Nå er du klar til å få flyt!</Text>
+              <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Alt er klart!</Text>
               <Text style={tw`text-base text-text-muted text-center mb-8`}>
-                Alt er klart. Del denne koden med {partnerName.trim() || 'partner'} så hen kan bli med!
+                {partnerEmail.trim()
+                  ? `Inviter ${partnerName.trim() || 'partner'} for å komme i gang sammen.`
+                  : `Del koden med ${partnerName.trim() || 'partner'} så hen kan bli med.`}
               </Text>
 
-              <View style={tw`bg-primary/20 border-2 border-primary rounded-2xl p-8 mb-6 w-full max-w-sm`}>
-                <Text style={tw`text-sm text-primary-light text-center mb-2 uppercase tracking-wider`}>
-                  Invitasjonskode
-                </Text>
-                <Text style={tw`text-4xl font-bold text-white text-center tracking-wider`}>
-                  {generatedInviteCode}
-                </Text>
-              </View>
+              {/* Email flow: show send button or confirmation */}
+              {partnerEmail.trim() ? (
+                <View style={tw`w-full max-w-sm mb-6`}>
+                  {!inviteSent ? (
+                    <TouchableOpacity
+                      style={tw.style('bg-primary rounded-lg py-4 px-8', sendingInvite && 'opacity-50')}
+                      onPress={sendInvitationEmail}
+                      disabled={sendingInvite}
+                    >
+                      {sendingInvite ? (
+                        <ActivityIndicator color="#f5f1ed" />
+                      ) : (
+                        <Text style={tw`text-white text-lg font-semibold text-center`}>
+                          Send invitasjon
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={tw`bg-primary/20 border border-primary/50 rounded-lg p-4`}>
+                      <Text style={tw`text-primary-light text-center text-sm`}>
+                        Invitasjon sendt til {partnerEmail.trim()}
+                      </Text>
+                    </View>
+                  )}
 
-              <View style={tw`bg-slate-800/50 rounded-lg p-4 mb-8 w-full max-w-sm`}>
-                <Text style={tw`text-sm text-text-muted text-center leading-relaxed`}>
-                  💡 {partnerName.trim() || 'Partner'} kan bruke denne koden når hen laster ned appen og velger "Bli med"
-                </Text>
-              </View>
+                  {/* Toggle to show invite code */}
+                  <TouchableOpacity
+                    style={tw`mt-4 py-2`}
+                    onPress={() => setShowInviteCode(!showInviteCode)}
+                  >
+                    <Text style={tw`text-slate-400 text-sm text-center underline`}>
+                      {showInviteCode ? 'Skjul invitasjonskode' : 'Vis invitasjonskode'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showInviteCode && (
+                    <View style={tw`bg-primary/20 border-2 border-primary rounded-2xl p-6 mt-2`}>
+                      <Text style={tw`text-sm text-primary-light text-center mb-2 uppercase tracking-wider`}>
+                        Invitasjonskode
+                      </Text>
+                      <Text style={tw`text-4xl font-bold text-white text-center tracking-wider`}>
+                        {generatedInviteCode}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                /* No email: show invite code directly */
+                <View style={tw`bg-primary/20 border-2 border-primary rounded-2xl p-8 mb-6 w-full max-w-sm`}>
+                  <Text style={tw`text-sm text-primary-light text-center mb-2 uppercase tracking-wider`}>
+                    Invitasjonskode
+                  </Text>
+                  <Text style={tw`text-4xl font-bold text-white text-center tracking-wider`}>
+                    {generatedInviteCode}
+                  </Text>
+                </View>
+              )}
 
               <TouchableOpacity
                 style={tw`bg-primary rounded-lg py-4 px-8 w-full max-w-sm`}
@@ -1124,7 +1248,7 @@ export default function OnboardingScreen() {
                 }}
               >
                 <Text style={tw`text-white text-lg font-semibold text-center`}>
-                  Kom i gang!
+                  {inviteSent ? 'Kom i gang!' : 'Hopp over'}
                 </Text>
               </TouchableOpacity>
             </View>

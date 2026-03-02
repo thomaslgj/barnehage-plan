@@ -356,6 +356,7 @@ export default function MainScreen({ navigation }: any) {
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [hasPlaceholderMember, setHasPlaceholderMember] = useState(false);
   const [inviteMessageDismissed, setInviteMessageDismissed] = useState(false);
+  const [showInviteCodePopup, setShowInviteCodePopup] = useState(false);
   const [weekWasFullyFilled, setWeekWasFullyFilled] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [weekChanging, setWeekChanging] = useState(false);
@@ -1115,6 +1116,33 @@ export default function MainScreen({ navigation }: any) {
           </View>
         )}
 
+        {/* Invite Partner Button */}
+        {hasPlaceholderMember && inviteCode && weekOffset === currentWeekOffset && !inviteMessageDismissed && (
+          <View style={tw`mb-5`}>
+            <TouchableOpacity
+              style={tw`flex-row items-center gap-2.5 bg-secondary/15 rounded-lg px-4 py-3 border border-secondary/30`}
+              onPress={() => setShowInviteCodePopup(!showInviteCodePopup)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="bulb-outline" size={18} color="#e8c96f" />
+              <Text style={tw`flex-1 text-sm text-slate-200 font-medium`}>
+                Din partner har ikke blitt med enda
+              </Text>
+              <Ionicons name={showInviteCodePopup ? 'chevron-up' : 'chevron-down'} size={16} color="#a89985" />
+            </TouchableOpacity>
+            {showInviteCodePopup && (
+              <View style={tw`mt-2 bg-slate-800/50 rounded-lg px-4 py-3 border border-slate-700`}>
+                <Text style={tw`text-xs text-slate-400 mb-2`}>
+                  Del denne invitasjonskoden:
+                </Text>
+                <Text style={tw`text-lg text-white font-bold text-center tracking-wider`}>
+                  {inviteCode}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Today/Tomorrow Card */}
         {weekOffset === currentWeekOffset && (
           <TodayCardSection
@@ -1134,39 +1162,8 @@ export default function MainScreen({ navigation }: any) {
           />
         )}
 
-        {/* Messages Section - Invite, Template, Empty State */}
+        {/* Messages Section - Template, Empty State */}
         <Animated.View style={{ opacity: messagesFade }}>
-          {/* Invite Partner Message */}
-          {hasPlaceholderMember && inviteCode && weekOffset === currentWeekOffset && !inviteMessageDismissed && (
-            <View style={tw`mb-3 bg-info/10 rounded-lg border border-info/30`}>
-              {/* Header with close button */}
-              <View style={tw`flex-row items-start justify-between p-4 pb-2`}>
-                <Text style={tw`text-sm text-slate-200 flex-1 pr-2`}>
-                  💡 Din partner har ikke blitt med enda
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setInviteMessageDismissed(true)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={tw`ml-2`}
-                >
-                  <Text style={tw`text-text-light text-xl leading-none`}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Content */}
-              <View style={tw`px-4 pb-4`}>
-                <Text style={tw`text-xs text-slate-400 mb-2`}>
-                  Del denne invitasjonskoden så de kan bli med:
-                </Text>
-                <View style={tw`bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700`}>
-                  <Text style={tw`text-base text-white font-semibold text-center tracking-wider`}>
-                    {inviteCode}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-
         {/* Template Loading Animation */}
         {applyingTemplate && (
           <View style={tw`mb-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50`}>
@@ -1182,11 +1179,8 @@ export default function MainScreen({ navigation }: any) {
           {/* Apply Template Button - show when week is empty */}
           {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && hasTemplate && dayMetadata.length > 0 && (
             <View style={tw`mb-3 p-4 bg-primary/20 rounded-lg border border-primary/50`}>
-              <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
+              <Text style={tw`text-base text-text text-center mb-3 font-medium`}>
                 Fyll inn fra standard-uke ✨
-              </Text>
-              <Text style={tw`text-sm text-text-light text-center mb-3`}>
-                Få flyt i hverdagen ved å bruke ditt vanlige oppsett
               </Text>
               <TouchableOpacity
                 style={tw`bg-primary py-2.5 px-4 rounded-lg`}

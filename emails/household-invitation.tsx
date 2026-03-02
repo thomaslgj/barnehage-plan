@@ -5,6 +5,7 @@ import {
   Head,
   Heading,
   Html,
+  Link,
   Preview,
   Section,
   Text,
@@ -12,50 +13,59 @@ import {
 
 interface HouseholdInvitationEmailProps {
   inviterName: string;
-  householdName: string;
-  inviteLink: string;
+  partnerName: string;
+  inviteCode: string;
+  landingPageLink: string;
+  deepLink: string;
 }
 
 export default function HouseholdInvitationEmail({
   inviterName = 'Noen',
-  householdName = 'Husstand',
-  inviteLink = 'https://flytfamilie.no',
+  partnerName = 'du',
+  inviteCode = 'abc-def',
+  landingPageLink = 'https://flytfamilie.no',
+  deepLink = 'flyt://onboarding?code=abc-def',
 }: HouseholdInvitationEmailProps) {
   return (
     <Html>
       <Head />
-      <Preview>Du er invitert til {householdName} på Flyt</Preview>
+      <Preview>{inviterName} inviterer deg til Flyt</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>Invitasjon til Flyt</Heading>
+          <Heading style={h1}>Hei {partnerName}!</Heading>
 
           <Text style={text}>
-            Hei!
+            <strong>{inviterName}</strong> vil gjerne dele barnehage-hverdagen med deg i Flyt.
           </Text>
 
           <Text style={text}>
-            <strong>{inviterName}</strong> har invitert deg til husstanden <strong>{householdName}</strong> på Flyt.
-          </Text>
-
-          <Text style={text}>
-            Flyt hjelper familier med å koordinere henting, levering og utstyr til barnehagen –
-            så dere slipper å holde alt i hodet.
+            Flyt hjelper familier med å koordinere henting, levering og utstyr til barnehagen
+            – så dere slipper å holde alt i hodet.
           </Text>
 
           <Section style={buttonContainer}>
-            <Button style={button} href={inviteLink}>
-              Godta invitasjon
+            <Button style={button} href={landingPageLink}>
+              Last ned Flyt
             </Button>
           </Section>
 
-          <Text style={text}>
-            Eller kopier og lim inn denne lenken i nettleseren din:
+          <Text style={textSmall}>
+            Har du allerede appen?{' '}
+            <Link style={link} href={deepLink}>
+              Åpne direkte i Flyt
+            </Link>
           </Text>
-          <Text style={link}>{inviteLink}</Text>
+
+          <Section style={codeContainer}>
+            <Text style={codeLabel}>Invitasjonskode</Text>
+            <Text style={codeText}>{inviteCode}</Text>
+            <Text style={codeHint}>
+              Bruk denne koden når du åpner appen og velger «Bli med»
+            </Text>
+          </Section>
 
           <Text style={footer}>
-            Hvis du ikke kjenner {inviterName} eller ikke vil bli med i {householdName},
-            kan du bare ignorere denne eposten.
+            Hvis du ikke kjenner {inviterName} kan du trygt ignorere denne e-posten.
           </Text>
         </Container>
       </Body>
@@ -80,7 +90,7 @@ const h1 = {
   color: '#333',
   fontSize: '24px',
   fontWeight: 'bold',
-  margin: '40px 0',
+  margin: '40px 0 16px',
   padding: '0 40px',
 };
 
@@ -91,8 +101,17 @@ const text = {
   padding: '0 40px',
 };
 
+const textSmall = {
+  color: '#555',
+  fontSize: '14px',
+  lineHeight: '22px',
+  padding: '0 40px',
+  textAlign: 'center' as const,
+};
+
 const buttonContainer = {
   padding: '27px 40px',
+  textAlign: 'center' as const,
 };
 
 const button = {
@@ -109,10 +128,38 @@ const button = {
 
 const link = {
   color: '#7fa884',
-  fontSize: '14px',
   textDecoration: 'underline',
-  padding: '0 40px',
-  wordBreak: 'break-all' as const,
+};
+
+const codeContainer = {
+  backgroundColor: '#f0f7f1',
+  borderRadius: '12px',
+  margin: '24px 40px',
+  padding: '24px',
+  textAlign: 'center' as const,
+};
+
+const codeLabel = {
+  color: '#7fa884',
+  fontSize: '12px',
+  fontWeight: '600',
+  letterSpacing: '1px',
+  textTransform: 'uppercase' as const,
+  margin: '0 0 8px',
+};
+
+const codeText = {
+  color: '#333',
+  fontSize: '32px',
+  fontWeight: 'bold',
+  letterSpacing: '2px',
+  margin: '0 0 8px',
+};
+
+const codeHint = {
+  color: '#888',
+  fontSize: '12px',
+  margin: '0',
 };
 
 const footer = {
