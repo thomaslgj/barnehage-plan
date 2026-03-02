@@ -35,11 +35,11 @@ export default function HouseholdInvitationEmail({
           <Heading style={h1}>Hei {partnerName}!</Heading>
 
           <Text style={text}>
-            <strong>{inviterName}</strong> vil gjerne dele barnehage-hverdagen med deg i Flyt.
+            <strong>{inviterName}</strong> vil gjerne dele hverdagen med deg i Flyt.
           </Text>
 
           <Text style={text}>
-            Flyt hjelper familier med å koordinere henting, levering og utstyr til barnehagen
+            Flyt gir familien en felles oversikt over hvem som henter, leverer og hva som trengs
             – så dere slipper å holde alt i hodet.
           </Text>
 
