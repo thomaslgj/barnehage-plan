@@ -34,3 +34,8 @@ function subscribe(callback: () => void): () => void {
 export function useAssignments(): AssignmentData {
   return useSyncExternalStore(subscribe, getAssignments);
 }
+
+/** Subscribe to a single assignment key. Only re-renders when THIS key's value changes. */
+export function useAssignment(key: string): string | null {
+  return useSyncExternalStore(subscribe, () => assignments[key] || null);
+}

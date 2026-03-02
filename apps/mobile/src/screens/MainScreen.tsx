@@ -29,7 +29,7 @@ import NotesBottomSheet from '../components/NotesBottomSheet';
 import TipModal from '../components/TipModal';
 import { fetchNotesForDateRange, addNote, deleteNote } from '../lib/notes';
 import { useTips } from '../hooks/useTips';
-import { useAssignments, setAssignments, getAssignments, type AssignmentData } from '../stores/assignments-store';
+import { useAssignments, useAssignment, setAssignments, getAssignments, type AssignmentData } from '../stores/assignments-store';
 import type { ScheduleAssignment, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
@@ -307,10 +307,9 @@ function TodayCardSection({
   onToggleCollapse,
   onEquipmentModalDismiss,
 }: TodayCardSectionProps) {
-  // Subscribe directly to assignments store — re-renders here, NOT in MainScreen
-  const assignments = useAssignments();
-  const dropoffUserId = todayDate ? assignments[`${todayDate}-dropoff`] : undefined;
-  const pickupUserId = todayDate ? assignments[`${todayDate}-pickup`] : undefined;
+  // Subscribe to ONLY today's two keys — won't re-render when other days change
+  const dropoffUserId = useAssignment(todayDate ? `${todayDate}-dropoff` : '');
+  const pickupUserId = useAssignment(todayDate ? `${todayDate}-pickup` : '');
   const dropoffName = getDisplayName(dropoffUserId ?? null);
   const pickupName = getDisplayName(pickupUserId ?? null);
 
