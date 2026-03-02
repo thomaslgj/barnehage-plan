@@ -51,7 +51,7 @@ export default function HouseholdInvitationEmail({
 
           <Text style={textSmall}>
             Har du allerede appen?{' '}
-            <Link style={link} href={deepLink}>
+            <Link style={link} href={`https://flytfamilie.no/invite?code=${inviteCode}`}>
               Åpne direkte i Flyt
             </Link>
           </Text>
