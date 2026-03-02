@@ -2,10 +2,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/send-invitation", "/api/dev", "/favicon.ico", "/_next"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/send-invitation", "/favicon.ico", "/_next"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Block dev API routes in production at the middleware level
+  if (pathname.startsWith("/api/dev")) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.next();
+  }
 
   // la login og next-assets være åpne
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
