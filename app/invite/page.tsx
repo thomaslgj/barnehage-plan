@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function InvitePage() {
+  return (
+    <Suspense>
+      <InviteContent />
+    </Suspense>
+  );
+}
+
+function InviteContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
 

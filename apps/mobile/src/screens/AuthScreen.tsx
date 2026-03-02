@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Animated,
   ScrollView,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -35,6 +37,11 @@ export default function AuthScreen() {
   });
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [attemptingBiometric, setAttemptingBiometric] = useState(false);
+
+  // Dev impersonation state
+  const [devModalVisible, setDevModalVisible] = useState(false);
+  const [devUsers, setDevUsers] = useState<{ id: string; email: string }[]>([]);
+  const [devLoading, setDevLoading] = useState(false);
 
   // Animation refs
   // In test environment, start with opacity 1 (fully visible) to avoid animation issues
@@ -229,6 +236,52 @@ export default function AuthScreen() {
     }
   };
 
+  const handleDevOpenModal = async () => {
+    setDevLoading(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://flytfamilie.no';
+      const res = await fetch(`${apiUrl}/api/dev/users`);
+      if (!res.ok) throw new Error('Could not fetch users');
+      const users = await res.json();
+      setDevUsers(users);
+      setDevModalVisible(true);
+    } catch (error) {
+      Alert.alert('Dev error', (error as Error).message);
+    } finally {
+      setDevLoading(false);
+    }
+  };
+
+  const handleDevImpersonate = async (userEmail: string) => {
+    setDevModalVisible(false);
+    setLoading(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://flytfamilie.no';
+      const res = await fetch(`${apiUrl}/api/dev/impersonate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Impersonation failed');
+      }
+      const { email: otpEmail, otp } = await res.json();
+      // Use verifyOtp on the client — goes through the normal sign-in flow
+      // (avoids setSession lock deadlock with onAuthStateChange)
+      const { error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: otp,
+        type: 'email',
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Dev impersonate error:', error);
+      Alert.alert('Dev error', (error as Error).message);
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={tw`flex-1 bg-background`}
@@ -335,7 +388,63 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
         </Animated.View>
+
+        {/* Dev Impersonation Panel - only in dev builds */}
+        {__DEV__ && (
+          <View style={tw`mt-8 border-t border-slate-700 pt-4`}>
+            <TouchableOpacity
+              style={tw.style(
+                `bg-slate-800/50 border border-dashed border-slate-600 rounded py-3 items-center`,
+                devLoading && 'opacity-50'
+              )}
+              onPress={handleDevOpenModal}
+              disabled={devLoading || loading}
+            >
+              {devLoading ? (
+                <ActivityIndicator color="#a89985" />
+              ) : (
+                <Text style={tw`text-text-light text-sm`}>
+                  Dev: Velg bruker
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Dev User Picker Modal */}
+      {__DEV__ && (
+        <Modal
+          visible={devModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setDevModalVisible(false)}
+        >
+          <View style={tw`flex-1 justify-end bg-black/50`}>
+            <View style={tw`bg-card-elevated rounded-t-2xl max-h-[70%] pb-8`}>
+              <View style={tw`flex-row justify-between items-center px-5 py-4 border-b border-slate-700`}>
+                <Text style={tw`text-white text-lg font-semibold`}>Velg bruker</Text>
+                <TouchableOpacity onPress={() => setDevModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#a89985" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={devUsers}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={tw`px-5 py-4 border-b border-slate-700/50`}
+                    onPress={() => handleDevImpersonate(item.email)}
+                  >
+                    <Text style={tw`text-white text-base`}>{item.email}</Text>
+                    <Text style={tw`text-text-light text-xs mt-1`}>{item.id}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
