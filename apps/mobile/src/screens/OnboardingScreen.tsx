@@ -703,9 +703,10 @@ export default function OnboardingScreen() {
       setInviteSent(true);
     } catch (error) {
       console.error('Error sending invitation email:', error);
+      const message = error instanceof Error ? error.message : 'Ukjent feil';
       Alert.alert(
         'Kunne ikke sende',
-        `E-posten ble ikke sendt. Du kan dele invitasjonskoden "${generatedInviteCode}" manuelt.`,
+        message,
         [{ text: 'OK' }]
       );
       setShowInviteCode(true);

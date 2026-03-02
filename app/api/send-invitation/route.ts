@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import HouseholdInvitationEmail from '@/emails/household-invitation';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -23,6 +24,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 }
+      );
+    }
+
+    // Check if email is already registered
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const emailTaken = existingUsers?.users?.some(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    if (emailTaken) {
+      return NextResponse.json(
+        { error: 'Denne e-postadressen er allerede registrert i Flyt' },
+        { status: 409 }
       );
     }
 
