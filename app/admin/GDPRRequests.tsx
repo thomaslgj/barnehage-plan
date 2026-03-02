@@ -152,8 +152,8 @@ export default function GDPRRequests({ requests }: { requests: GDPRRequest[] }) 
 
       alert('Konto slettet! Forespørselen er markert som fullført.');
       window.location.reload();
-    } catch (error: any) {
-      alert(`Feil ved sletting: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Feil ved sletting: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
       console.error(error);
     } finally {
       setProcessing(null);

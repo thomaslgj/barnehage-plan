@@ -20,6 +20,7 @@ interface HouseholdMember {
   joined_at: string;
   last_active_at?: string | null;
   is_premium?: boolean;
+  email?: string;
   household: {
     name: string;
   };
@@ -426,8 +427,8 @@ export default async function AdminDashboard() {
                     <tr key={member.id} className="hover:bg-card">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-foreground">{member.display_name || 'Ikke satt'}</div>
-                        {(member as any).email && (
-                          <div className="text-xs text-light">{(member as any).email}</div>
+                        {member.email && (
+                          <div className="text-xs text-light">{member.email}</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

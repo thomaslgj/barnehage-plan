@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Export all user data
-    const exportData: any = {
+    const exportData: Record<string, unknown> = {
       export_date: new Date().toISOString(),
       user_email: request.user_email,
       request_type: request.request_type,
