@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import PlausibleTracker from "@/components/PlausibleTracker";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body className={`${plusJakartaSans.variable} antialiased`}>
+        <PlausibleTracker />
         {children}
       </body>
     </html>
