@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
@@ -121,7 +121,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       forcedOnboardingRef.current = false; // Reset forced onboarding flag
@@ -134,15 +134,16 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadHouseholdData uses only stable refs and setters
+  }, []);
 
-  const forceOnboarding = () => {
+  const forceOnboarding = useCallback(() => {
     forcedOnboardingRef.current = true;
     setNeedsOnboarding(true);
     setHouseholdId(null);
     setChildId(null);
     setMembers([]);
-  };
+  }, []);
 
   // Periodic activity tracking - update every 5 minutes while app is active
   useEffect(() => {
@@ -266,7 +267,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const value: HouseholdContextValue = {
+  const value = useMemo<HouseholdContextValue>(() => ({
     user,
     householdId,
     childId,
@@ -276,7 +277,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     error,
     refresh,
     forceOnboarding,
-  };
+  }), [user, householdId, childId, members, needsOnboarding, loading, error, refresh, forceOnboarding]);
 
   return (
     <HouseholdContext.Provider value={value}>

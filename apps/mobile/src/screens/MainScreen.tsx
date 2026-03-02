@@ -29,15 +29,12 @@ import NotesBottomSheet from '../components/NotesBottomSheet';
 import TipModal from '../components/TipModal';
 import { fetchNotesForDateRange, addNote, deleteNote } from '../lib/notes';
 import { useTips } from '../hooks/useTips';
+import { useAssignments, setAssignments, getAssignments, type AssignmentData } from '../stores/assignments-store';
 import type { ScheduleAssignment, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
 dayjs.extend(isoWeek);
 dayjs.locale('nb');
-
-interface AssignmentData {
-  [key: string]: string | null; // key: "YYYY-MM-DD-dropoff" or "YYYY-MM-DD-pickup", value: user_id
-}
 
 const EMPTY_NOTES: DayNote[] = [];
 const REFRESH_COLORS = ['#7fa884'];
@@ -176,10 +173,9 @@ const ScheduleDayRow = React.memo(function ScheduleDayRow({
   );
 });
 
-// Memoized schedule list - prevents re-render when unrelated MainScreen state changes
+// Schedule list - subscribes to assignments store directly, bypassing MainScreen re-render
 interface ScheduleListProps {
   loading: boolean;
-  assignments: AssignmentData;
   dayMetadata: DayMetadata[];
   members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
   notes: Map<string, DayNote[]>;
@@ -190,13 +186,13 @@ interface ScheduleListProps {
   onSlotPress: (date: string, slot: 'dropoff' | 'pickup') => void;
   onNotePress: (date: string) => void;
   onDismissTemplate: () => void;
+  onAllSlotsFilled: () => void;
   dropoffAvatarRef: React.MutableRefObject<any>;
   noteIconRefs: React.MutableRefObject<Map<string, any>>;
 }
 
-const ScheduleList = React.memo(function ScheduleList({
+function ScheduleList({
   loading,
-  assignments,
   dayMetadata,
   members,
   notes,
@@ -207,9 +203,22 @@ const ScheduleList = React.memo(function ScheduleList({
   onSlotPress,
   onNotePress,
   onDismissTemplate,
+  onAllSlotsFilled,
   dropoffAvatarRef,
   noteIconRefs,
 }: ScheduleListProps) {
+  // Subscribe directly to the assignments store — re-renders here, NOT in MainScreen
+  const assignments = useAssignments();
+
+  // Check if all slots filled → trigger celebration (runs inside ScheduleList, not MainScreen)
+  useEffect(() => {
+    if (loading || dayMetadata.length === 0) return;
+    const allFilled = dayMetadata.every(day =>
+      assignments[day.dropoffKey] && assignments[day.pickupKey]
+    );
+    if (allFilled) onAllSlotsFilled();
+  }, [assignments, dayMetadata, loading, onAllSlotsFilled]);
+
   if (loading) return <ScheduleSkeleton />;
 
   return (
@@ -264,29 +273,15 @@ const ScheduleList = React.memo(function ScheduleList({
       ))}
     </View>
   );
-}, (prev, next) => {
-  return (
-    prev.loading === next.loading &&
-    prev.assignments === next.assignments &&
-    prev.dayMetadata === next.dayMetadata &&
-    prev.members === next.members &&
-    prev.notes === next.notes &&
-    prev.savingSlot === next.savingSlot &&
-    prev.templateWasSuccessful === next.templateWasSuccessful &&
-    prev.applyingTemplate === next.applyingTemplate
-  );
-});
+}
 
-// Memoized TodayCard section - only re-renders when today's specific data changes
+// TodayCard section - subscribes to assignments store directly
 interface TodayCardSectionProps {
   loading: boolean;
   weekChanging: boolean;
   todayDate: string | undefined;
-  dropoffName: string | undefined;
-  pickupName: string | undefined;
-  dropoffUserId: string | null | undefined;
-  pickupUserId: string | null | undefined;
   members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
+  getDisplayName: (memberId: string | null) => string | undefined;
   todayNotes: DayNote[];
   todayCardCollapsed: boolean;
   todayCardFade: Animated.Value;
@@ -297,15 +292,12 @@ interface TodayCardSectionProps {
   onEquipmentModalDismiss: () => void;
 }
 
-const TodayCardSection = React.memo(function TodayCardSection({
+function TodayCardSection({
   loading,
   weekChanging,
   todayDate,
-  dropoffName,
-  pickupName,
-  dropoffUserId,
-  pickupUserId,
   members,
+  getDisplayName,
   todayNotes,
   todayCardCollapsed,
   todayCardFade,
@@ -315,6 +307,13 @@ const TodayCardSection = React.memo(function TodayCardSection({
   onToggleCollapse,
   onEquipmentModalDismiss,
 }: TodayCardSectionProps) {
+  // Subscribe directly to assignments store — re-renders here, NOT in MainScreen
+  const assignments = useAssignments();
+  const dropoffUserId = todayDate ? assignments[`${todayDate}-dropoff`] : undefined;
+  const pickupUserId = todayDate ? assignments[`${todayDate}-pickup`] : undefined;
+  const dropoffName = getDisplayName(dropoffUserId ?? null);
+  const pickupName = getDisplayName(pickupUserId ?? null);
+
   return (
     <Animated.View style={{ opacity: todayCardFade }}>
       {(loading || weekChanging) ? (
@@ -338,7 +337,7 @@ const TodayCardSection = React.memo(function TodayCardSection({
       ) : null}
     </Animated.View>
   );
-});
+}
 
 export default function MainScreen({ navigation }: any) {
   const { user, householdId, childId, members } = useHousehold();
@@ -346,7 +345,7 @@ export default function MainScreen({ navigation }: any) {
   const isWeekend = dayjs().day() === 0 || dayjs().day() === 6;
   const currentWeekOffset = isWeekend ? 1 : 0;
   const [weekOffset, setWeekOffset] = useState(currentWeekOffset);
-  const [assignments, setAssignments] = useState<AssignmentData>({});
+  // assignments live in external store (assignments-store.ts) — not in MainScreen state
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
@@ -411,10 +410,12 @@ export default function MainScreen({ navigation }: any) {
   const nextButtonScale = useRef(new Animated.Value(1)).current;
   const profileButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Calculate current week dates
-  const startOfWeek = dayjs().add(weekOffset, 'week').startOf('isoWeek');
-  const endOfWeek = startOfWeek.add(6, 'day');
-  const weekRange = `${startOfWeek.format('D. MMM')} - ${endOfWeek.format('D. MMM')}`;
+  // Calculate current week dates - memoized to avoid dayjs ops on every render
+  const startOfWeek = useMemo(() => dayjs().add(weekOffset, 'week').startOf('isoWeek'), [weekOffset]);
+  const weekRange = useMemo(() => {
+    const endOfWeek = startOfWeek.add(6, 'day');
+    return `${startOfWeek.format('D. MMM')} - ${endOfWeek.format('D. MMM')}`;
+  }, [startOfWeek]);
 
   // Generate 7 days (1 week), Mon-Fri only - memoized to avoid recalculation
   const daysToShow = useMemo(() => {
@@ -442,16 +443,22 @@ export default function MainScreen({ navigation }: any) {
     };
   }), [daysToShow]);
 
-  const today = dayjs().format('YYYY-MM-DD');
-  const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
-  const currentHour = dayjs().hour();
+  // Memoize time-based values - only recalculate on week change, not every render
+  const { today, currentDayOfWeek, currentHour } = useMemo(() => ({
+    today: dayjs().format('YYYY-MM-DD'),
+    currentDayOfWeek: dayjs().day(), // 0 = Sunday, 6 = Saturday
+    currentHour: dayjs().hour(),
+  }), [weekOffset]);
 
-  // Check if all slots in current week are empty - uses pre-computed keys
+  // Check if all slots in current week are empty - reads from store on load/week change
   const allSlotsEmpty = useMemo(() => {
+    const current = getAssignments();
     return dayMetadata.every(day =>
-      !assignments[day.dropoffKey] && !assignments[day.pickupKey]
+      !current[day.dropoffKey] && !current[day.pickupKey]
     );
-  }, [dayMetadata, assignments]);
+  // Re-evaluate when week changes or loading finishes (store has fresh data at that point)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayMetadata, loading]);
 
   // On weekends, show next Monday instead of today/tomorrow - memoized
   // After 16:00 on weekdays, show tomorrow instead of today
@@ -604,7 +611,7 @@ export default function MainScreen({ navigation }: any) {
           // Get first day's dropoff assignment to determine avatar details
           const firstDay = daysToShow[0];
           const firstDateStr = firstDay.format('YYYY-MM-DD');
-          const firstDropoffUserId = assignments[`${firstDateStr}-dropoff`];
+          const firstDropoffUserId = getAssignments()[`${firstDateStr}-dropoff`];
 
           // Find member and get avatar info
           const member = firstDropoffUserId && members.length > 0
@@ -707,22 +714,15 @@ export default function MainScreen({ navigation }: any) {
     setWeekWasFullyFilled(false);
   }, [weekOffset]);
 
-  // Check if week is fully filled and trigger celebration
-  useEffect(() => {
-    if (loading || weekWasFullyFilled) return;
-
-    const allSlotsFilled = dayMetadata.every(day =>
-      assignments[day.dropoffKey] && assignments[day.pickupKey]
-    );
-
-    if (allSlotsFilled && dayMetadata.length > 0) {
-      setWeekWasFullyFilled(true);
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      celebrationConfettiRef.current?.start();
+  // Celebration callback - called by ScheduleList when all slots become filled
+  const handleAllSlotsFilled = useCallback(() => {
+    if (weekWasFullyFilled) return;
+    setWeekWasFullyFilled(true);
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  }, [assignments, dayMetadata, loading]);
+    celebrationConfettiRef.current?.start();
+  }, [weekWasFullyFilled]);
 
   // Manual template application
   const handleApplyTemplate = async () => {
@@ -776,13 +776,14 @@ export default function MainScreen({ navigation }: any) {
         updated_by: string;
       }> = [];
 
+      const currentAssignments = getAssignments();
       for (const day of daysToShow) {
         const dateStr = day.format('YYYY-MM-DD');
         const weekday = day.isoWeekday(); // 1-7, Monday=1
 
         // Check dropoff
         const dropoffKey = `${dateStr}-dropoff`;
-        if (!assignments[dropoffKey]) {
+        if (!currentAssignments[dropoffKey]) {
           const template = templates.find(t => t.weekday === weekday && t.slot === 'dropoff');
           if (template?.assigned_member_id) {
             newAssignments.push({
@@ -799,7 +800,7 @@ export default function MainScreen({ navigation }: any) {
 
         // Check pickup
         const pickupKey = `${dateStr}-pickup`;
-        if (!assignments[pickupKey]) {
+        if (!currentAssignments[pickupKey]) {
           const template = templates.find(t => t.weekday === weekday && t.slot === 'pickup');
           if (template?.assigned_member_id) {
             newAssignments.push({
@@ -1012,11 +1013,7 @@ export default function MainScreen({ navigation }: any) {
     setTemplateWasSuccessful(false);
   }, []);
 
-  const todayDate = todayOrTomorrow?.format('YYYY-MM-DD');
-  const todayDropoffId = todayDate ? assignments[`${todayDate}-dropoff`] : undefined;
-  const todayPickupId = todayDate ? assignments[`${todayDate}-pickup`] : undefined;
-  const todayDropoffName = getDisplayName(todayDropoffId ?? null);
-  const todayPickupName = getDisplayName(todayPickupId ?? null);
+  const todayDate = useMemo(() => todayOrTomorrow?.format('YYYY-MM-DD'), [todayOrTomorrow]);
   const todayNotes = todayDate ? notes.get(todayDate) || EMPTY_NOTES : EMPTY_NOTES;
 
   const handleTodayDropoffPress = useCallback(() => {
@@ -1125,11 +1122,8 @@ export default function MainScreen({ navigation }: any) {
             loading={loading}
             weekChanging={weekChanging}
             todayDate={todayDate}
-            dropoffName={todayDropoffName}
-            pickupName={todayPickupName}
-            dropoffUserId={todayDropoffId}
-            pickupUserId={todayPickupId}
             members={members}
+            getDisplayName={getDisplayName}
             todayNotes={todayNotes}
             todayCardCollapsed={todayCardCollapsed}
             todayCardFade={todayCardFade}
@@ -1261,7 +1255,6 @@ export default function MainScreen({ navigation }: any) {
         {/* Schedule List */}
         <ScheduleList
           loading={loading}
-          assignments={assignments}
           dayMetadata={dayMetadata}
           members={members}
           notes={notes}
@@ -1272,6 +1265,7 @@ export default function MainScreen({ navigation }: any) {
           onSlotPress={handleSlotPress}
           onNotePress={handleNotePress}
           onDismissTemplate={onDismissTemplate}
+          onAllSlotsFilled={handleAllSlotsFilled}
           dropoffAvatarRef={dropoffAvatarRef}
           noteIconRefs={noteIconRefs}
         />
