@@ -277,7 +277,7 @@ export default function LandingPage() {
               {/* Screenshot container with scroll animation */}
               <div className="absolute inset-0 overflow-hidden rounded-[2.5rem]">
                 <img
-                  src="/screenshot.jpg"
+                  src="/screenshot.png"
                   alt="Flyt app screenshot"
                   className="w-full h-auto screenshot-scroll"
                   style={{

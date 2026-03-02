@@ -349,6 +349,7 @@ export default function MainScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [templateWasSuccessful, setTemplateWasSuccessful] = useState(false);
+  const [templateDismissed, setTemplateDismissed] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [hasTemplate, setHasTemplate] = useState(false);
   const [childName, setChildName] = useState<string>('');
@@ -1011,6 +1012,7 @@ export default function MainScreen({ navigation }: any) {
   // Stable callbacks for memoized components
   const onDismissTemplate = useCallback(() => {
     setTemplateWasSuccessful(false);
+    setTemplateDismissed(true);
   }, []);
 
   const todayDate = useMemo(() => todayOrTomorrow?.format('YYYY-MM-DD'), [todayOrTomorrow]);
@@ -1177,7 +1179,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
           {/* Apply Template Button - show when week is empty */}
-          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && hasTemplate && dayMetadata.length > 0 && (
+          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && !templateDismissed && allSlotsEmpty && hasTemplate && dayMetadata.length > 0 && (
             <View style={tw`mb-3 p-4 bg-primary/20 rounded-lg border border-primary/50`}>
               <Text style={tw`text-base text-text text-center mb-3 font-medium`}>
                 Fyll inn fra standard-uke ✨
