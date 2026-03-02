@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // 1. User info
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-    if (authUser) {
+    if (authUser?.user) {
       exportData.user_info = {
         email: authUser.user.email,
         created_at: authUser.user.created_at,
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       // 3. Children
       const { data: children } = await supabaseAdmin
         .from('children')
-        .select('name, created_at')
+        .select('id, name, created_at')
         .eq('household_id', request.household_id);
 
       exportData.children = children || [];
