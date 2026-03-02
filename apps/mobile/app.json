@@ -20,6 +20,7 @@
       "associatedDomains": ["applinks:flytfamilie.no"]
     },
     "android": {
+      "jsEngine": "hermes",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2d2520"

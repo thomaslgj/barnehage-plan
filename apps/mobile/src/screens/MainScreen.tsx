@@ -50,12 +50,137 @@ const NAV_BUTTON_STYLE = {
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
 };
+const CONNECTING_LINE_STYLE = {
+  position: 'absolute' as const,
+  top: '50%' as const,
+  left: '50%' as const,
+  width: 32,
+  height: 2,
+  backgroundColor: 'rgba(139, 122, 106, 0.4)',
+  transform: [{ translateX: -16 }, { translateY: -1 }],
+  zIndex: -1,
+};
+
+interface DayMetadata {
+  dateStr: string;
+  dayName: string;
+  isToday: boolean;
+  dropoffKey: string;
+  pickupKey: string;
+}
+
+// Memoized day row - only re-renders when THIS day's data changes
+interface ScheduleDayRowProps {
+  dateStr: string;
+  dayName: string;
+  isToday: boolean;
+  dropoffKey: string;
+  pickupKey: string;
+  dropoffUserId: string | null;
+  pickupUserId: string | null;
+  dropoffLoading: boolean;
+  pickupLoading: boolean;
+  members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
+  getDisplayName: (memberId: string | null) => string | undefined;
+  onSlotPress: (date: string, slot: 'dropoff' | 'pickup') => void;
+  onNotePress: (date: string) => void;
+  hasNotes: boolean;
+  isFirstDay: boolean;
+  dropoffAvatarRef?: React.MutableRefObject<any>;
+  noteIconRefs: React.MutableRefObject<Map<string, any>>;
+}
+
+const ScheduleDayRow = React.memo(function ScheduleDayRow({
+  dateStr,
+  dayName,
+  isToday,
+  dropoffKey,
+  pickupKey,
+  dropoffUserId,
+  pickupUserId,
+  dropoffLoading,
+  pickupLoading,
+  members,
+  getDisplayName,
+  onSlotPress,
+  onNotePress,
+  hasNotes,
+  isFirstDay,
+  dropoffAvatarRef,
+  noteIconRefs,
+}: ScheduleDayRowProps) {
+  return (
+    <View key={dateStr}>
+      <View style={tw`pb-1`}>
+        <View style={tw`h-px bg-slate-600/40 mt-3`} />
+        <View style={tw`flex-row items-center justify-between mt-1.5`}>
+          <View style={tw`flex-row items-center gap-1.5`}>
+            {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
+            <Text style={tw.style(
+              'text-[11px] font-semibold capitalize',
+              isToday ? 'text-secondary-light' : 'text-slate-400'
+            )}>
+              {dayName}
+            </Text>
+          </View>
+          <NoteIcon
+            ref={(ref) => {
+              if (ref) {
+                noteIconRefs.current.set(dateStr, ref);
+              }
+            }}
+            hasNotes={hasNotes}
+            onPress={() => onNotePress(dateStr)}
+          />
+        </View>
+
+        <View style={{ position: 'relative' }}>
+          <View style={tw`flex-row gap-6`}>
+            <View style={tw`flex-1`}>
+              <ScheduleSlot
+                key={dropoffKey}
+                slotType="dropoff"
+                displayName={getDisplayName(dropoffUserId)}
+                userId={dropoffUserId}
+                members={members}
+                onPress={() => onSlotPress(dateStr, 'dropoff')}
+                loading={dropoffLoading}
+                avatarRef={isFirstDay ? dropoffAvatarRef : undefined}
+              />
+            </View>
+            <View style={tw`flex-1`}>
+              <ScheduleSlot
+                key={pickupKey}
+                slotType="pickup"
+                displayName={getDisplayName(pickupUserId)}
+                userId={pickupUserId}
+                members={members}
+                onPress={() => onSlotPress(dateStr, 'pickup')}
+                loading={pickupLoading}
+              />
+            </View>
+          </View>
+          <View style={CONNECTING_LINE_STYLE} />
+        </View>
+      </View>
+    </View>
+  );
+}, (prev, next) => {
+  // Only re-render when THIS day's actual data changes
+  return (
+    prev.dropoffUserId === next.dropoffUserId &&
+    prev.pickupUserId === next.pickupUserId &&
+    prev.dropoffLoading === next.dropoffLoading &&
+    prev.pickupLoading === next.pickupLoading &&
+    prev.hasNotes === next.hasNotes
+  );
+});
 
 // Memoized schedule list - prevents re-render when unrelated MainScreen state changes
 interface ScheduleListProps {
   loading: boolean;
   assignments: AssignmentData;
-  daysToShow: dayjs.Dayjs[];
+  dayMetadata: DayMetadata[];
   members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
   notes: Map<string, DayNote[]>;
   savingSlot: string | null;
@@ -72,7 +197,7 @@ interface ScheduleListProps {
 const ScheduleList = React.memo(function ScheduleList({
   loading,
   assignments,
-  daysToShow,
+  dayMetadata,
   members,
   notes,
   savingSlot,
@@ -115,87 +240,35 @@ const ScheduleList = React.memo(function ScheduleList({
         </View>
       )}
 
-      {daysToShow.map((day, index) => {
-        const dateStr = day.format('YYYY-MM-DD');
-        const dropoffKey = `${dateStr}-dropoff`;
-        const pickupKey = `${dateStr}-pickup`;
-        const isToday = day.isSame(dayjs(), 'day');
-
-        return (
-          <View key={dateStr}>
-            <View style={tw`pb-1`}>
-              <View style={tw`h-px bg-slate-600/40 mt-3`} />
-              <View style={tw`flex-row items-center justify-between mt-1.5`}>
-                <View style={tw`flex-row items-center gap-1.5`}>
-                  {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
-                  <Text style={tw.style(
-                    'text-[11px] font-semibold capitalize',
-                    isToday ? 'text-secondary-light' : 'text-slate-400'
-                  )}>
-                    {day.format('dddd')}
-                  </Text>
-                </View>
-                <NoteIcon
-                  ref={(ref) => {
-                    if (ref) {
-                      noteIconRefs.current.set(dateStr, ref);
-                    }
-                  }}
-                  hasNotes={notes.has(dateStr) && (notes.get(dateStr)?.length || 0) > 0}
-                  onPress={() => onNotePress(dateStr)}
-                />
-              </View>
-
-              <View style={{ position: 'relative' }}>
-                <View style={tw`flex-row gap-6`}>
-                  <View style={tw`flex-1`}>
-                    <ScheduleSlot
-                      key={dropoffKey}
-                      slotType="dropoff"
-                      displayName={getDisplayName(assignments[dropoffKey])}
-                      userId={assignments[dropoffKey]}
-                      members={members}
-                      onPress={() => onSlotPress(dateStr, 'dropoff')}
-                      loading={savingSlot === dropoffKey}
-                      avatarRef={index === 0 ? dropoffAvatarRef : undefined}
-                    />
-                  </View>
-                  <View style={tw`flex-1`}>
-                    <ScheduleSlot
-                      key={pickupKey}
-                      slotType="pickup"
-                      displayName={getDisplayName(assignments[pickupKey])}
-                      userId={assignments[pickupKey]}
-                      members={members}
-                      onPress={() => onSlotPress(dateStr, 'pickup')}
-                      loading={savingSlot === pickupKey}
-                    />
-                  </View>
-                </View>
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    width: 32,
-                    height: 2,
-                    backgroundColor: 'rgba(139, 122, 106, 0.4)',
-                    transform: [{ translateX: -16 }, { translateY: -1 }],
-                    zIndex: -1,
-                  }}
-                />
-              </View>
-            </View>
-          </View>
-        );
-      })}
+      {dayMetadata.map((day, index) => (
+        <ScheduleDayRow
+          key={day.dateStr}
+          dateStr={day.dateStr}
+          dayName={day.dayName}
+          isToday={day.isToday}
+          dropoffKey={day.dropoffKey}
+          pickupKey={day.pickupKey}
+          dropoffUserId={assignments[day.dropoffKey] || null}
+          pickupUserId={assignments[day.pickupKey] || null}
+          dropoffLoading={savingSlot === day.dropoffKey}
+          pickupLoading={savingSlot === day.pickupKey}
+          members={members}
+          getDisplayName={getDisplayName}
+          onSlotPress={onSlotPress}
+          onNotePress={onNotePress}
+          hasNotes={notes.has(day.dateStr) && (notes.get(day.dateStr)?.length || 0) > 0}
+          isFirstDay={index === 0}
+          dropoffAvatarRef={dropoffAvatarRef}
+          noteIconRefs={noteIconRefs}
+        />
+      ))}
     </View>
   );
 }, (prev, next) => {
   return (
     prev.loading === next.loading &&
     prev.assignments === next.assignments &&
-    prev.daysToShow === next.daysToShow &&
+    prev.dayMetadata === next.dayMetadata &&
     prev.members === next.members &&
     prev.notes === next.notes &&
     prev.savingSlot === next.savingSlot &&
@@ -357,19 +430,28 @@ export default function MainScreen({ navigation }: any) {
     return days;
   }, [weekOffset]);
 
+  // Pre-compute day metadata - only recalculates on week change, NOT on assignment change
+  const dayMetadata = useMemo<DayMetadata[]>(() => daysToShow.map(day => {
+    const dateStr = day.format('YYYY-MM-DD');
+    return {
+      dateStr,
+      dayName: day.format('dddd'),
+      isToday: day.isSame(dayjs(), 'day'),
+      dropoffKey: `${dateStr}-dropoff`,
+      pickupKey: `${dateStr}-pickup`,
+    };
+  }), [daysToShow]);
+
   const today = dayjs().format('YYYY-MM-DD');
   const currentDayOfWeek = dayjs().day(); // 0 = Sunday, 6 = Saturday
   const currentHour = dayjs().hour();
 
-  // Check if all slots in current week are empty - memoized
+  // Check if all slots in current week are empty - uses pre-computed keys
   const allSlotsEmpty = useMemo(() => {
-    return daysToShow.every(day => {
-      const dateStr = day.format('YYYY-MM-DD');
-      const dropoffKey = `${dateStr}-dropoff`;
-      const pickupKey = `${dateStr}-pickup`;
-      return !assignments[dropoffKey] && !assignments[pickupKey];
-    });
-  }, [daysToShow, assignments]);
+    return dayMetadata.every(day =>
+      !assignments[day.dropoffKey] && !assignments[day.pickupKey]
+    );
+  }, [dayMetadata, assignments]);
 
   // On weekends, show next Monday instead of today/tomorrow - memoized
   // After 16:00 on weekdays, show tomorrow instead of today
@@ -629,21 +711,18 @@ export default function MainScreen({ navigation }: any) {
   useEffect(() => {
     if (loading || weekWasFullyFilled) return;
 
-    const allSlotsFilled = daysToShow.every(day => {
-      const dateStr = day.format('YYYY-MM-DD');
-      const dropoffKey = `${dateStr}-dropoff`;
-      const pickupKey = `${dateStr}-pickup`;
-      return assignments[dropoffKey] && assignments[pickupKey];
-    });
+    const allSlotsFilled = dayMetadata.every(day =>
+      assignments[day.dropoffKey] && assignments[day.pickupKey]
+    );
 
-    if (allSlotsFilled && daysToShow.length > 0) {
+    if (allSlotsFilled && dayMetadata.length > 0) {
       setWeekWasFullyFilled(true);
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       celebrationConfettiRef.current?.start();
     }
-  }, [assignments, daysToShow.length, loading]);
+  }, [assignments, dayMetadata, loading]);
 
   // Manual template application
   const handleApplyTemplate = async () => {
@@ -776,18 +855,20 @@ export default function MainScreen({ navigation }: any) {
     if (!childId || !householdId || !user) return;
 
     const key = `${date}-${slot}`;
+    let pendingNextUserId: string | null = null;
 
-    // Use functional update to get current value without depending on assignments
+    // Pure state update - no side effects
     setAssignments((prev) => {
       const currentUserId = prev[key] || null;
-
-      // Find current index and get next
       const currentIndex = cycleOrder.indexOf(currentUserId);
       const nextIndex = (currentIndex + 1) % cycleOrder.length;
-      const nextUserId = cycleOrder[nextIndex];
+      pendingNextUserId = cycleOrder[nextIndex];
+      return { ...prev, [key]: pendingNextUserId };
+    });
 
-      // Fire off database save without awaiting (non-blocking)
-      if (nextUserId === null) {
+    // DB save deferred to next tick - runs after state update & render
+    setTimeout(() => {
+      if (pendingNextUserId === null) {
         supabase
           .from('schedule_assignments')
           .delete()
@@ -805,20 +886,15 @@ export default function MainScreen({ navigation }: any) {
             child_id: childId,
             date: date,
             slot: slot,
-            assigned_member_id: nextUserId,
-            assigned_user_id: nextUserId,
+            assigned_member_id: pendingNextUserId,
+            assigned_user_id: pendingNextUserId,
             updated_by: user.id,
           }, { onConflict: 'child_id,date,slot' })
           .then(({ error }) => {
             if (error) console.error('Error saving assignment:', error);
           });
       }
-
-      return {
-        ...prev,
-        [key]: nextUserId,
-      };
-    });
+    }, 0);
   }, [childId, householdId, user, cycleOrder]);
 
   const getDisplayName = useCallback((memberId: string | null): string | undefined => {
@@ -1111,7 +1187,7 @@ export default function MainScreen({ navigation }: any) {
         )}
 
           {/* Apply Template Button - show when week is empty */}
-          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && hasTemplate && daysToShow.length > 0 && (
+          {!loading && !weekChanging && !applyingTemplate && !templateWasSuccessful && allSlotsEmpty && hasTemplate && dayMetadata.length > 0 && (
             <View style={tw`mb-3 p-4 bg-primary/20 rounded-lg border border-primary/50`}>
               <Text style={tw`text-base text-text text-center mb-1 font-medium`}>
                 Fyll inn fra standard-uke ✨
@@ -1186,7 +1262,7 @@ export default function MainScreen({ navigation }: any) {
         <ScheduleList
           loading={loading}
           assignments={assignments}
-          daysToShow={daysToShow}
+          dayMetadata={dayMetadata}
           members={members}
           notes={notes}
           savingSlot={savingSlot}
