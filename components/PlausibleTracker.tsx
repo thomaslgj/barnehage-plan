@@ -6,7 +6,7 @@ export default function PlausibleTracker() {
   useEffect(() => {
     import("@plausible-analytics/tracker").then(({ init }) => {
       init({
-        domain: "flytfamilie.app",
+        domain: "flytfamilie.no",
         autoCapturePageviews: true,
       });
     });
