@@ -17,7 +17,12 @@
       "supportsTablet": true,
       "backgroundColor": "#2d2520",
       "bundleIdentifier": "com.thomaslg.flyt",
-      "associatedDomains": ["applinks:flytfamilie.no"]
+      "associatedDomains": [
+        "applinks:flytfamilie.no"
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "jsEngine": "hermes",
@@ -38,7 +43,10 @@
               "pathPrefix": "/auth"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -53,6 +61,7 @@
       "eas": {
         "projectId": "b1d1e57b-636d-450c-96ef-513d626e1a07"
       }
-    }
+    },
+    "owner": "thomaslg"
   }
 }
