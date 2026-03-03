@@ -19,17 +19,15 @@ import 'dayjs/locale/nb';
 import { supabase } from '../lib/supabase';
 import { useHousehold } from '../contexts/HouseholdProvider';
 import { Text } from '../components/Text';
-import TodayCard from '../components/TodayCard';
-import TodayCardSkeleton from '../components/TodayCardSkeleton';
 import HeaderSkeleton from '../components/HeaderSkeleton';
-import ScheduleSlot from '../components/ScheduleSlot';
-import ScheduleSkeleton from '../components/ScheduleSkeleton';
-import NoteIcon from '../components/NoteIcon';
 import NotesBottomSheet from '../components/NotesBottomSheet';
 import TipModal from '../components/TipModal';
+import ScheduleList, { type DayMetadata } from '../components/ScheduleList';
+import TodayCardSection from '../components/TodayCardSection';
 import { fetchNotesForDateRange, addNote, deleteNote } from '../lib/notes';
+import { applyTemplateToWeek } from '../lib/scheduleTemplate';
 import { useTips } from '../hooks/useTips';
-import { useAssignments, useAssignment, setAssignments, getAssignments, type AssignmentData } from '../stores/assignments-store';
+import { setAssignments, getAssignments, type AssignmentData } from '../stores/assignments-store';
 import type { ScheduleAssignment, DayNote } from '../types/db';
 import tw from '../lib/tw';
 
@@ -47,296 +45,6 @@ const NAV_BUTTON_STYLE = {
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
 };
-const CONNECTING_LINE_STYLE = {
-  position: 'absolute' as const,
-  top: '50%' as const,
-  left: '50%' as const,
-  width: 32,
-  height: 2,
-  backgroundColor: 'rgba(139, 122, 106, 0.4)',
-  transform: [{ translateX: -16 }, { translateY: -1 }],
-  zIndex: -1,
-};
-
-interface DayMetadata {
-  dateStr: string;
-  dayName: string;
-  isToday: boolean;
-  dropoffKey: string;
-  pickupKey: string;
-}
-
-// Memoized day row - only re-renders when THIS day's data changes
-interface ScheduleDayRowProps {
-  dateStr: string;
-  dayName: string;
-  isToday: boolean;
-  dropoffKey: string;
-  pickupKey: string;
-  dropoffUserId: string | null;
-  pickupUserId: string | null;
-  dropoffLoading: boolean;
-  pickupLoading: boolean;
-  members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
-  getDisplayName: (memberId: string | null) => string | undefined;
-  onSlotPress: (date: string, slot: 'dropoff' | 'pickup') => void;
-  onNotePress: (date: string) => void;
-  hasNotes: boolean;
-  isFirstDay: boolean;
-  dropoffAvatarRef?: React.MutableRefObject<any>;
-  noteIconRefs: React.MutableRefObject<Map<string, any>>;
-}
-
-const ScheduleDayRow = React.memo(function ScheduleDayRow({
-  dateStr,
-  dayName,
-  isToday,
-  dropoffKey,
-  pickupKey,
-  dropoffUserId,
-  pickupUserId,
-  dropoffLoading,
-  pickupLoading,
-  members,
-  getDisplayName,
-  onSlotPress,
-  onNotePress,
-  hasNotes,
-  isFirstDay,
-  dropoffAvatarRef,
-  noteIconRefs,
-}: ScheduleDayRowProps) {
-  return (
-    <View key={dateStr}>
-      <View style={tw`pb-1`}>
-        <View style={tw`h-px bg-slate-600/40 mt-3`} />
-        <View style={tw`flex-row items-center justify-between mt-1.5`}>
-          <View style={tw`flex-row items-center gap-1.5`}>
-            {isToday && <View style={tw`w-1.5 h-1.5 bg-secondary rounded-full`} />}
-            <Text style={tw.style(
-              'text-[11px] font-semibold capitalize',
-              isToday ? 'text-secondary-light' : 'text-slate-400'
-            )}>
-              {dayName}
-            </Text>
-          </View>
-          <NoteIcon
-            ref={(ref) => {
-              if (ref) {
-                noteIconRefs.current.set(dateStr, ref);
-              }
-            }}
-            hasNotes={hasNotes}
-            onPress={() => onNotePress(dateStr)}
-          />
-        </View>
-
-        <View style={{ position: 'relative' }}>
-          <View style={tw`flex-row gap-6`}>
-            <View style={tw`flex-1`}>
-              <ScheduleSlot
-                key={dropoffKey}
-                slotType="dropoff"
-                displayName={getDisplayName(dropoffUserId)}
-                userId={dropoffUserId}
-                members={members}
-                onPress={() => onSlotPress(dateStr, 'dropoff')}
-                loading={dropoffLoading}
-                avatarRef={isFirstDay ? dropoffAvatarRef : undefined}
-              />
-            </View>
-            <View style={tw`flex-1`}>
-              <ScheduleSlot
-                key={pickupKey}
-                slotType="pickup"
-                displayName={getDisplayName(pickupUserId)}
-                userId={pickupUserId}
-                members={members}
-                onPress={() => onSlotPress(dateStr, 'pickup')}
-                loading={pickupLoading}
-              />
-            </View>
-          </View>
-          <View style={CONNECTING_LINE_STYLE} />
-        </View>
-      </View>
-    </View>
-  );
-}, (prev, next) => {
-  // Only re-render when THIS day's actual data changes
-  return (
-    prev.dropoffUserId === next.dropoffUserId &&
-    prev.pickupUserId === next.pickupUserId &&
-    prev.dropoffLoading === next.dropoffLoading &&
-    prev.pickupLoading === next.pickupLoading &&
-    prev.hasNotes === next.hasNotes
-  );
-});
-
-// Schedule list - subscribes to assignments store directly, bypassing MainScreen re-render
-interface ScheduleListProps {
-  loading: boolean;
-  dayMetadata: DayMetadata[];
-  members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
-  notes: Map<string, DayNote[]>;
-  savingSlot: string | null;
-  templateWasSuccessful: boolean;
-  applyingTemplate: boolean;
-  getDisplayName: (memberId: string | null) => string | undefined;
-  onSlotPress: (date: string, slot: 'dropoff' | 'pickup') => void;
-  onNotePress: (date: string) => void;
-  onDismissTemplate: () => void;
-  onAllSlotsFilled: () => void;
-  dropoffAvatarRef: React.MutableRefObject<any>;
-  noteIconRefs: React.MutableRefObject<Map<string, any>>;
-}
-
-const ScheduleList = React.memo(function ScheduleList({
-  loading,
-  dayMetadata,
-  members,
-  notes,
-  savingSlot,
-  templateWasSuccessful,
-  applyingTemplate,
-  getDisplayName,
-  onSlotPress,
-  onNotePress,
-  onDismissTemplate,
-  onAllSlotsFilled,
-  dropoffAvatarRef,
-  noteIconRefs,
-}: ScheduleListProps) {
-  // Subscribe directly to the assignments store — re-renders here, NOT in MainScreen
-  const assignments = useAssignments();
-
-  // Check if all slots filled → trigger celebration (runs inside ScheduleList, not MainScreen)
-  useEffect(() => {
-    if (loading || dayMetadata.length === 0) return;
-    const allFilled = dayMetadata.every(day =>
-      assignments[day.dropoffKey] && assignments[day.pickupKey]
-    );
-    if (allFilled) onAllSlotsFilled();
-  }, [assignments, dayMetadata, loading, onAllSlotsFilled]);
-
-  if (loading) return <ScheduleSkeleton />;
-
-  return (
-    <View>
-      {/* Header */}
-      <View style={tw`flex-row gap-6 mb-3 px-1`}>
-        <View style={tw`flex-1 items-end`}>
-          <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
-        </View>
-        <View style={tw`flex-1 items-start`}>
-          <Text style={tw`text-xs font-medium text-slate-400`}>Henting</Text>
-        </View>
-      </View>
-
-      {/* Template Auto-Applied Message */}
-      {templateWasSuccessful && !applyingTemplate && (
-        <View style={tw`mb-3 p-3 bg-primary/20 rounded-lg border border-primary/50 flex-row items-center`}>
-          <Text style={tw`text-sm text-primary-light text-center flex-1`}>
-            Uken er fylt inn fra din standard-uke. Nå har du flyt! 🌟
-          </Text>
-          <TouchableOpacity
-            onPress={onDismissTemplate}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={tw`ml-2`}
-          >
-            <Ionicons name="close" size={18} color="#7fa884" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {dayMetadata.map((day, index) => (
-        <ScheduleDayRow
-          key={day.dateStr}
-          dateStr={day.dateStr}
-          dayName={day.dayName}
-          isToday={day.isToday}
-          dropoffKey={day.dropoffKey}
-          pickupKey={day.pickupKey}
-          dropoffUserId={assignments[day.dropoffKey] || null}
-          pickupUserId={assignments[day.pickupKey] || null}
-          dropoffLoading={savingSlot === day.dropoffKey}
-          pickupLoading={savingSlot === day.pickupKey}
-          members={members}
-          getDisplayName={getDisplayName}
-          onSlotPress={onSlotPress}
-          onNotePress={onNotePress}
-          hasNotes={notes.has(day.dateStr) && (notes.get(day.dateStr)?.length || 0) > 0}
-          isFirstDay={index === 0}
-          dropoffAvatarRef={dropoffAvatarRef}
-          noteIconRefs={noteIconRefs}
-        />
-      ))}
-    </View>
-  );
-});
-
-// TodayCard section - subscribes to assignments store directly
-interface TodayCardSectionProps {
-  loading: boolean;
-  weekChanging: boolean;
-  todayDate: string | undefined;
-  members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
-  getDisplayName: (memberId: string | null) => string | undefined;
-  todayNotes: DayNote[];
-  todayCardCollapsed: boolean;
-  todayCardFade: Animated.Value;
-  onDropoffPress: () => void;
-  onPickupPress: () => void;
-  onNotePress: () => void;
-  onToggleCollapse: () => void;
-  onEquipmentModalDismiss: () => void;
-}
-
-const TodayCardSection = React.memo(function TodayCardSection({
-  loading,
-  weekChanging,
-  todayDate,
-  members,
-  getDisplayName,
-  todayNotes,
-  todayCardCollapsed,
-  todayCardFade,
-  onDropoffPress,
-  onPickupPress,
-  onNotePress,
-  onToggleCollapse,
-  onEquipmentModalDismiss,
-}: TodayCardSectionProps) {
-  // Subscribe to ONLY today's two keys — won't re-render when other days change
-  const dropoffUserId = useAssignment(todayDate ? `${todayDate}-dropoff` : '');
-  const pickupUserId = useAssignment(todayDate ? `${todayDate}-pickup` : '');
-  const dropoffName = getDisplayName(dropoffUserId ?? null);
-  const pickupName = getDisplayName(pickupUserId ?? null);
-
-  return (
-    <Animated.View style={{ opacity: todayCardFade }}>
-      {(loading || weekChanging) ? (
-        <TodayCardSkeleton />
-      ) : todayDate ? (
-        <TodayCard
-          date={todayDate}
-          dropoffName={dropoffName}
-          pickupName={pickupName}
-          dropoffUserId={dropoffUserId}
-          pickupUserId={pickupUserId}
-          members={members}
-          onDropoffPress={onDropoffPress}
-          onPickupPress={onPickupPress}
-          notes={todayNotes}
-          onNotePress={onNotePress}
-          collapsed={todayCardCollapsed}
-          onToggleCollapse={onToggleCollapse}
-          onEquipmentModalDismiss={onEquipmentModalDismiss}
-        />
-      ) : null}
-    </Animated.View>
-  );
-});
 
 export default function MainScreen({ navigation }: any) {
   const { user, householdId, childId, members } = useHousehold();
@@ -451,15 +159,8 @@ export default function MainScreen({ navigation }: any) {
     currentHour: dayjs().hour(),
   }), [weekOffset]);
 
-  // Check if all slots in current week are empty - reads from store on load/week change
-  const allSlotsEmpty = useMemo(() => {
-    const current = getAssignments();
-    return dayMetadata.every(day =>
-      !current[day.dropoffKey] && !current[day.pickupKey]
-    );
-  // Re-evaluate when week changes or loading finishes (store has fresh data at that point)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dayMetadata, loading]);
+  // Computed after fetchAssignments resolves — avoids stale store reads on week change
+  const [allSlotsEmpty, setAllSlotsEmpty] = useState(false);
 
   // On weekends, show next Monday instead of today/tomorrow - memoized
   // After 16:00 on weekdays, show tomorrow instead of today
@@ -551,6 +252,10 @@ export default function MainScreen({ navigation }: any) {
 
       // Update with fresh data from database
       setAssignments(assignmentMap);
+      setAllSlotsEmpty(currentDays.every(day => {
+        const dateStr = day.format('YYYY-MM-DD');
+        return !assignmentMap[`${dateStr}-dropoff`] && !assignmentMap[`${dateStr}-pickup`];
+      }));
 
       // Also fetch notes for this date range
       const notesMap = await fetchNotesForDateRange(householdId, childId, fromDate, toDate);
@@ -713,6 +418,7 @@ export default function MainScreen({ navigation }: any) {
   useEffect(() => {
     setTemplateWasSuccessful(false);
     setWeekWasFullyFilled(false);
+    setAllSlotsEmpty(false); // Reset until fetchAssignments resolves with fresh data
   }, [weekOffset]);
 
   // Celebration callback - called by ScheduleList when all slots become filled
@@ -727,118 +433,25 @@ export default function MainScreen({ navigation }: any) {
 
   // Manual template application
   const handleApplyTemplate = async () => {
+    if (!childId || !householdId || !user) return;
     setApplyingTemplate(true);
     try {
-      const wasApplied = await applyTemplateToWeek();
-      setTemplateWasSuccessful(wasApplied);
+      const { applied, hasTemplate } = await applyTemplateToWeek({
+        childId,
+        householdId,
+        userId: user.id,
+        days: daysToShow.map(d => ({ dateStr: d.format('YYYY-MM-DD'), isoWeekday: d.isoWeekday() })),
+      });
+      setHasTemplate(hasTemplate);
+      if (applied) {
+        await fetchAssignments();
+      }
+      setTemplateWasSuccessful(applied);
     } catch (error) {
       console.error('Error applying template:', error);
       setTemplateWasSuccessful(false);
     } finally {
       setApplyingTemplate(false);
-    }
-  };
-
-  // Note: Automatic template application is disabled
-  // Use the debug button below to manually apply template when needed
-
-  // Apply template to empty weeks
-  // Returns true if templates were actually applied, false otherwise
-  const applyTemplateToWeek = async (): Promise<boolean> => {
-    if (!childId || !householdId || !user) return false;
-
-    try {
-      // Fetch template
-      const { data: templates, error: templateError } = await supabase
-        .from('schedule_templates')
-        .select('weekday, slot, assigned_member_id, assigned_user_id')
-        .eq('household_id', householdId)
-        .eq('child_id', childId);
-
-      if (templateError) {
-        console.error('Template error:', templateError);
-        return false;
-      }
-
-      if (!templates || templates.length === 0) {
-        setHasTemplate(false);
-        return false; // No template to apply
-      }
-
-      setHasTemplate(true);
-
-      // Check which days in current view need assignments
-      const newAssignments: Array<{
-        household_id: string;
-        child_id: string;
-        date: string;
-        slot: 'dropoff' | 'pickup';
-        assigned_user_id: string | null;
-        updated_by: string;
-      }> = [];
-
-      const currentAssignments = getAssignments();
-      for (const day of daysToShow) {
-        const dateStr = day.format('YYYY-MM-DD');
-        const weekday = day.isoWeekday(); // 1-7, Monday=1
-
-        // Check dropoff
-        const dropoffKey = `${dateStr}-dropoff`;
-        if (!currentAssignments[dropoffKey]) {
-          const template = templates.find(t => t.weekday === weekday && t.slot === 'dropoff');
-          if (template?.assigned_member_id) {
-            newAssignments.push({
-              household_id: householdId,
-              child_id: childId,
-              date: dateStr,
-              slot: 'dropoff',
-              assigned_member_id: template.assigned_member_id,
-              assigned_user_id: template.assigned_user_id,
-              updated_by: user.id,
-            });
-          }
-        }
-
-        // Check pickup
-        const pickupKey = `${dateStr}-pickup`;
-        if (!currentAssignments[pickupKey]) {
-          const template = templates.find(t => t.weekday === weekday && t.slot === 'pickup');
-          if (template?.assigned_member_id) {
-            newAssignments.push({
-              household_id: householdId,
-              child_id: childId,
-              date: dateStr,
-              slot: 'pickup',
-              assigned_member_id: template.assigned_member_id,
-              assigned_user_id: template.assigned_user_id,
-              updated_by: user.id,
-            });
-          }
-        }
-      }
-
-      // Insert/update new assignments from template (use upsert to handle duplicates)
-      if (newAssignments.length > 0) {
-        // console.log('Upserting assignments:', newAssignments.length);
-        // console.log('Assignments to upsert:', JSON.stringify(newAssignments, null, 2));
-        const { error: upsertError } = await supabase
-          .from('schedule_assignments')
-          .upsert(newAssignments, { onConflict: 'child_id,date,slot' });
-
-        if (upsertError) {
-          console.error('Upsert error:', upsertError);
-          return false;
-        } else {
-          // Refresh assignments
-          await fetchAssignments();
-          return true; // Successfully applied template
-        }
-      } else {
-        return false;
-      }
-    } catch (error) {
-      console.error('Error applying template:', error);
-      return false;
     }
   };
 

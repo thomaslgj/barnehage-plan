@@ -372,9 +372,9 @@ export default function TodayCard({
               }}
               pointerEvents={visualCollapsed ? 'none' : 'auto'}
             >
-            <View style={tw`mb-4 flex-row items-baseline gap-2`}>
+            <View style={tw`mb-4 flex-row items-center gap-2`}>
                 <Text style={[tw.style(
-                  isToday ? 'text-xl font-black tracking-wide text-white' : 'text-lg font-bold text-slate-300'
+                  isToday ? 'text-xl font-black tracking-wide text-white' : 'text-xl font-bold text-slate-300'
                 ), { fontFamily: 'PlusJakartaSans_400Regular' }]}>{isToday ? title.toUpperCase() : title}</Text>
                 {(isToday || isTomorrow) && (
                   <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>· {dayName}</Text>
