@@ -342,14 +342,14 @@ export default function TodayCard({
                 <Ionicons name="document-text" size={18} color="#e8c96f" />
               )}
 
-              {/* Equipment status icon */}
-              {equipmentStatus === 'ready' && (
+              {/* Equipment status icon — hidden until initial load completes */}
+              {!isInitialLoad && !equipmentLoading && equipmentStatus === 'ready' && (
                 <Ionicons name="checkmark-circle" size={22} color="#7fa884" />
               )}
-              {equipmentStatus === 'not_ready' && (
+              {!isInitialLoad && !equipmentLoading && equipmentStatus === 'not_ready' && (
                 <Ionicons name="alert-circle" size={22} color="#d17166" />
               )}
-              {equipmentStatus === 'missing' && (
+              {!isInitialLoad && !equipmentLoading && equipmentStatus === 'missing' && (
                 <Ionicons name="time" size={22} color="#e8c96f" />
               )}
               </View>

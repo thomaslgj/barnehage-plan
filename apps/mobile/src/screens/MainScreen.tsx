@@ -34,9 +34,19 @@ import tw from '../lib/tw';
 dayjs.extend(isoWeek);
 dayjs.locale('nb');
 
+// In-memory schedule cache — synchronous lookups within a session (cleared on reload)
+const memoryScheduleCache = new Map<string, AssignmentData>();
+
 const EMPTY_NOTES: DayNote[] = [];
 const REFRESH_COLORS = ['#7fa884'];
-const SCROLL_CONTENT_STYLE = { padding: 16, paddingBottom: 80 } as const;
+const SCROLL_CONTENT_STYLE = { padding: 16, paddingBottom: 24 } as const;
+const NAV_FOOTER_STYLE = {
+  backgroundColor: '#201a17',
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(168, 153, 133, 0.25)',
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+} as const;
 const OFFSCREEN_STYLE = { position: 'absolute', top: -1000, left: -1000, zIndex: 9999 } as const;
 const NAV_BUTTON_STYLE = {
   padding: 8,
@@ -208,22 +218,63 @@ export default function MainScreen({ navigation }: any) {
 
     // Try to load from cache first on initial load
     if (isInitialLoad) {
-      try {
-        const cached = await AsyncStorage.getItem(cacheKey);
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          setAssignments(cachedData);
-          setLoading(false);
-          setInitialLoadComplete(true);
-          // Continue to fetch fresh data in background
-        } else {
+      // Check in-memory cache first (populated from previous session data / prefetch)
+      const memoryCached = memoryScheduleCache.get(cacheKey);
+      if (memoryCached) {
+        setAssignments(memoryCached);
+        setLoading(false);
+        setInitialLoadComplete(true);
+      } else {
+        // Fall back to AsyncStorage (persists across JS reloads)
+        try {
+          const cached = await AsyncStorage.getItem(cacheKey);
+          if (cached) {
+            const cachedData = JSON.parse(cached) as AssignmentData;
+            memoryScheduleCache.set(cacheKey, cachedData);
+            setAssignments(cachedData);
+            setLoading(false);
+            setInitialLoadComplete(true);
+            // Continue to fetch fresh data in background
+          } else {
+            setLoading(true);
+          }
+        } catch (error) {
+          console.error('Error loading cache:', error);
           setLoading(true);
         }
-      } catch (error) {
-        console.error('Error loading cache:', error);
-        setLoading(true);
       }
-    } else if (!refreshing && targetWeekOffset === undefined) {
+    } else if (targetWeekOffset !== undefined) {
+      // In-memory cache check is SYNCHRONOUS — batched with setWeekChanging(true) from changeWeek.
+      const memoryCached = memoryScheduleCache.get(cacheKey);
+      if (memoryCached) {
+        setAssignments(memoryCached);
+        setAllSlotsEmpty(currentDays.every(day => {
+          const dateStr = day.format('YYYY-MM-DD');
+          return !memoryCached[`${dateStr}-dropoff`] && !memoryCached[`${dateStr}-pickup`];
+        }));
+        // Brief skeleton flash (100ms) so the week transition is visually clear even between
+        // identical-looking empty weeks. weekChanging=true → skeleton shows → then dismissed.
+        setTimeout(() => setWeekChanging(false), 100);
+      } else {
+        // AsyncStorage fallback (bridge call, yields to event loop → skeleton shows briefly)
+        try {
+          const cached = await AsyncStorage.getItem(cacheKey);
+          if (cached) {
+            const cachedData = JSON.parse(cached) as AssignmentData;
+            memoryScheduleCache.set(cacheKey, cachedData);
+            setAssignments(cachedData);
+            setAllSlotsEmpty(currentDays.every(day => {
+              const dateStr = day.format('YYYY-MM-DD');
+              return !cachedData[`${dateStr}-dropoff`] && !cachedData[`${dateStr}-pickup`];
+            }));
+            setWeekChanging(false);
+          }
+          // No cache → weekChanging stays true → skeleton until Supabase responds
+        } catch (error) {
+          console.error('Error loading week cache:', error);
+        }
+      }
+    } else if (!refreshing) {
       setWeekChanging(true);
     }
 
@@ -247,7 +298,8 @@ export default function MainScreen({ navigation }: any) {
         assignmentMap[key] = memberId;
       });
 
-      // Save to cache
+      // Save to both caches
+      memoryScheduleCache.set(cacheKey, assignmentMap);
       await AsyncStorage.setItem(cacheKey, JSON.stringify(assignmentMap));
 
       // Update with fresh data from database
@@ -272,6 +324,49 @@ export default function MainScreen({ navigation }: any) {
 
     }
   }, [childId, householdId, weekOffset, refreshing]);
+
+  // Prefetch adjacent weeks after settling on a week — makes next navigation instant
+  useEffect(() => {
+    if (!initialLoadComplete || !childId || !householdId) return;
+
+    // Wait 1 s so rapid navigation doesn't trigger unnecessary fetches
+    const timer = setTimeout(async () => {
+      for (const delta of [-1, 1]) {
+        const targetOffset = weekOffset + delta;
+        const startOfAdjacentWeek = dayjs().add(targetOffset, 'week').startOf('isoWeek');
+        const days: dayjs.Dayjs[] = [];
+        for (let i = 0; i < 7; i++) {
+          const d = startOfAdjacentWeek.add(i, 'day');
+          if (d.day() >= 1 && d.day() <= 5) days.push(d);
+        }
+        const from = days[0].format('YYYY-MM-DD');
+        const to = days[days.length - 1].format('YYYY-MM-DD');
+        const key = `schedule_${childId}_${from}_${to}`;
+
+        // Skip if already cached
+        const existing = await AsyncStorage.getItem(key);
+        if (existing) continue;
+
+        const { data } = await supabase
+          .from('schedule_assignments')
+          .select('date, slot, assigned_member_id, assigned_user_id')
+          .eq('child_id', childId)
+          .gte('date', from)
+          .lte('date', to);
+
+        if (data) {
+          const map: AssignmentData = {};
+          data.forEach((a: Pick<ScheduleAssignment, 'date' | 'slot' | 'assigned_member_id' | 'assigned_user_id'>) => {
+            map[`${a.date}-${a.slot}`] = a.assigned_member_id || a.assigned_user_id || null;
+          });
+          memoryScheduleCache.set(key, map);
+          await AsyncStorage.setItem(key, JSON.stringify(map));
+        }
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [initialLoadComplete, weekOffset, childId, householdId]);
 
   // Initial fetch - start immediately, cache will make it fast
   useEffect(() => {
@@ -414,12 +509,7 @@ export default function MainScreen({ navigation }: any) {
     fetchInviteCodeAndPlaceholder();
   }, [householdId, members]); // Re-check when members change
 
-  // Reset template success message when week changes (but keep templateAutoApplied to prevent re-triggering)
-  useEffect(() => {
-    setTemplateWasSuccessful(false);
-    setWeekWasFullyFilled(false);
-    setAllSlotsEmpty(false); // Reset until fetchAssignments resolves with fresh data
-  }, [weekOffset]);
+  // (Week-change resets are done synchronously in changeWeek to avoid racing with cache)
 
   // Celebration callback - called by ScheduleList when all slots become filled
   const handleAllSlotsFilled = useCallback(() => {
@@ -653,30 +743,31 @@ export default function MainScreen({ navigation }: any) {
 
   // Button animation helpers
   const animateButtonPress = (animValue: Animated.Value, callback: () => void) => {
-    Animated.sequence([
-      Animated.spring(animValue, {
-        toValue: 0.9,
-        useNativeDriver: true,
-      }),
-      Animated.spring(animValue, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Call callback FIRST so state updates are queued before any bridge communication
+    callback();
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    callback();
+    // Single spring from compressed state — no JS↔Native round-trip between two animations
+    animValue.setValue(0.88);
+    Animated.spring(animValue, {
+      toValue: 1,
+      friction: 4,
+      tension: 60,
+      useNativeDriver: true,
+    }).start();
   };
 
   // Week navigation helper - sets loading state and fetches immediately
   const changeWeek = useCallback((offset: number) => {
     if (!initialLoadComplete) return;
 
+    // Batch all resets with the week change — avoids racing with cache response (issue 3)
     setWeekChanging(true);
     setWeekOffset(offset);
+    setAllSlotsEmpty(false);
+    setTemplateWasSuccessful(false);
+    setWeekWasFullyFilled(false);
     fetchAssignments(false, offset);
   }, [initialLoadComplete, fetchAssignments]);
 
@@ -697,7 +788,7 @@ export default function MainScreen({ navigation }: any) {
         </View>
       )}
 
-      <SafeAreaView style={tw`flex-1 bg-background`} edges={['top']}>
+      <SafeAreaView style={tw`flex-1 bg-background`} edges={['top', 'bottom']}>
         <ScrollView
           style={tw`flex-1`}
           contentContainerStyle={SCROLL_CONTENT_STYLE}
@@ -810,59 +901,10 @@ export default function MainScreen({ navigation }: any) {
           )}
         </Animated.View>
 
-        {/* Week Navigation Header */}
-        <Animated.View style={[tw`mt-8`, { opacity: navigationFade }]}>
-          <View style={tw`flex-row items-center justify-between mb-3`}>
-          <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
-            <TouchableOpacity
-              style={NAV_BUTTON_STYLE}
-              onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
-              activeOpacity={0.5}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="chevron-back" size={20} color="#a89985" />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <View style={tw`flex-1 items-center px-3`}>
-            <View style={tw`flex-row items-center gap-2`}>
-              {weekChanging && (
-                <ActivityIndicator size="small" color="#7fa884" />
-              )}
-              <Text style={tw`text-base font-semibold text-text`}>
-                {weekRange}
-              </Text>
-            </View>
-          </View>
-
-          <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
-            <TouchableOpacity
-              style={NAV_BUTTON_STYLE}
-              onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
-              activeOpacity={0.5}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="chevron-forward" size={20} color="#a89985" />
-            </TouchableOpacity>
-          </Animated.View>
-          </View>
-
-          {/* Go to Current Week Button */}
-          {weekOffset !== currentWeekOffset && (
-            <TouchableOpacity
-              style={tw`mb-3 flex-row items-center justify-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
-              onPress={() => changeWeek(currentWeekOffset)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="today-outline" size={20} color="#f5f1ed" />
-              <Text style={tw`text-base text-white font-medium`}>Gå til nåværende uke</Text>
-            </TouchableOpacity>
-          )}
-        </Animated.View>
-
         {/* Schedule List */}
         <ScheduleList
           loading={loading}
+          weekChanging={weekChanging}
           dayMetadata={dayMetadata}
           members={members}
           notes={notes}
@@ -878,6 +920,56 @@ export default function MainScreen({ navigation }: any) {
           noteIconRefs={noteIconRefs}
         />
       </ScrollView>
+
+        {/* Week Navigation Footer — outside ScrollView to avoid touch/scroll conflict delay */}
+        <Animated.View style={[NAV_FOOTER_STYLE, { opacity: navigationFade }]}>
+          <View style={tw`flex-row items-center justify-between`}>
+            <Animated.View style={{ transform: [{ scale: prevButtonScale }] }}>
+              <TouchableOpacity
+                style={NAV_BUTTON_STYLE}
+                onPress={() => animateButtonPress(prevButtonScale, () => changeWeek(weekOffset - 1))}
+                activeOpacity={0.5}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-back" size={20} color="#a89985" />
+              </TouchableOpacity>
+            </Animated.View>
+
+            <View style={tw`flex-1 items-center px-3`}>
+              <View style={tw`flex-row items-center gap-2`}>
+                {weekChanging && (
+                  <ActivityIndicator size="small" color="#7fa884" />
+                )}
+                <Text style={tw`text-base font-semibold text-text`}>
+                  {weekRange}
+                </Text>
+              </View>
+            </View>
+
+            <Animated.View style={{ transform: [{ scale: nextButtonScale }] }}>
+              <TouchableOpacity
+                style={NAV_BUTTON_STYLE}
+                onPress={() => animateButtonPress(nextButtonScale, () => changeWeek(weekOffset + 1))}
+                activeOpacity={0.5}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-forward" size={20} color="#a89985" />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+
+          {/* Go to Current Week Button */}
+          {weekOffset !== currentWeekOffset && (
+            <TouchableOpacity
+              style={tw`mt-2 flex-row items-center justify-center gap-2 bg-slate-700/50 rounded-full py-2 px-4`}
+              onPress={() => changeWeek(currentWeekOffset)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="today-outline" size={20} color="#f5f1ed" />
+              <Text style={tw`text-base text-white font-medium`}>Gå til nåværende uke</Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
     </SafeAreaView>
 
     <NotesBottomSheet

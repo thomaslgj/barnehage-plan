@@ -136,6 +136,7 @@ const ScheduleDayRow = React.memo(function ScheduleDayRow({
 
 export interface ScheduleListProps {
   loading: boolean;
+  weekChanging: boolean;
   dayMetadata: DayMetadata[];
   members: Array<{ id: string; user_id: string | null; display_name: string | null; avatar_id?: string | null }>;
   notes: Map<string, DayNote[]>;
@@ -153,6 +154,7 @@ export interface ScheduleListProps {
 
 const ScheduleList = React.memo(function ScheduleList({
   loading,
+  weekChanging,
   dayMetadata,
   members,
   notes,
@@ -179,12 +181,12 @@ const ScheduleList = React.memo(function ScheduleList({
     if (allFilled) onAllSlotsFilled();
   }, [assignments, dayMetadata, loading, onAllSlotsFilled]);
 
-  if (loading) return <ScheduleSkeleton />;
+  if (loading || weekChanging) return <ScheduleSkeleton />;
 
   return (
     <View>
       {/* Header */}
-      <View style={tw`flex-row gap-6 mb-3 px-1`}>
+      <View style={tw`flex-row gap-6 mt-2 mb-1 px-1`}>
         <View style={tw`flex-1 items-end`}>
           <Text style={tw`text-xs font-medium text-slate-400`}>Levering</Text>
         </View>
