@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
 import { View, Text, Platform, Animated, TouchableOpacity, LayoutAnimation, UIManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -70,10 +70,12 @@ export default function TodayCard({
   const [prevEquipmentStatus, setPrevEquipmentStatus] = useState<'ready' | 'missing' | 'not_ready' | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [autoCollapseSet, setAutoCollapseSet] = useState(false);
+  // Local visual state gives immediate response on click - no waiting for parent re-render
+  const [visualCollapsed, setVisualCollapsed] = useState(collapsed);
   const confettiRef = useRef<any>(null);
   const prevDate = useRef<string>(date);
-  const opacityAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current; // For opacity/transform (native)
-  const heightAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current;  // For height (JS)
+  const opacityAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current; // opacity/transform (native driver)
+  const heightAnim = useRef(new Animated.Value(collapsed ? 0 : 1)).current;  // height (JS driver - unavoidable)
 
   const dateObj = dayjs(date);
   const isToday = dateObj.isSame(dayjs(), 'day');
@@ -191,34 +193,47 @@ export default function TodayCard({
     }
   }, [equipmentItems.length, notes.length, date, collapsed, onToggleCollapse, autoCollapseSet, equipmentStatus]);
 
-  // Animate when collapsed state changes
+  // Sync external prop to local visual state (e.g. auto-collapse triggered by parent)
+  useEffect(() => {
+    if (visualCollapsed !== collapsed) {
+      setVisualCollapsed(collapsed);
+    }
+  }, [collapsed]);
+
+  // Animate when visual state changes - starts immediately since visualCollapsed is local state
   useEffect(() => {
     Animated.parallel([
-      // Opacity/transform animation (native - smooth)
+      // Opacity/transform crossfade (native driver - runs on UI thread)
       Animated.timing(opacityAnim, {
-        toValue: collapsed ? 0 : 1,
+        toValue: visualCollapsed ? 0 : 1,
         duration: 200,
         useNativeDriver: true,
       }),
-      // Height animation (JS - needed for layout)
+      // Height animation (JS driver - unavoidable for layout, but starts immediately now)
       Animated.spring(heightAnim, {
-        toValue: collapsed ? 0 : 1,
+        toValue: visualCollapsed ? 0 : 1,
         friction: 10,
         tension: 50,
         useNativeDriver: false,
       }),
     ]).start();
-  }, [collapsed, opacityAnim, heightAnim]);
+  }, [visualCollapsed, opacityAnim, heightAnim]);
 
   const handleToggleCollapse = () => {
     if (!onToggleCollapse) return;
 
-    // Trigger haptic feedback
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    onToggleCollapse();
+    // Update local visual state immediately - Animated.spring starts on THIS setState.
+    setVisualCollapsed(prev => !prev);
+    // Mark parent update as low-priority so React commits the animation first.
+    // Without this, React 19 batches both updates together and waits for all of
+    // MainScreen's expensive re-render before starting the animation.
+    startTransition(() => {
+      onToggleCollapse();
+    });
   };
 
   const handleToggleItem = async (itemKey: string) => {
@@ -275,6 +290,7 @@ export default function TodayCard({
         {/* Main content section with padding */}
         <View style={tw`px-5 pt-5 pb-4`}>
           <TouchableOpacity
+            testID="today-card-header"
             onPress={handleToggleCollapse}
             activeOpacity={0.95}
             disabled={!onToggleCollapse}
@@ -300,7 +316,7 @@ export default function TodayCard({
                   }],
                 }
               ]}
-              pointerEvents={collapsed ? 'auto' : 'none'}
+              pointerEvents={visualCollapsed ? 'auto' : 'none'}
             >
               <View style={tw`flex-row items-center gap-3`}>
               <Text style={[tw.style(
@@ -354,7 +370,7 @@ export default function TodayCard({
                   })
                 }],
               }}
-              pointerEvents={collapsed ? 'none' : 'auto'}
+              pointerEvents={visualCollapsed ? 'none' : 'auto'}
             >
             <View style={tw`mb-4 flex-row items-baseline gap-2`}>
                 <Text style={[tw.style(
@@ -423,6 +439,7 @@ export default function TodayCard({
           {/* Collapse icon with visual feedback */}
           {onToggleCollapse && (
             <TouchableOpacity
+              testID="today-card-toggle"
               onPress={handleToggleCollapse}
               activeOpacity={0.5}
               style={{
@@ -437,7 +454,7 @@ export default function TodayCard({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons
-                name={collapsed ? 'chevron-down' : 'chevron-up'}
+                name={visualCollapsed ? 'chevron-down' : 'chevron-up'}
                 size={20}
                 color="#a89985"
               />
@@ -445,9 +462,10 @@ export default function TodayCard({
           )}
         </View>
 
-        {/* Notes Section - between avatars and equipment (only show when expanded) */}
-        {!collapsed && notes.length > 0 && (
+        {/* Notes Section - LayoutAnimation + overflow:hidden on card handles show/hide animation */}
+        {!visualCollapsed && notes.length > 0 && (
           <TouchableOpacity
+            testID="today-card-notes-section"
             onPress={onNotePress}
             activeOpacity={0.7}
             disabled={!onNotePress}
@@ -464,22 +482,24 @@ export default function TodayCard({
           </TouchableOpacity>
         )}
 
-        {/* Equipment Status Section - integrated footer (only show when expanded) */}
-        {!collapsed && (
-          equipmentItems.length > 0 ? (
-            <EquipmentStatusBadge
-              status={equipmentStatus}
-              items={equipmentItems}
-              onPress={() => setBottomSheetVisible(true)}
-              isFooter={true}
-            />
-          ) : (
-            <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-4 bg-[#2d2520]`}>
-              <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
-                Laster utstyr...
-              </Text>
-            </View>
-          )
+        {/* Equipment Status Section - LayoutAnimation + overflow:hidden on card handles show/hide */}
+        {!visualCollapsed && (
+          <View testID="today-card-equipment-section">
+            {equipmentItems.length > 0 ? (
+              <EquipmentStatusBadge
+                status={equipmentStatus}
+                items={equipmentItems}
+                onPress={() => setBottomSheetVisible(true)}
+                isFooter={true}
+              />
+            ) : (
+              <View style={tw`w-full flex-row items-center justify-center gap-3 px-5 py-4 bg-[#2d2520]`}>
+                <Text style={[tw`text-base text-slate-400`, { fontFamily: 'PlusJakartaSans_400Regular' }]}>
+                  Laster utstyr...
+                </Text>
+              </View>
+            )}
+          </View>
         )}
       </View>
 

@@ -191,7 +191,7 @@ interface ScheduleListProps {
   noteIconRefs: React.MutableRefObject<Map<string, any>>;
 }
 
-function ScheduleList({
+const ScheduleList = React.memo(function ScheduleList({
   loading,
   dayMetadata,
   members,
@@ -273,7 +273,7 @@ function ScheduleList({
       ))}
     </View>
   );
-}
+});
 
 // TodayCard section - subscribes to assignments store directly
 interface TodayCardSectionProps {
@@ -292,7 +292,7 @@ interface TodayCardSectionProps {
   onEquipmentModalDismiss: () => void;
 }
 
-function TodayCardSection({
+const TodayCardSection = React.memo(function TodayCardSection({
   loading,
   weekChanging,
   todayDate,
@@ -336,7 +336,7 @@ function TodayCardSection({
       ) : null}
     </Animated.View>
   );
-}
+});
 
 export default function MainScreen({ navigation }: any) {
   const { user, householdId, childId, members } = useHousehold();
